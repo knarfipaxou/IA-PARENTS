@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PROF PARENT IA — Planche des écrans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;} html,body{margin:0;}
+  body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#E9EBE7;color:#13241D;
+    background-image:radial-gradient(circle at 25% -5%,#F0F2EE,#E4E7E2 70%);}
+  ::-webkit-scrollbar{height:10px;width:10px;} ::-webkit-scrollbar-thumb{background:#cdd2cc;border-radius:6px;}
+  .wrap{max-width:1480px;margin:0 auto;padding:48px 40px 80px;}
+  .sec-title{font-size:13px;font-weight:800;letter-spacing:1.5px;color:#6B7A71;margin:48px 0 4px;text-transform:uppercase;}
+  .sec-sub{font-size:15px;color:#8A988F;font-weight:600;margin-bottom:24px;}
+  .row{display:flex;flex-wrap:wrap;gap:30px;}
+  .cell{display:flex;flex-direction:column;align-items:center;gap:12px;}
+  .label{font-size:13.5px;font-weight:700;color:#3A4A42;text-align:center;max-width:300px;}
+</style></head>
+<body>
+<div class="wrap" id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="art.jsx"></script>
+<script type="text/babel" src="screens1.jsx"></script>
+<script type="text/babel" src="screens2.jsx"></script>
+<script type="text/babel" src="screens3.jsx"></script>
+<script type="text/babel" src="screens4.jsx"></script>
+<script type="text/babel" src="screens5.jsx"></script>
+<script type="text/babel" src="screens6.jsx"></script>
+
+<script type="text/babel">
+const theme = makeTheme('emeraude', false);
+const SCALE = 0.78, W = 402, H = 852;
+const noop = () => {};
+const profile = { prenom: 'Maxime', classe: 'CM2', goal: 'comprendre', familyName: 'Famille Martin' };
+
+function Phone({ label, children }) {
+  return (
+    <div className="cell">
+      <div style={{
+        width: W * SCALE, height: H * SCALE, borderRadius: 44, background: theme.bg,
+        boxShadow: '0 24px 50px rgba(16,40,30,0.16), 0 0 0 1px rgba(16,40,30,0.06)',
+        overflow: 'hidden', position: 'relative', flexShrink: 0,
+      }}>
+        {/* status bar overlay */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 40, zIndex: 5,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 26px',
+          fontSize: 12, fontWeight: 700, color: theme.ink, pointerEvents: 'none' }}>
+          <span>9:41</span>
+          <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
+            <span style={{ width: 16, height: 9, border: `1.4px solid ${theme.ink}`, borderRadius: 2, display: 'inline-block', opacity: 0.85 }} />
+          </div>
+        </div>
+        <div style={{ position: 'absolute', top: 9, left: '50%', transform: 'translateX(-50%)', width: 96, height: 26, background: '#0c0c0c', borderRadius: 16, zIndex: 6 }} />
+        {/* scaled screen */}
+        <div style={{ width: W, height: H, transform: `scale(${SCALE})`, transformOrigin: 'top left' }}>
+          <div style={{ width: W, height: H, background: theme.bg, color: theme.ink }}>{children}</div>
+        </div>
+      </div>
+      <div className="label">{label}</div>
+    </div>
+  );
+}
+
+const sections = [
+  { title: 'Onboarding', sub: 'Premier lancement et création des profils', screens: [
+    ['1 · Accueil', <WelcomeScreen go={noop} />],
+    ['2 · Création famille', <FamilyScreen go={noop} state={profile} setState={noop} />],
+    ['3 · Profil enfant', <ProfileScreen go={noop} state={profile} setState={noop} />],
+  ]},
+  { title: 'Quotidien & enfants', sub: 'Le cœur de l’app au jour le jour', screens: [
+    ['4 · Tableau de bord', <HomeScreen go={noop} state={profile} toast={noop} />],
+    ['5 · Liste des enfants', <ChildrenScreen go={noop} />],
+    ['15 · Suivi & progression', <ProgressScreen go={noop} />],
+    ['16 · Notifications', <NotificationsScreen go={noop} toast={noop} />],
+  ]},
+  { title: 'Scan & analyse', sub: 'Photo → compréhension → validation parent', screens: [
+    ['6 · Scanner l’agenda', <ScanAgendaScreen go={noop} toast={noop} />],
+    ['7 · Résultats agenda', <AgendaResultsScreen go={noop} toast={noop} />],
+    ['8 · Scanner une leçon', <ScanScreen go={noop} toast={noop} />],
+    ['9 · Résultat de la leçon', <ResultScreen go={noop} toast={noop} />],
+    ['10 · Validation parent', <ValidationScreen go={noop} toast={noop} />],
+    ['18 · Photo floue', <PhotoFloueScreen go={noop} toast={noop} />],
+  ]},
+  { title: 'Révision', sub: 'Plan personnalisé, exercices et correction', screens: [
+    ['11 · Plan de révision', <PlanScreen go={noop} toast={noop} />],
+    ['12 · Exercices du jour', <ExercisesScreen go={noop} toast={noop} />],
+    ['13 · Correction parent', <CorrectionScreen go={noop} toast={noop} />],
+    ['14 · Contrôle blanc', <MockTestScreen go={noop} toast={noop} />],
+  ]},
+  { title: 'Système', sub: 'Réglages, export et fonctionnalités à venir', screens: [
+    ['17 · Paramètres', <SettingsScreen go={noop} toast={noop} dark={false} onToggleDark={noop} />],
+    ['19 · PDF prêt à imprimer', <PdfScreen go={noop} toast={noop} />],
+    ['20 · À venir', <ComingSoonScreen go={noop} />],
+  ]},
+];
+
+function Board() {
+  return (
+    <ThemeCtx.Provider value={theme}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <BrandMark size={56} />
+        <div>
+          <div style={{ fontSize: 30, fontWeight: 800, letterSpacing: -0.8 }}>PROF PARENT <span style={{ color: theme.primary }}>IA</span></div>
+          <div style={{ fontSize: 16, color: '#7A887F', fontWeight: 600, marginTop: 2 }}>Planche des écrans · 20 vues · V1 maths collège</div>
+        </div>
+      </div>
+      {sections.map(s => (
+        <div key={s.title}>
+          <div className="sec-title">{s.title}</div>
+          <div className="sec-sub">{s.sub}</div>
+          <div className="row">
+            {s.screens.map(([label, el]) => <Phone key={label} label={label}>{el}</Phone>)}
+          </div>
+        </div>
+      ))}
+    </ThemeCtx.Provider>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Board />);
+</script>
+</body></html>

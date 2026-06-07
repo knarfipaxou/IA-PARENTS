@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "IA Parents",
+    "slug": "ia-parents",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#F7F5F2"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.iaparents.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2C5F8A"
+      },
+      "package": "com.iaparents.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Utilisé pour importer les photos de cahiers et devoirs."
+        }
+      ]
+    ],
+    "scheme": "iaparents",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
