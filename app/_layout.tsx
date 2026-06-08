@@ -33,7 +33,7 @@ export default function RootLayout() {
           <Stack.Screen name="mission-exo" />
           <Stack.Screen name="mission-result" />
           <Stack.Screen name="plan-create" />
-          <Stack.Screen name="plan-edit" />
+          <Stack.Screen name="plan-edit" options={{ animation: 'slide_from_bottom' }} />
         </Stack>
       </ChildProvider>
     </SafeAreaProvider>

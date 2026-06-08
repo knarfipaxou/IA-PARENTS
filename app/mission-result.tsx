@@ -12,7 +12,7 @@ type Stat = { v: string; l: string; icon: string; a: AccentKey };
 
 const STATS: Stat[] = [
   { v: '4/4', l: 'étapes', icon: 'checkmark-done-outline', a: 'green' },
-  { v: '90%', l: 'réussite', icon: 'target-outline', a: 'blue' },
+  { v: '90%', l: 'réussite', icon: 'ribbon-outline', a: 'blue' },
   { v: '+15', l: 'points', icon: 'star-outline', a: 'amber' },
 ];
 
