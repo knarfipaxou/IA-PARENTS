@@ -1,4 +1,129 @@
-import type { Enfant, Echeance, Mission, AnalyseResult } from '../types';
+import type { AccentKey } from '../constants/theme';
+import type { Enfant, Echeance as LegacyEcheance, Mission, AnalyseResult } from '../types';
+
+// ─── New design-bundle types ────────────────────────────────────────────────
+
+export type EcheanceStatus = 'confirme' | 'incertain' | 'erreur' | 'flou';
+
+export interface Echeance {
+  id: string;
+  subj: string;
+  type: string;
+  date: string;
+  days: number;
+  status: EcheanceStatus;
+  accent: AccentKey;
+  icon: string;
+  urg?: boolean;
+}
+
+export interface HistoryItem {
+  subj: string;
+  type: string;
+  score: string;
+  date: string;
+  accent: AccentKey;
+}
+
+export interface MatiereStat {
+  s: string;
+  v: number;
+  a: AccentKey;
+  icon: string;
+}
+
+export interface CollegeChild {
+  id: string;
+  kind: 'college';
+  name: string;
+  classe: string;
+  age: number;
+  accent: AccentKey;
+  progress: number;
+  next: { subj: string; type: string; days: number; accent: AccentKey };
+  mission: { subj: string; min: number; obj: string; notion: string };
+  matieres: MatiereStat[];
+  forts: string[];
+  faibles: string[];
+  echeances: Echeance[];
+  history: HistoryItem[];
+}
+
+export interface MaternelleChild {
+  id: string;
+  kind: 'maternelle';
+  name: string;
+  classe: string;
+  age: number;
+  accent: AccentKey;
+  progress: number;
+  activity: { label: string; min: number; obj: string };
+  matieres: MatiereStat[];
+  forts: string[];
+  faibles: string[];
+  echeances: Echeance[];
+  history: HistoryItem[];
+}
+
+export type Child = CollegeChild | MaternelleChild;
+
+export const CHILDREN: Child[] = [
+  {
+    id: 'maxime',
+    kind: 'college',
+    name: 'Maxime',
+    classe: '6e',
+    age: 11,
+    accent: 'green',
+    progress: 65,
+    next: { subj: 'SVT', type: 'Composition', days: 3, accent: 'coral' },
+    mission: {
+      subj: 'SVT',
+      min: 12,
+      obj: 'Expliquer la reproduction des végétaux à fleurs',
+      notion: 'La reproduction des plantes',
+    },
+    matieres: [
+      { s: 'Mathématiques', v: 78, a: 'green', icon: 'calculator-outline' },
+      { s: 'Français', v: 64, a: 'violet', icon: 'book-outline' },
+      { s: 'Sciences', v: 71, a: 'coral', icon: 'flask-outline' },
+    ],
+    forts: ['Calcul mental', 'Lecture'],
+    faibles: ['Problèmes', 'Dictée'],
+    echeances: [
+      { id: 'svt', subj: 'SVT', type: 'Composition', date: '24 avr', days: 3, status: 'confirme', accent: 'coral', icon: 'flask-outline', urg: true },
+      { id: 'mat', subj: 'Maths', type: 'DS', date: '28 avr', days: 7, status: 'confirme', accent: 'green', icon: 'calculator-outline' },
+      { id: 'fr', subj: 'Français', type: 'Dictée', date: '2 mai', days: 11, status: 'incertain', accent: 'violet', icon: 'book-outline' },
+    ],
+    history: [
+      { subj: 'Histoire', type: 'Interro', score: '16/20', date: 'Mai', accent: 'amber' },
+      { subj: 'Maths', type: 'Contrôle', score: '14/20', date: 'Mai', accent: 'green' },
+    ],
+  },
+  {
+    id: 'alexia',
+    kind: 'maternelle',
+    name: 'Alexia',
+    classe: 'Moyenne section',
+    age: 4,
+    accent: 'violet',
+    progress: 80,
+    activity: { label: 'Langage oral', min: 8, obj: 'Décrire une image' },
+    matieres: [
+      { s: 'Langage', v: 85, a: 'violet', icon: 'chatbubble-outline' },
+      { s: 'Graphisme', v: 70, a: 'blue', icon: 'pencil-outline' },
+      { s: 'Nombres', v: 75, a: 'green', icon: 'calculator-outline' },
+    ],
+    forts: ['Vocabulaire', 'Motricité fine'],
+    faibles: ['Tracé des lettres'],
+    echeances: [
+      { id: 'lang', subj: 'Langage', type: 'Activité', date: "Aujourd'hui", days: 0, status: 'confirme', accent: 'violet', icon: 'chatbubble-outline' },
+    ],
+    history: [],
+  },
+];
+
+// ─── Legacy mock data (kept for screens that still use it) ──────────────────
 
 export const mockEnfants: Enfant[] = [
   {
@@ -10,7 +135,7 @@ export const mockEnfants: Enfant[] = [
   },
 ];
 
-export const mockEcheances: Echeance[] = [
+export const mockEcheances: LegacyEcheance[] = [
   {
     id: '1',
     enfantId: '1',
@@ -64,7 +189,7 @@ export const mockMissions: Mission[] = [
         id: 'e1',
         type: 'rappel',
         contenu:
-          'La fougère se reproduit grâce à des **spores**. Ces minuscules cellules tombent sur le sol humide et germent pour former le **prothalle**. Le prothalle est une petite plante bisexuée qui permet la reproduction sexuée.',
+          'La fougère se reproduit grâce à des **spores**. Ces minuscules cellules tombent sur le sol humide et germent pour former le **prothalle**.',
       },
       {
         id: 'e2',
@@ -77,60 +202,7 @@ export const mockMissions: Mission[] = [
           'Une graine modifiée de la fougère',
         ],
         bonneReponse: 1,
-        explication:
-          "Le prothalle est bien la petite plante bisexuée qui naît de la germination d'une spore. Il est indispensable à la reproduction sexuée de la fougère.",
-      },
-      {
-        id: 'e3',
-        type: 'texte_trous',
-        question: 'Complète la phrase :',
-        texte: 'La spore germe pour former le ___, qui produit ensuite des cellules reproductrices.',
-        trous: ['prothalle'],
-        explication:
-          'La chaîne est : spore → prothalle → reproduction sexuée → nouvelle fougère.',
-      },
-      {
-        id: 'e4',
-        type: 'qcm',
-        question: 'La multiplication végétative permet à la fougère de :',
-        options: [
-          'Se reproduire uniquement par graines',
-          "Se reproduire sans spores ni gamètes, depuis ses propres organes",
-          'Produire des fleurs colorées',
-          'Survivre en hiver uniquement',
-        ],
-        bonneReponse: 1,
-        explication:
-          "La multiplication végétative est une reproduction asexuée : la fougère crée de nouveaux individus depuis ses rhizomes, sans passer par les spores.",
-      },
-    ],
-  },
-  {
-    id: '2',
-    echeanceId: '1',
-    titre: 'Cycle de reproduction complet',
-    duree: 10,
-    statut: 'disponible',
-    exercices: [
-      {
-        id: 'e5',
-        type: 'rappel',
-        contenu:
-          "Il existe deux modes de reproduction chez la fougère : la **reproduction sexuée** (via les spores et le prothalle) et la **multiplication végétative** (via les rhizomes). Les deux permettent d'obtenir de nouvelles plantes.",
-      },
-      {
-        id: 'e6',
-        type: 'qcm',
-        question: 'Dans quel ordre se déroule la reproduction sexuée de la fougère ?',
-        options: [
-          'Prothalle → spore → fougère adulte',
-          'Spore → prothalle → fougère adulte',
-          'Fougère → prothalle → spore',
-          'Rhizome → spore → prothalle',
-        ],
-        bonneReponse: 1,
-        explication:
-          "L'ordre correct est : la fougère adulte produit des spores → les spores germent et forment des prothalles → les prothalles se reproduisent et donnent de nouvelles fougères.",
+        explication: "Le prothalle est la petite plante bisexuée qui naît de la germination d'une spore.",
       },
     ],
   },
@@ -143,8 +215,7 @@ export const mockAnalyseResult: AnalyseResult = {
   dateEvaluation: '10 juin 2026',
   joursRestants: 3,
   notions: ['spores', 'prothalle', 'fougère', 'multiplication végétative', 'reproduction sexuée'],
-  consignes:
-    "Savoir expliquer le cycle de reproduction de la fougère. Connaître les différences entre reproduction sexuée et multiplication végétative. Être capable de légender un schéma.",
+  consignes: "Savoir expliquer le cycle de reproduction de la fougère.",
   priorite: 'haute',
   dureeConseillee: 12,
   missionsProposees: 3,

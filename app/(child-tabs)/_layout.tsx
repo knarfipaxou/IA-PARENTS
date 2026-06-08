@@ -1,8 +1,18 @@
-import { Tabs } from 'expo-router';
+import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native';
 import { T } from '../../constants/theme';
+import { useChild } from '../../contexts/ChildContext';
 
-export default function TabsLayout() {
+export default function ChildTabsLayout() {
+  const router = useRouter();
+  const { child, setChild } = useChild();
+
+  function goBack() {
+    setChild(null);
+    router.replace('/(tabs)/' as any);
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -21,29 +31,38 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="espace"
         options={{
-          title: 'Accueil',
+          title: 'Espace',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="notifications"
+        name="plan"
         options={{
-          title: 'Alertes',
+          title: 'Planning',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="echeances"
         options={{
-          title: 'Réglages',
+          title: 'Échéances',
           tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'settings' : 'settings-outline'} size={size} color={color} />
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profil"
+        options={{
+          title: 'Profil',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
           ),
         }}
       />
