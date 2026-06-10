@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useChild } from '../../contexts/ChildContext';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
@@ -20,6 +22,10 @@ function Row({ icon, label, value, onPress, showArrow = true }: { icon: string; 
 }
 
 export default function SettingsScreen() {
+  const router = useRouter();
+  const { children } = useChild();
+  const activeCount = children.filter((c) => !c.archived).length;
+  const archivedCount = children.filter((c) => c.archived).length;
   const [dark, setDark] = React.useState(false);
   const [notifs, setNotifs] = React.useState(true);
   const [keyInput, setKeyInput] = React.useState('');
@@ -57,7 +63,14 @@ export default function SettingsScreen() {
 
         <Text style={s.sectionLabel}>Compte</Text>
         <Card pad={0}>
-          <Row icon="people-outline" label="Mes enfants" value="2 profils" />
+          <Row icon="people-outline" label="Mes enfants" value={`${activeCount} ${activeCount > 1 ? 'profils' : 'profil'}`} />
+          <View style={s.divider} />
+          <Row
+            icon="archive-outline"
+            label="Enfants archivés"
+            value={`${archivedCount}`}
+            onPress={() => router.push('/archived-children' as any)}
+          />
           <View style={s.divider} />
           <Row icon="notifications-outline" label="Notifications" />
         </Card>

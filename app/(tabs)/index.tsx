@@ -14,7 +14,8 @@ import { type Child } from '../../data/mock';
 
 export default function ParentHome() {
   const router = useRouter();
-  const { setChild, children } = useChild();
+  const { setChild, children: allChildren } = useChild();
+  const children = allChildren.filter((c) => !c.archived);
 
   const alerts = [
     { accent: 'coral' as const, icon: 'alert-circle-outline', text: 'Composition de SVT de Maxime dans 3 jours' },

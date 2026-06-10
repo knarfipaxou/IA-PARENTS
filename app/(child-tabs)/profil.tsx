@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
@@ -10,6 +11,7 @@ import { ProgressRing } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
 
 export default function ProfilScreen() {
+  const router = useRouter();
   const { child } = useChild();
 
   if (!child) {
@@ -34,7 +36,16 @@ export default function ProfilScreen() {
             <Text style={s.name}>{child.name}</Text>
             <Text style={s.classe}>{child.classe} · {child.age} ans</Text>
           </View>
+          <TouchableOpacity onPress={() => router.push('/edit-child' as any)} style={s.editBtn}>
+            <Ionicons name="create-outline" size={19} color={T.ink} />
+          </TouchableOpacity>
         </View>
+
+        <TouchableOpacity onPress={() => router.push('/edit-child' as any)} style={s.editRow} activeOpacity={0.85}>
+          <Ionicons name="create-outline" size={19} color={T.primaryDeep} />
+          <Text style={s.editRowText}>Modifier le profil</Text>
+          <Ionicons name="chevron-forward" size={17} color={T.primaryDeep} />
+        </TouchableOpacity>
 
         {/* Matieres */}
         <Text style={s.sectionLabel}>MATIÈRES SUIVIES</Text>
@@ -133,6 +144,15 @@ const s = StyleSheet.create({
   avatarText: { color: '#fff', fontWeight: '800', fontSize: 28 },
   name: { fontSize: 25, fontWeight: '800', color: T.ink, letterSpacing: -0.5 },
   classe: { fontSize: 14, color: T.sub, fontWeight: '600', marginTop: 1 },
+  editBtn: {
+    width: 42, height: 42, borderRadius: 13, backgroundColor: T.surface,
+    borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center',
+  },
+  editRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: T.primarySoft, borderRadius: 15, padding: 13,
+  },
+  editRowText: { flex: 1, fontSize: 14.5, fontWeight: '800', color: T.primaryDeep },
   sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginBottom: 11, letterSpacing: 0.2, marginTop: 22 },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },

@@ -35,6 +35,8 @@ export default function RootLayout() {
           <Stack.Screen name="link-lessons" />
           <Stack.Screen name="agenda-validate" />
           <Stack.Screen name="echeance-edit" />
+          <Stack.Screen name="edit-child" />
+          <Stack.Screen name="archived-children" />
           <Stack.Screen name="mission" />
           <Stack.Screen name="mission-rappel" />
           <Stack.Screen name="mission-exo" />
