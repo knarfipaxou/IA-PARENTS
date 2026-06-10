@@ -10,11 +10,11 @@ import { Card } from '../../components/ui/Card';
 import { ProgressRing } from '../../components/ui/Progress';
 import { Squircle } from '../../components/ui/Squircle';
 import { useChild } from '../../contexts/ChildContext';
-import { CHILDREN, type Child } from '../../data/mock';
+import { type Child } from '../../data/mock';
 
 export default function ParentHome() {
   const router = useRouter();
-  const { setChild } = useChild();
+  const { setChild, children } = useChild();
 
   const alerts = [
     { accent: 'coral' as const, icon: 'alert-circle-outline', text: 'Composition de SVT de Maxime dans 3 jours' },
@@ -33,7 +33,7 @@ export default function ParentHome() {
         <View style={s.greeting}>
           <View style={{ flex: 1 }}>
             <Text style={s.greetTitle}>Bonjour, Franck</Text>
-            <Text style={s.greetSub}>Famille Martin · {CHILDREN.length} enfants</Text>
+            <Text style={s.greetSub}>Famille Martin · {children.length} {children.length > 1 ? 'enfants' : 'enfant'}</Text>
           </View>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/notifications' as any)}
@@ -62,15 +62,15 @@ export default function ParentHome() {
         {/* Child picker */}
         <Text style={s.sectionLabel}>CHOISIR UN ENFANT</Text>
         <View style={s.childList}>
-          {CHILDREN.map((c) => {
+          {children.map((c) => {
             const isCollege = c.kind === 'college';
-            const tagAccent = isCollege ? c.next!.accent : c.accent;
+            const tagAccent = isCollege ? c.next?.accent ?? c.accent : c.accent;
             const tagLabel = isCollege
-              ? `${c.next!.type} de ${c.next!.subj}`
-              : c.activity!.label;
+              ? `${c.next?.type ?? 'À planifier'}${c.next?.subj && c.next.subj !== '—' ? ` de ${c.next.subj}` : ''}`
+              : c.activity?.label ?? 'Activité';
             const tagSub = isCollege
-              ? `dans ${c.next!.days} jours`
-              : `${c.activity!.min} min · activité`;
+              ? c.next && c.next.days > 0 ? `dans ${c.next.days} jours` : 'à planifier'
+              : `${c.activity?.min ?? 0} min · activité`;
             const tagIcon = isCollege ? 'flask-outline' : 'star-outline';
 
             return (
@@ -105,7 +105,7 @@ export default function ParentHome() {
             );
           })}
 
-          <TouchableOpacity style={s.addCard} activeOpacity={0.8}>
+          <TouchableOpacity style={s.addCard} activeOpacity={0.8} onPress={() => router.push('/add-child' as any)}>
             <View style={s.addIcon}>
               <Ionicons name="add" size={23} color={T.primary} />
             </View>
