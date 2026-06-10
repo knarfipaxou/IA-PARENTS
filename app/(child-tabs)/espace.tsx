@@ -11,7 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
 import { ProgressRing } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
-import { iconForMatiere, accentForMatiere, formatLessonDate } from '../../lib/matiere';
+import { iconForMatiere, accentForMatiere, formatLessonDate, isControle } from '../../lib/matiere';
 
 type ActionItem = {
   accent: keyof typeof T;
@@ -33,6 +33,7 @@ export default function EspaceScreen() {
   const router = useRouter();
   const { child, setChild, lessons } = useChild();
   const childLessons = child ? lessons.filter((l) => l.childId === child.id) : [];
+  const controles = (child?.echeances ?? []).filter((e) => isControle(e.type));
 
   if (!child) {
     return (
@@ -140,6 +141,59 @@ export default function EspaceScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Contrôles à venir */}
+        {controles.length > 0 && (
+          <>
+            <Text style={s.sectionLabel}>CONTRÔLES À VENIR</Text>
+            <View style={{ gap: 11, marginBottom: 20 }}>
+              {controles.map((e) => {
+                const noLesson = (e.lessonIds ?? []).length === 0;
+                return (
+                  <TouchableOpacity
+                    key={e.id}
+                    onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
+                    style={s.controleRow}
+                    activeOpacity={0.88}
+                  >
+                    <Squircle accentKey={e.accent} size={44} r={14} icon={<Ionicons name={(e.icon || 'school-outline') as any} size={21} color={T[e.accent].fg} />} style={{ marginRight: 12 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.controleTitle}>{e.type} de {e.subj}</Text>
+                      <Text style={s.controleSub}>
+                        {e.date} · {(e.lessonIds ?? []).length} {(e.lessonIds ?? []).length > 1 ? 'leçons liées' : 'leçon liée'}
+                      </Text>
+                      {noLesson && (
+                        <View style={s.controleWarn}>
+                          <Ionicons name="warning-outline" size={13} color={T.amber.fg} />
+                          <Text style={s.controleWarnText}>⚠️ Aucune leçon rattachée</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={[s.jBadge, { backgroundColor: T[e.accent].solid }]}>
+                      <Text style={s.jBadgeText}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
+        {/* Alerte : contrôles sans leçons */}
+        {controles.filter((e) => (e.lessonIds ?? []).length === 0).map((e) => (
+          <View key={`alert-${e.id}`} style={s.amberBanner}>
+            <Ionicons name="warning-outline" size={20} color={T.amber.fg} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.amberBannerText}>
+                Contrôle de {e.subj} dans {e.days} {e.days > 1 ? 'jours' : 'jour'} : avez-vous rattaché les leçons concernées ?
+              </Text>
+              <TouchableOpacity onPress={() => router.push(`/link-lessons?echeanceId=${e.id}` as any)} style={s.amberBannerBtn}>
+                <Text style={s.amberBannerBtnText}>Rattacher des leçons</Text>
+                <Ionicons name="arrow-forward" size={14} color={T.amber.fg} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
 
         {/* Leçons enregistrées */}
         <View style={s.sectionHeaderRow}>
@@ -253,6 +307,23 @@ const s = StyleSheet.create({
   },
   actionTitle: { fontWeight: '800', fontSize: 14, color: T.ink, letterSpacing: -0.3, marginBottom: 3 },
   actionDesc: { fontSize: 12, color: T.sub, fontWeight: '500' },
+  controleRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
+    borderRadius: 20, padding: 13,
+    shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+  },
+  controleTitle: { fontWeight: '800', fontSize: 15, color: T.ink, letterSpacing: -0.3 },
+  controleSub: { fontSize: 12.5, color: T.sub, fontWeight: '600', marginTop: 2 },
+  controleWarn: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
+  controleWarnText: { fontSize: 12, fontWeight: '800', color: T.amber.fg },
+  amberBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 11,
+    backgroundColor: T.amber.soft, borderRadius: 18, padding: 14, marginBottom: 14,
+  },
+  amberBannerText: { fontSize: 13.5, fontWeight: '700', color: T.amber.fg, lineHeight: 19 },
+  amberBannerBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  amberBannerBtnText: { fontSize: 13.5, fontWeight: '800', color: T.amber.fg, textDecorationLine: 'underline' },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 4 },
   seeAll: { fontSize: 13.5, fontWeight: '800', color: T.primary },
   emptyLessons: {

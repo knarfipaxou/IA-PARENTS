@@ -11,6 +11,10 @@ import { TopBar } from '../components/ui/TopBar';
 import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
   AiError,
+  generateForControl,
+  generatePlanning,
+  type Planning,
+  type ControlKind,
   generateRevisionSheet,
   generateFlashcards,
   generateExercises,
@@ -31,6 +35,8 @@ const META: Record<string, { title: string; accent: AccentKey }> = {
   exercices: { title: 'Exercices', accent: 'amber' },
   minitest: { title: 'Mini-test', accent: 'blue' },
   controle: { title: 'Contrôle blanc', accent: 'coral' },
+  piege: { title: 'Test piégeux', accent: 'amber' },
+  planning: { title: 'Planning J-10 → J-1', accent: 'blue' },
 };
 
 // ─── QCM block (pattern from mission-exo) ───────────────────────────────────
@@ -110,16 +116,28 @@ const LESSON_FIELD: Record<string, keyof SavedLesson> = {
 
 export default function GenerateScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ kind?: string; lessonId?: string }>();
-  const kind = (typeof params.kind === 'string' ? params.kind : 'fiche') as GeneratedKind;
+  const params = useLocalSearchParams<{ kind?: string; lessonId?: string; echeanceId?: string }>();
+  const kind = (typeof params.kind === 'string' ? params.kind : 'fiche') as string;
   const lessonId = typeof params.lessonId === 'string' ? params.lessonId : undefined;
+  const echeanceId = typeof params.echeanceId === 'string' ? params.echeanceId : undefined;
   const meta = META[kind] ?? META.fiche;
-  const { child, lessons, updateLesson } = useChild();
-  const savedLesson: SavedLesson | undefined = lessonId
-    ? lessons.find((l) => l.id === lessonId)
-    : child
-      ? lessons.find((l) => l.childId === child.id)
-      : undefined;
+  const { child, lessons, updateLesson, updateEcheance } = useChild();
+
+  // ── échéance (contrôle global) mode ──
+  const echeance = echeanceId ? child?.echeances?.find((e) => e.id === echeanceId) : undefined;
+  const linkedLessons = echeance ? lessons.filter((l) => (echeance.lessonIds ?? []).includes(l.id)) : [];
+  const echeanceMode = !!echeanceId;
+  const dateKnown = !echeance || /\d{1,2}\/\d{1,2}\/\d{4}/.test(echeance.date) || echeance.days > 0;
+  const echeanceBlocked = echeanceMode && (!echeance || linkedLessons.length === 0 || (kind === 'planning' && !dateKnown));
+
+  // ── lesson mode ──
+  const savedLesson: SavedLesson | undefined = echeanceMode
+    ? undefined
+    : lessonId
+      ? lessons.find((l) => l.id === lessonId)
+      : child
+        ? lessons.find((l) => l.childId === child.id)
+        : undefined;
   const lesson: LessonAnalysis | undefined = savedLesson
     ? {
         matiere: savedLesson.matiere,
@@ -129,7 +147,11 @@ export default function GenerateScreen() {
         resume: savedLesson.resume,
       }
     : undefined;
-  const cached = savedLesson ? (savedLesson as any)[LESSON_FIELD[kind] ?? 'fiche'] : undefined;
+  const cached = echeanceMode
+    ? echeance?.generated?.[kind]
+    : savedLesson
+      ? (savedLesson as any)[LESSON_FIELD[kind] ?? 'fiche']
+      : undefined;
 
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +166,8 @@ export default function GenerateScreen() {
   const [shownCorrections, setShownCorrections] = useState<Set<number>>(new Set());
 
   const generate = useCallback(async () => {
-    if (!child || !lesson) return;
+    if (!child) return;
+    if (echeanceMode ? (!echeance || linkedLessons.length === 0) : !lesson) return;
     setLoading(true);
     setError(null);
     setContent(null);
@@ -154,13 +177,22 @@ export default function GenerateScreen() {
     setShownCorrections(new Set());
     try {
       let result: any;
-      if (kind === 'fiche') result = await generateRevisionSheet(lesson, child);
-      else if (kind === 'flashcards') result = await generateFlashcards(lesson, child);
-      else if (kind === 'exercices') result = await generateExercises(lesson, child);
-      else if (kind === 'minitest') result = await generateMiniTest(lesson, child);
-      else result = await generateMockExam(lesson, child);
-      // persist INTO the lesson so the content is never lost
-      if (savedLesson) updateLesson(savedLesson.id, { [LESSON_FIELD[kind] ?? 'fiche']: result } as Partial<SavedLesson>);
+      if (echeanceMode && echeance) {
+        const eLite = { subj: echeance.subj, type: echeance.type, date: echeance.date, titre: echeance.titre, consigne: echeance.consigne };
+        const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume }));
+        if (kind === 'planning') result = await generatePlanning(eLite, lLite, child);
+        else result = await generateForControl(kind as ControlKind, eLite, lLite, child);
+        // persist on the échéance so the content is never lost
+        updateEcheance(child.id, echeance.id, { generated: { ...(echeance.generated ?? {}), [kind]: result } });
+      } else if (lesson) {
+        if (kind === 'fiche') result = await generateRevisionSheet(lesson, child);
+        else if (kind === 'flashcards') result = await generateFlashcards(lesson, child);
+        else if (kind === 'exercices') result = await generateExercises(lesson, child);
+        else if (kind === 'minitest') result = await generateMiniTest(lesson, child);
+        else result = await generateMockExam(lesson, child);
+        // persist INTO the lesson so the content is never lost
+        if (savedLesson) updateLesson(savedLesson.id, { [LESSON_FIELD[kind] ?? 'fiche']: result } as Partial<SavedLesson>);
+      }
       setContent(result);
       setLoading(false);
     } catch (e) {
@@ -172,7 +204,7 @@ export default function GenerateScreen() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, child?.id, savedLesson?.id]);
+  }, [kind, child?.id, savedLesson?.id, echeanceId, (echeance?.lessonIds ?? []).join(',')]);
 
   useEffect(() => {
     // show cached content instantly; only call the AI when nothing is cached
@@ -180,7 +212,31 @@ export default function GenerateScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generate]);
 
-  if (!child || !lesson) {
+  if (echeanceMode && echeanceBlocked) {
+    return (
+      <SafeAreaView style={s.safe}>
+        <TopBar onBack={() => router.back()} />
+        <View style={s.center}>
+          <Ionicons name="warning-outline" size={42} color={T.amber.fg} />
+          <Text style={s.centerText}>
+            {kind === 'planning' && linkedLessons.length > 0
+              ? "Impossible de générer un planning fiable sans une date connue. Modifiez l'échéance pour préciser la date."
+              : 'Impossible de générer un planning fiable sans les leçons concernées.'}
+          </Text>
+          {echeance && (
+            <Btn onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)} icon={<Ionicons name="link-outline" size={19} color="#fff" />}>
+              Rattacher une leçon
+            </Btn>
+          )}
+          <GhostBtn onPress={() => router.push('/scan' as any)} icon={<Ionicons name="scan-outline" size={18} color={T.ink} />}>
+            Scanner une leçon
+          </GhostBtn>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!child || (!echeanceMode && !lesson)) {
     return (
       <SafeAreaView style={s.safe}>
         <TopBar onBack={() => router.back()} />
@@ -286,7 +342,7 @@ export default function GenerateScreen() {
     ) : null;
   }
 
-  if (kind === 'exercices' && content) {
+  if ((kind === 'exercices' || kind === 'piege') && content) {
     const ex = content as Exercises;
     body = (
       <>
@@ -325,6 +381,33 @@ export default function GenerateScreen() {
             )}
           </Card>
         )}
+      </>
+    );
+  }
+
+  if (kind === 'planning' && content) {
+    const plan = content as Planning;
+    body = (
+      <>
+        {(plan.jours ?? []).map((j, i) => (
+          <Card key={i} pad={15} style={{ marginTop: 13 }}>
+            <View style={s.planHeader}>
+              <View style={s.planBadge}>
+                <Text style={s.planBadgeText}>{j.jour}</Text>
+              </View>
+              <Text style={s.planTotal}>
+                {(j.taches ?? []).reduce((acc, t) => acc + (t.min || 0), 0)} min
+              </Text>
+            </View>
+            {(j.taches ?? []).map((t, ti) => (
+              <View key={ti} style={s.planTask}>
+                <Ionicons name="ellipse-outline" size={14} color={T.primary} />
+                <Text style={s.planTaskLabel}>{t.label}</Text>
+                <Text style={s.planTaskMin}>{t.min} min</Text>
+              </View>
+            ))}
+          </Card>
+        ))}
       </>
     );
   }
@@ -384,7 +467,11 @@ export default function GenerateScreen() {
 
         <View style={s.header}>
           <Text style={s.title}>{meta.title}</Text>
-          <Text style={s.sub}>{lesson.matiere} · {lesson.titre} · pour {child.name}</Text>
+          <Text style={s.sub}>
+            {echeanceMode && echeance
+              ? `${echeance.type} de ${echeance.subj} · ${linkedLessons.length} ${linkedLessons.length > 1 ? 'leçons' : 'leçon'} · pour ${child.name}`
+              : `${lesson?.matiere} · ${lesson?.titre} · pour ${child.name}`}
+          </Text>
         </View>
 
         {body}
@@ -444,4 +531,11 @@ const s = StyleSheet.create({
   corrToggleText: { color: T.primary, fontWeight: '800', fontSize: 13.5 },
   corrBox: { backgroundColor: T.surfaceAlt, borderRadius: 14, padding: 13, marginTop: 10 },
   corrText: { fontSize: 13.5, color: T.ink, fontWeight: '500', lineHeight: 21 },
+  planHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  planBadge: { backgroundColor: T.blue.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
+  planBadgeText: { fontSize: 13.5, fontWeight: '800', color: T.blue.fg },
+  planTotal: { fontSize: 12.5, fontWeight: '800', color: T.sub },
+  planTask: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 6 },
+  planTaskLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: T.ink, lineHeight: 20 },
+  planTaskMin: { fontSize: 12.5, fontWeight: '800', color: T.amber.fg },
 });

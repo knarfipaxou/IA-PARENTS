@@ -282,3 +282,116 @@ ${JSON_ONLY}`,
   });
   return extractJSON<MockExam>(text);
 }
+
+// ─── Contrôles : suggestion, génération globale, planning ────────────────────
+
+export interface LessonLite {
+  id: string;
+  matiere: string;
+  titre: string;
+  notions: string[];
+  resume: string;
+}
+
+export interface EcheanceLite {
+  subj: string;
+  type: string;
+  date: string;
+  titre?: string;
+  consigne?: string;
+}
+
+export interface LessonSuggestions {
+  suggestions: { lessonId: string; raison: string }[];
+}
+
+export async function suggestLessons(echeance: EcheanceLite, lessons: LessonLite[], child: Child): Promise<LessonSuggestions> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+Contrôle à venir: ${JSON.stringify(echeance)}
+Leçons enregistrées de l'enfant: ${JSON.stringify(lessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume })))}
+Compare la matière, le titre, les notions et le résumé de chaque leçon avec le contrôle (matière, titre, consigne). Renvoie uniquement les leçons probablement concernées par ce contrôle:
+{"suggestions": [{"lessonId": "id de la leçon", "raison": "explication courte en une phrase"}]}
+Si aucune leçon ne correspond, renvoie {"suggestions": []}. ${JSON_ONLY}`,
+    maxTokens: 2048,
+  });
+  return extractJSON<LessonSuggestions>(text);
+}
+
+export type ControlKind = 'fiche' | 'flashcards' | 'exercices' | 'minitest' | 'controle' | 'piege';
+
+function lessonsBlock(lessons: LessonLite[]): string {
+  return lessons
+    .map((l, i) => `Leçon ${i + 1} — ${l.matiere} : ${l.titre}\nNotions: ${l.notions.join(', ')}\nRésumé: ${l.resume}`)
+    .join('\n\n');
+}
+
+export async function generateForControl(
+  kind: ControlKind,
+  echeance: EcheanceLite,
+  lessons: LessonLite[],
+  child: Child
+): Promise<any> {
+  const ctx = `${childCtx(child)}
+L'enfant prépare: ${echeance.type} de ${echeance.subj} (${echeance.date})${echeance.titre ? ` — ${echeance.titre}` : ''}${echeance.consigne ? `\nConsigne du professeur: ${echeance.consigne}` : ''}
+Le contenu doit couvrir TOUTES les leçons suivantes (mélange les notions):
+${lessonsBlock(lessons)}`;
+
+  let user: string;
+  let maxTokens = 4096;
+  if (kind === 'fiche') {
+    user = `${ctx}
+Crée une fiche de révision globale couvrant toutes ces leçons:
+{"titre": "...", "sections": [{"titre": "...", "contenu": "explication simple et pédagogique", "points_cles": ["point 1", "point 2"]}]}
+4 à 6 sections. ${JSON_ONLY}`;
+  } else if (kind === 'flashcards') {
+    user = `${ctx}
+Crée 10 à 12 flashcards mélangeant toutes ces leçons:
+{"cards": [{"recto": "question", "verso": "réponse"}]}
+${JSON_ONLY}`;
+  } else if (kind === 'exercices') {
+    user = `${ctx}
+Crée 6 exercices QCM mélangés couvrant l'ensemble des leçons:
+{"exercices": [{"type": "qcm", "question": "...", "options": ["a", "b", "c", "d"], "bonneReponse": 0, "explication": "..."}]}
+Exactement 4 options par question. "bonneReponse" est l'index (0-3). ${JSON_ONLY}`;
+  } else if (kind === 'minitest') {
+    user = `${ctx}
+Crée un mini-test rapide de 4 questions QCM couvrant toutes les leçons, plus un conseil de révision:
+{"exercices": [{"type": "qcm", "question": "...", "options": ["a", "b", "c", "d"], "bonneReponse": 0, "explication": "..."}], "conseil": "conseil personnalisé"}
+Exactement 4 options par question. ${JSON_ONLY}`;
+  } else if (kind === 'piege') {
+    user = `${ctx}
+Crée un test piégeux: 5 questions QCM avec des distracteurs très plausibles correspondant aux erreurs classiques des élèves sur ces notions:
+{"exercices": [{"type": "qcm", "question": "...", "options": ["a", "b", "c", "d"], "bonneReponse": 0, "explication": "pourquoi les autres options sont des pièges classiques"}]}
+Exactement 4 options par question. ${JSON_ONLY}`;
+  } else {
+    user = `${ctx}
+Crée un contrôle blanc complet (comme un vrai contrôle à l'école) couvrant toutes les leçons, avec 6 à 8 questions ouvertes notées sur 20 au total:
+{"titre": "...", "duree_min": 45, "questions": [{"enonce": "...", "points": 3, "correction": "réponse attendue détaillée"}]}
+${JSON_ONLY}`;
+    maxTokens = 4096;
+  }
+
+  const text = await askClaude({ system: SYSTEM, user, maxTokens });
+  return extractJSON<any>(text);
+}
+
+export interface Planning {
+  jours: { jour: string; taches: { label: string; min: number }[] }[];
+}
+
+export async function generatePlanning(echeance: EcheanceLite, lessons: LessonLite[], child: Child): Promise<Planning> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+L'enfant prépare: ${echeance.type} de ${echeance.subj} le ${echeance.date}${echeance.consigne ? `\nConsigne: ${echeance.consigne}` : ''}
+Leçons à réviser:
+${lessonsBlock(lessons)}
+Crée un planning de révision progressif de J-10 à J-1 (10 jours avant le contrôle jusqu'à la veille). Chaque jour comporte 1 à 3 tâches courtes et concrètes avec une durée en minutes adaptée à l'âge de l'enfant:
+{"jours": [{"jour": "J-10", "taches": [{"label": "tâche concrète", "min": 15}]}]}
+Termine par J-1 (révision légère et confiance). ${JSON_ONLY}`,
+    maxTokens: 4096,
+  });
+  return extractJSON<Planning>(text);
+}

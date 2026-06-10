@@ -32,6 +32,7 @@ export default function RootLayout() {
           <Stack.Screen name="generate" />
           <Stack.Screen name="lessons" />
           <Stack.Screen name="lesson-detail" />
+          <Stack.Screen name="link-lessons" />
           <Stack.Screen name="mission" />
           <Stack.Screen name="mission-rappel" />
           <Stack.Screen name="mission-exo" />

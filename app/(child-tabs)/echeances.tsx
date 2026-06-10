@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
 import { Squircle } from '../../components/ui/Squircle';
 import { useChild } from '../../contexts/ChildContext';
+import { isControle } from '../../lib/matiere';
+import { GhostBtn } from '../../components/ui/Btn';
 
 export default function EcheancesScreen() {
   const router = useRouter();
@@ -25,7 +27,7 @@ export default function EcheancesScreen() {
           {echeances.map((it) => (
             <TouchableOpacity
               key={it.id}
-              onPress={() => router.push('/echeance-detail' as any)}
+              onPress={() => router.push(`/echeance-detail?id=${it.id}` as any)}
               style={s.row}
               activeOpacity={0.88}
             >
@@ -48,6 +50,12 @@ export default function EcheancesScreen() {
                   <View style={[s.statusDot, { backgroundColor: it.status === 'confirme' ? T.green.solid : T.amber.solid }]} />
                   <Text style={s.statusText}>{it.status === 'confirme' ? 'Confirmé' : 'À vérifier'}</Text>
                 </View>
+                {isControle(it.type) && (it.lessonIds ?? []).length === 0 && (
+                  <View style={s.warnRow}>
+                    <Ionicons name="warning-outline" size={13} color={T.amber.fg} />
+                    <Text style={s.warnText}>⚠️ Aucune leçon rattachée</Text>
+                  </View>
+                )}
               </View>
               <View style={s.jCol}>
                 <Text style={[s.jCount, { color: T[it.accent].fg }]}>
@@ -64,6 +72,12 @@ export default function EcheancesScreen() {
               <Text style={s.emptyText}>Aucune échéance à venir</Text>
             </View>
           )}
+        </View>
+
+        <View style={{ marginTop: 18 }}>
+          <GhostBtn full onPress={() => router.push('/manual-deadline' as any)} icon={<Ionicons name="add" size={19} color={T.ink} />}>
+            Ajouter une échéance manuellement
+          </GhostBtn>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -91,6 +105,8 @@ const s = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
   statusDot: { width: 7, height: 7, borderRadius: 999 },
   statusText: { fontSize: 12.5, fontWeight: '800', color: T.sub },
+  warnRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
+  warnText: { fontSize: 12, fontWeight: '800', color: T.amber.fg },
   jCol: { alignItems: 'center' },
   jCount: { fontSize: 21, fontWeight: '800', lineHeight: 24 },
   emptyBox: { alignItems: 'center', paddingVertical: 48, gap: 12 },
