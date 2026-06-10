@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Animated, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,18 +7,43 @@ import { Ionicons } from '@expo/vector-icons';
 import { T } from '../constants/theme';
 import { Btn, GhostBtn } from '../components/ui/Btn';
 import { Card } from '../components/ui/Card';
-import { Chip } from '../components/ui/Chip';
 import { TopBar } from '../components/ui/TopBar';
+import { useChild } from '../contexts/ChildContext';
+import { pickImage, pickFromLibrary } from '../lib/camera';
+import { analyzeLesson, AiError } from '../services/ai';
 
 const TIPS = ['Utilisez une bonne lumière', 'Cadrez toute la page', 'Évitez les photos floues'];
 
 export default function ScanScreen() {
   const router = useRouter();
+  const { child, saveGenerated } = useChild();
   const [scanning, setScanning] = useState(false);
 
-  const capture = () => {
+  const capture = async (fromLibrary = false) => {
+    if (!child) {
+      Alert.alert('Aucun enfant sélectionné', "Sélectionnez d'abord un enfant depuis l'accueil.");
+      return;
+    }
+    const base64 = fromLibrary ? await pickFromLibrary() : await pickImage();
+    if (!base64) return;
     setScanning(true);
-    setTimeout(() => { setScanning(false); router.push('/result'); }, 2100);
+    try {
+      const result = await analyzeLesson(base64, child);
+      saveGenerated(child.id, 'lesson', result);
+      setScanning(false);
+      router.push('/result');
+    } catch (e) {
+      setScanning(false);
+      if (e instanceof AiError && e.code === 'NO_KEY') {
+        Alert.alert('Clé API manquante', 'Ajoutez votre clé API dans Réglages.');
+      } else {
+        const msg = e instanceof Error ? e.message : 'Erreur inattendue.';
+        Alert.alert("Analyse impossible", msg, [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Réessayer', onPress: () => capture(fromLibrary) },
+        ]);
+      }
+    }
   };
 
   return (
@@ -68,11 +93,11 @@ export default function ScanScreen() {
         </Card>
 
         <View style={{ minHeight: 24 }} />
-        <Btn full onPress={capture} loading={scanning} icon={!scanning ? <Ionicons name="camera-outline" size={20} color="#fff" /> : undefined}>
+        <Btn full onPress={() => capture(false)} loading={scanning} icon={!scanning ? <Ionicons name="camera-outline" size={20} color="#fff" /> : undefined}>
           {scanning ? 'Analyse…' : 'Prendre une photo'}
         </Btn>
         <View style={{ marginTop: 10 }}>
-          <GhostBtn full onPress={() => router.push('/result')} icon={<Ionicons name="images-outline" size={19} color={T.ink} />}>
+          <GhostBtn full onPress={() => { if (!scanning) capture(true); }} icon={<Ionicons name="images-outline" size={19} color={T.ink} />}>
             Importer depuis la galerie
           </GhostBtn>
         </View>

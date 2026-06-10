@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,12 +8,43 @@ import { T } from '../constants/theme';
 import { Btn, GhostBtn } from '../components/ui/Btn';
 import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
+import { useChild } from '../contexts/ChildContext';
+import { pickImage, pickFromLibrary } from '../lib/camera';
+import { analyzeAgenda, AiError } from '../services/ai';
 
 const TIPS = ['Bonne lumière, sans reflet', 'Cadrez la semaine entière', 'Texte bien lisible'];
 
 export default function ScanAgendaScreen() {
   const router = useRouter();
+  const { child, saveGenerated } = useChild();
   const [scanning, setScanning] = useState(false);
+
+  const capture = async (fromLibrary = false) => {
+    if (!child) {
+      Alert.alert('Aucun enfant sélectionné', "Sélectionnez d'abord un enfant depuis l'accueil.");
+      return;
+    }
+    const base64 = fromLibrary ? await pickFromLibrary() : await pickImage();
+    if (!base64) return;
+    setScanning(true);
+    try {
+      const result = await analyzeAgenda(base64, child);
+      saveGenerated(child.id, 'devoirs', result.devoirs ?? []);
+      setScanning(false);
+      router.push('/agenda-results');
+    } catch (e) {
+      setScanning(false);
+      if (e instanceof AiError && e.code === 'NO_KEY') {
+        Alert.alert('Clé API manquante', 'Ajoutez votre clé API dans Réglages.');
+      } else {
+        const msg = e instanceof Error ? e.message : 'Erreur inattendue.';
+        Alert.alert('Lecture impossible', msg, [
+          { text: 'Annuler', style: 'cancel' },
+          { text: 'Réessayer', onPress: () => capture(fromLibrary) },
+        ]);
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={s.safe}>
@@ -58,7 +89,7 @@ export default function ScanAgendaScreen() {
         <View style={{ minHeight: 24 }} />
         <Btn
           full
-          onPress={() => { setScanning(true); setTimeout(() => { setScanning(false); router.push('/agenda-results'); }, 2000); }}
+          onPress={() => capture(false)}
           color={T.blue.solid} deep="#2C44AE"
           loading={scanning}
           icon={!scanning ? <Ionicons name="camera-outline" size={20} color="#fff" /> : undefined}
@@ -66,7 +97,7 @@ export default function ScanAgendaScreen() {
           {scanning ? 'Lecture…' : 'Prendre une photo'}
         </Btn>
         <View style={{ marginTop: 10 }}>
-          <GhostBtn full onPress={() => router.push('/agenda-results')} icon={<Ionicons name="images-outline" size={19} color={T.ink} />}>
+          <GhostBtn full onPress={() => { if (!scanning) capture(true); }} icon={<Ionicons name="images-outline" size={19} color={T.ink} />}>
             Importer depuis la galerie
           </GhostBtn>
         </View>
