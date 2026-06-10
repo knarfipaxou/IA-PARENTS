@@ -1,0 +1,284 @@
+import { getJSON, setJSON } from '../lib/storage';
+import type { Child } from '../data/mock';
+
+// ─── API key management ─────────────────────────────────────────────────────
+
+const KEY_API = 'ppia.apiKey';
+
+export async function getApiKey(): Promise<string | null> {
+  const key = await getJSON<string | null>(KEY_API, null);
+  return key && key.length > 0 ? key : null;
+}
+
+export async function setApiKey(key: string): Promise<void> {
+  await setJSON(KEY_API, key.trim());
+}
+
+// ─── Error types ────────────────────────────────────────────────────────────
+
+export type AiErrorCode = 'NO_KEY' | 'BAD_KEY' | 'NETWORK' | 'API' | 'PARSE';
+
+export class AiError extends Error {
+  code: AiErrorCode;
+  constructor(code: AiErrorCode, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+// ─── Core Claude call (raw HTTP — no Node SDK in React Native) ──────────────
+
+const API_URL = 'https://api.anthropic.com/v1/messages';
+const MODEL = 'claude-sonnet-4-6';
+
+interface AskParams {
+  system: string;
+  user: string;
+  imageBase64?: string;
+  maxTokens?: number;
+}
+
+export async function askClaude({ system, user, imageBase64, maxTokens = 4096 }: AskParams): Promise<string> {
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    throw new AiError('NO_KEY', 'Aucune clé API configurée.');
+  }
+
+  const content: any[] = [];
+  if (imageBase64) {
+    content.push({
+      type: 'image',
+      source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 },
+    });
+  }
+  content.push({ type: 'text', text: user });
+
+  let res: Response;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: maxTokens,
+        system,
+        messages: [{ role: 'user', content }],
+      }),
+    });
+  } catch {
+    throw new AiError('NETWORK', 'Impossible de joindre le serveur. Vérifiez votre connexion.');
+  }
+
+  if (res.status === 401 || res.status === 403) {
+    throw new AiError('BAD_KEY', 'Clé API invalide. Vérifiez-la dans Réglages.');
+  }
+  if (!res.ok) {
+    let msg = `Erreur API (${res.status})`;
+    try {
+      const err = await res.json();
+      if (err?.error?.message) msg = err.error.message;
+    } catch {
+      // keep default message
+    }
+    throw new AiError('API', msg);
+  }
+
+  const data = await res.json();
+  const text = (data?.content ?? [])
+    .filter((b: any) => b.type === 'text')
+    .map((b: any) => b.text)
+    .join('\n');
+  if (!text) throw new AiError('PARSE', "Réponse vide de l'IA.");
+  return text;
+}
+
+// ─── JSON helper ────────────────────────────────────────────────────────────
+
+export function extractJSON<T = any>(text: string): T {
+  // direct parse first
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // fall through
+  }
+  // strip markdown fences
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) {
+    try {
+      return JSON.parse(fenced[1]) as T;
+    } catch {
+      // fall through
+    }
+  }
+  // first balanced {...} block
+  const start = text.indexOf('{');
+  if (start >= 0) {
+    let depth = 0;
+    for (let i = start; i < text.length; i++) {
+      if (text[i] === '{') depth++;
+      else if (text[i] === '}') {
+        depth--;
+        if (depth === 0) {
+          try {
+            return JSON.parse(text.slice(start, i + 1)) as T;
+          } catch {
+            break;
+          }
+        }
+      }
+    }
+  }
+  throw new AiError('PARSE', "L'IA a renvoyé un format inattendu. Réessayez.");
+}
+
+// ─── Typed AI functions ─────────────────────────────────────────────────────
+
+const SYSTEM = 'Tu es un professeur particulier bienveillant qui aide des parents à faire réviser leurs enfants.';
+const JSON_ONLY = 'Réponds UNIQUEMENT avec un JSON valide, sans markdown, sans texte avant ou après.';
+
+function childCtx(child: Child): string {
+  return `L'enfant s'appelle ${child.name}, il est en classe de ${child.classe} et a ${child.age} ans. Adapte la difficulté, le vocabulaire et le ton à son niveau scolaire et à son âge.`;
+}
+
+export interface LessonAnalysis {
+  matiere: string;
+  titre: string;
+  niveau: string;
+  notions: string[];
+  resume: string;
+}
+
+export async function analyzeLesson(imageBase64: string, child: Child): Promise<LessonAnalysis> {
+  const text = await askClaude({
+    system: SYSTEM,
+    imageBase64,
+    user: `${childCtx(child)}
+Voici la photo d'une leçon. Analyse-la et renvoie:
+{"matiere": "matière scolaire", "titre": "titre de la leçon", "niveau": "niveau scolaire estimé", "notions": ["notion 1", "notion 2", ...], "resume": "résumé simple en 2-3 phrases compréhensible par un parent"}
+${JSON_ONLY}`,
+    maxTokens: 2048,
+  });
+  return extractJSON<LessonAnalysis>(text);
+}
+
+export interface AgendaDevoir {
+  matiere: string;
+  type: string;
+  titre: string;
+  date: string;
+  notions: string[];
+  priorite: 'haute' | 'normale' | 'basse';
+}
+
+export async function analyzeAgenda(imageBase64: string, child: Child): Promise<{ devoirs: AgendaDevoir[] }> {
+  const text = await askClaude({
+    system: SYSTEM,
+    imageBase64,
+    user: `${childCtx(child)}
+Voici la photo d'un agenda ou cahier de texte scolaire. Extrais tous les devoirs, contrôles et échéances visibles (dates incluses) et renvoie:
+{"devoirs": [{"matiere": "...", "type": "Contrôle|Devoir|Dictée|Exposé|Composition|Leçon", "titre": "...", "date": "date au format JJ/MM/AAAA si lisible, sinon texte tel quel", "notions": ["..."], "priorite": "haute|normale|basse"}]}
+${JSON_ONLY}`,
+    maxTokens: 3072,
+  });
+  return extractJSON<{ devoirs: AgendaDevoir[] }>(text);
+}
+
+export interface RevisionSheet {
+  titre: string;
+  sections: { titre: string; contenu: string; points_cles: string[] }[];
+}
+
+export async function generateRevisionSheet(lesson: LessonAnalysis, child: Child): Promise<RevisionSheet> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+Leçon: ${JSON.stringify(lesson)}
+Crée une fiche de révision claire et structurée pour cette leçon:
+{"titre": "...", "sections": [{"titre": "...", "contenu": "explication simple et pédagogique", "points_cles": ["point 1", "point 2"]}]}
+3 à 5 sections. ${JSON_ONLY}`,
+    maxTokens: 4096,
+  });
+  return extractJSON<RevisionSheet>(text);
+}
+
+export interface Flashcards {
+  cards: { recto: string; verso: string }[];
+}
+
+export async function generateFlashcards(lesson: LessonAnalysis, child: Child): Promise<Flashcards> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+Leçon: ${JSON.stringify(lesson)}
+Crée 8 à 10 flashcards (question au recto, réponse courte au verso) pour réviser cette leçon:
+{"cards": [{"recto": "question", "verso": "réponse"}]}
+${JSON_ONLY}`,
+    maxTokens: 3072,
+  });
+  return extractJSON<Flashcards>(text);
+}
+
+export interface QcmExercise {
+  type: 'qcm';
+  question: string;
+  options: string[];
+  bonneReponse: number;
+  explication: string;
+}
+
+export interface Exercises {
+  exercices: QcmExercise[];
+}
+
+export async function generateExercises(lesson: LessonAnalysis, child: Child): Promise<Exercises> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+Leçon: ${JSON.stringify(lesson)}
+Crée 5 exercices QCM pour entraîner l'enfant sur cette leçon:
+{"exercices": [{"type": "qcm", "question": "...", "options": ["a", "b", "c", "d"], "bonneReponse": 0, "explication": "pourquoi cette réponse est correcte"}]}
+Exactement 4 options par question. "bonneReponse" est l'index (0-3) de la bonne option. ${JSON_ONLY}`,
+    maxTokens: 4096,
+  });
+  return extractJSON<Exercises>(text);
+}
+
+export interface MiniTest extends Exercises {
+  conseil: string;
+}
+
+export async function generateMiniTest(lesson: LessonAnalysis, child: Child): Promise<MiniTest> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+Leçon: ${JSON.stringify(lesson)}
+Crée un mini-test rapide de 3 questions QCM sur cette leçon, plus un conseil de révision:
+{"exercices": [{"type": "qcm", "question": "...", "options": ["a", "b", "c", "d"], "bonneReponse": 0, "explication": "..."}], "conseil": "conseil de révision personnalisé pour l'enfant"}
+Exactement 4 options par question. "bonneReponse" est l'index (0-3). ${JSON_ONLY}`,
+    maxTokens: 3072,
+  });
+  return extractJSON<MiniTest>(text);
+}
+
+export interface MockExam {
+  titre: string;
+  duree_min: number;
+  questions: { enonce: string; points: number; correction: string }[];
+}
+
+export async function generateMockExam(lesson: LessonAnalysis, child: Child): Promise<MockExam> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+Leçon: ${JSON.stringify(lesson)}
+Crée un contrôle blanc (comme un vrai contrôle à l'école) sur cette leçon, avec 5 à 6 questions ouvertes notées sur 20 au total:
+{"titre": "...", "duree_min": 30, "questions": [{"enonce": "...", "points": 4, "correction": "réponse attendue détaillée"}]}
+${JSON_ONLY}`,
+    maxTokens: 4096,
+  });
+  return extractJSON<MockExam>(text);
+}
