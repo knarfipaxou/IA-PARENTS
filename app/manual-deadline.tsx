@@ -9,6 +9,7 @@ import { TopBar } from '../components/ui/TopBar';
 import { Btn } from '../components/ui/Btn';
 import { useChild } from '../contexts/ChildContext';
 import type { AccentKey } from '../constants/theme';
+import { Alert } from 'react-native';
 
 type FormState = {
   matiere: string;
@@ -27,11 +28,44 @@ const PRIOS: { label: string; accent: AccentKey }[] = [
 
 export default function ManualDeadline() {
   const router = useRouter();
-  const { child } = useChild();
+  const { child, addEcheance } = useChild();
   const [form, setForm] = useState<FormState>({ matiere: '', type: 'Contrôle', date: '', notions: '', priorite: 'Moyenne' });
 
   function set(k: keyof FormState, v: string) {
     setForm((prev) => ({ ...prev, [k]: v }));
+  }
+
+  function submit() {
+    if (!child) {
+      Alert.alert('Aucun enfant sélectionné', "Sélectionnez d'abord un enfant depuis l'accueil.");
+      return;
+    }
+    if (!form.matiere.trim()) {
+      Alert.alert('Matière manquante', 'Indiquez la matière concernée.');
+      return;
+    }
+    const accents: AccentKey[] = ['green', 'violet', 'coral', 'blue', 'amber'];
+    const m = form.date.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    let days = 7;
+    if (m) {
+      const target = new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const diff = Math.round((target.getTime() - now.getTime()) / 86400000);
+      if (!isNaN(diff)) days = Math.max(diff, 0);
+    }
+    addEcheance(child.id, {
+      id: `ech-${Date.now()}`,
+      subj: form.matiere.trim(),
+      type: form.type,
+      date: form.date.trim() || 'À définir',
+      days,
+      status: 'confirme',
+      accent: accents[(child.echeances?.length ?? 0) % accents.length],
+      icon: 'school-outline',
+      urg: form.priorite === 'Haute',
+    });
+    router.push('/(child-tabs)/echeances' as any);
   }
 
   return (
@@ -86,7 +120,7 @@ export default function ManualDeadline() {
                 style={s.input}
                 value={form.date}
                 onChangeText={(v) => set('date', v)}
-                placeholder="Jeu. 18 juin"
+                placeholder="18/06/2026"
                 placeholderTextColor={T.faint}
               />
             </View>
@@ -128,8 +162,8 @@ export default function ManualDeadline() {
         </Card>
 
         <View style={{ height: 24 }} />
-        <Btn onPress={() => router.push('/plan-create' as any)} full icon={<Ionicons name="arrow-forward" size={20} color="#fff" />} iconRight>
-          Créer le planning
+        <Btn onPress={submit} full icon={<Ionicons name="arrow-forward" size={20} color="#fff" />} iconRight>
+          Ajouter l'échéance
         </Btn>
         <View style={{ height: 24 }} />
       </ScrollView>

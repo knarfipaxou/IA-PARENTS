@@ -21,6 +21,7 @@ type ActionItem = {
 };
 
 const COLLEGE_ACTIONS: ActionItem[] = [
+  { accent: 'coral', iconName: 'scan-outline', title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan' },
   { accent: 'green', iconName: 'camera-outline', title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda' },
   { accent: 'amber', iconName: 'trophy-outline', title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control' },
   { accent: 'violet', iconName: 'book-outline', title: 'Révisions', desc: 'Missions de révision', route: '/(child-tabs)/plan' },
@@ -118,7 +119,7 @@ export default function EspaceScreen() {
         {/* School actions */}
         <Text style={s.sectionLabel}>ACTIONS SCOLAIRES</Text>
         <View style={s.actionsGrid}>
-          {(isCollege ? COLLEGE_ACTIONS : COLLEGE_ACTIONS.slice(1, 3)).map((ac, i) => (
+          {(isCollege ? COLLEGE_ACTIONS : COLLEGE_ACTIONS.slice(2, 4)).map((ac, i) => (
             <TouchableOpacity
               key={i}
               onPress={() => router.push(ac.route as any)}
