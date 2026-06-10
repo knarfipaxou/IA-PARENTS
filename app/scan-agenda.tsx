@@ -31,7 +31,7 @@ export default function ScanAgendaScreen() {
       const result = await analyzeAgenda(base64, child);
       saveGenerated(child.id, 'devoirs', result.devoirs ?? []);
       setScanning(false);
-      router.push('/agenda-results');
+      router.push('/agenda-validate' as any);
     } catch (e) {
       setScanning(false);
       if (e instanceof AiError && e.code === 'NO_KEY') {
