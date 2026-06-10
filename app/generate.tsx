@@ -8,7 +8,7 @@ import { Btn, GhostBtn } from '../components/ui/Btn';
 import { Card } from '../components/ui/Card';
 import { Chip } from '../components/ui/Chip';
 import { TopBar } from '../components/ui/TopBar';
-import { useChild, type GeneratedKind } from '../contexts/ChildContext';
+import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
   AiError,
   generateRevisionSheet,
@@ -100,17 +100,40 @@ const q = StyleSheet.create({
 
 // ─── Main screen ────────────────────────────────────────────────────────────
 
+const LESSON_FIELD: Record<string, keyof SavedLesson> = {
+  fiche: 'fiche',
+  flashcards: 'flashcards',
+  exercices: 'exercices',
+  minitest: 'minitest',
+  controle: 'controleBlanc',
+};
+
 export default function GenerateScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ kind?: string }>();
+  const params = useLocalSearchParams<{ kind?: string; lessonId?: string }>();
   const kind = (typeof params.kind === 'string' ? params.kind : 'fiche') as GeneratedKind;
+  const lessonId = typeof params.lessonId === 'string' ? params.lessonId : undefined;
   const meta = META[kind] ?? META.fiche;
-  const { child, getGenerated, saveGenerated } = useChild();
-  const lesson: LessonAnalysis | undefined = child ? getGenerated(child.id, 'lesson') : undefined;
+  const { child, lessons, updateLesson } = useChild();
+  const savedLesson: SavedLesson | undefined = lessonId
+    ? lessons.find((l) => l.id === lessonId)
+    : child
+      ? lessons.find((l) => l.childId === child.id)
+      : undefined;
+  const lesson: LessonAnalysis | undefined = savedLesson
+    ? {
+        matiere: savedLesson.matiere,
+        titre: savedLesson.titre,
+        niveau: savedLesson.niveau ?? '',
+        notions: savedLesson.notions,
+        resume: savedLesson.resume,
+      }
+    : undefined;
+  const cached = savedLesson ? (savedLesson as any)[LESSON_FIELD[kind] ?? 'fiche'] : undefined;
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
-  const [content, setContent] = useState<any>(null);
+  const [content, setContent] = useState<any>(cached ?? null);
 
   // flashcards state
   const [cardIndex, setCardIndex] = useState(0);
@@ -136,7 +159,8 @@ export default function GenerateScreen() {
       else if (kind === 'exercices') result = await generateExercises(lesson, child);
       else if (kind === 'minitest') result = await generateMiniTest(lesson, child);
       else result = await generateMockExam(lesson, child);
-      saveGenerated(child.id, kind, result);
+      // persist INTO the lesson so the content is never lost
+      if (savedLesson) updateLesson(savedLesson.id, { [LESSON_FIELD[kind] ?? 'fiche']: result } as Partial<SavedLesson>);
       setContent(result);
       setLoading(false);
     } catch (e) {
@@ -148,9 +172,13 @@ export default function GenerateScreen() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, child?.id]);
+  }, [kind, child?.id, savedLesson?.id]);
 
-  useEffect(() => { generate(); }, [generate]);
+  useEffect(() => {
+    // show cached content instantly; only call the AI when nothing is cached
+    if (!cached) generate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generate]);
 
   if (!child || !lesson) {
     return (

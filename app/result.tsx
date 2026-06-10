@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,8 +9,7 @@ import { GhostBtn } from '../components/ui/Btn';
 import { Card } from '../components/ui/Card';
 import { Squircle } from '../components/ui/Squircle';
 import { TopBar } from '../components/ui/TopBar';
-import { useChild } from '../contexts/ChildContext';
-import type { LessonAnalysis } from '../services/ai';
+import { useChild, type SavedLesson } from '../contexts/ChildContext';
 
 const ACTIONS: { kind: string; label: string; desc: string; icon: string; accent: AccentKey }[] = [
   { kind: 'fiche', label: 'Créer la fiche de révision', desc: 'Résumé structuré avec points clés', icon: 'document-text-outline', accent: 'green' },
@@ -22,8 +21,14 @@ const ACTIONS: { kind: string; label: string; desc: string; icon: string; accent
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { child, getGenerated } = useChild();
-  const lesson: LessonAnalysis | undefined = child ? getGenerated(child.id, 'lesson') : undefined;
+  const params = useLocalSearchParams<{ lessonId?: string }>();
+  const { child, lessons } = useChild();
+  const lessonId = typeof params.lessonId === 'string' ? params.lessonId : undefined;
+  const lesson: SavedLesson | undefined = lessonId
+    ? lessons.find((l) => l.id === lessonId)
+    : child
+      ? lessons.find((l) => l.childId === child.id)
+      : undefined;
 
   if (!child || !lesson) {
     return (
@@ -51,6 +56,10 @@ export default function ResultScreen() {
         <View style={s.header}>
           <Text style={s.title}>Résultat de la leçon</Text>
           <Text style={s.sub}>Voici ce que l'IA a compris. Choisissez une activité.</Text>
+          <View style={s.savedChip}>
+            <Ionicons name="checkmark-circle" size={15} color={T.primaryDeep} />
+            <Text style={s.savedChipText}>Leçon enregistrée ✓</Text>
+          </View>
         </View>
 
         {/* Lesson summary */}
@@ -99,7 +108,7 @@ export default function ResultScreen() {
           {ACTIONS.map((a) => (
             <TouchableOpacity
               key={a.kind}
-              onPress={() => router.push(`/generate?kind=${a.kind}` as any)}
+              onPress={() => router.push(`/generate?kind=${a.kind}&lessonId=${lesson.id}` as any)}
               style={s.actionRow}
               activeOpacity={0.88}
             >
@@ -132,6 +141,8 @@ const s = StyleSheet.create({
   header: { marginTop: 18, marginBottom: 0 },
   title: { fontSize: 27, fontWeight: '800', color: T.ink, letterSpacing: -0.6 },
   sub: { fontSize: 15, color: T.sub, marginTop: 8, fontWeight: '500' },
+  savedChip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: T.primarySoft, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 10 },
+  savedChipText: { fontSize: 12.5, fontWeight: '800', color: T.primaryDeep },
   lessonCard: { borderRadius: 24, padding: 20, marginTop: 18 },
   lessonBadgeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   lessonBadge: { backgroundColor: T.primary, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },

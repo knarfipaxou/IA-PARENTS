@@ -15,6 +15,12 @@ export interface Echeance {
   accent: AccentKey;
   icon: string;
   urg?: boolean;
+  // extended (Milestone 2/3) — optional for backward compat with stored data
+  titre?: string;
+  consigne?: string;
+  noteParent?: string;
+  lessonIds?: string[];
+  generated?: Record<string, any>;
 }
 
 export interface HistoryItem {
@@ -32,7 +38,12 @@ export interface MatiereStat {
   icon: string;
 }
 
-export interface CollegeChild {
+interface ChildBaseExtras {
+  archived?: boolean;
+  archivedAt?: string;
+}
+
+export interface CollegeChild extends ChildBaseExtras {
   id: string;
   kind: 'college';
   name: string;
@@ -49,7 +60,7 @@ export interface CollegeChild {
   history: HistoryItem[];
 }
 
-export interface MaternelleChild {
+export interface MaternelleChild extends ChildBaseExtras {
   id: string;
   kind: 'maternelle';
   name: string;

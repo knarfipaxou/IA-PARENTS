@@ -16,7 +16,7 @@ const TIPS = ['Utilisez une bonne lumière', 'Cadrez toute la page', 'Évitez le
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { child, saveGenerated } = useChild();
+  const { child, addLesson } = useChild();
   const [scanning, setScanning] = useState(false);
 
   const capture = async (fromLibrary = false) => {
@@ -29,9 +29,18 @@ export default function ScanScreen() {
     setScanning(true);
     try {
       const result = await analyzeLesson(base64, child);
-      saveGenerated(child.id, 'lesson', result);
+      // auto-save: the lesson is persisted immediately so it never disappears
+      const lesson = addLesson({
+        childId: child.id,
+        matiere: result.matiere,
+        titre: result.titre,
+        niveau: result.niveau,
+        notions: result.notions ?? [],
+        resume: result.resume,
+        imageBase64: base64.length < 1500000 ? base64 : undefined,
+      });
       setScanning(false);
-      router.push('/result');
+      router.push(`/result?lessonId=${lesson.id}` as any);
     } catch (e) {
       setScanning(false);
       if (e instanceof AiError && e.code === 'NO_KEY') {

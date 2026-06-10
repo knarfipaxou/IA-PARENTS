@@ -11,6 +11,7 @@ import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
 import { ProgressRing } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
+import { iconForMatiere, accentForMatiere, formatLessonDate } from '../../lib/matiere';
 
 type ActionItem = {
   accent: keyof typeof T;
@@ -30,7 +31,8 @@ const COLLEGE_ACTIONS: ActionItem[] = [
 
 export default function EspaceScreen() {
   const router = useRouter();
-  const { child, setChild } = useChild();
+  const { child, setChild, lessons } = useChild();
+  const childLessons = child ? lessons.filter((l) => l.childId === child.id) : [];
 
   if (!child) {
     return (
@@ -139,6 +141,41 @@ export default function EspaceScreen() {
           ))}
         </View>
 
+        {/* Leçons enregistrées */}
+        <View style={s.sectionHeaderRow}>
+          <Text style={[s.sectionLabel, { marginBottom: 0, marginTop: 0 }]}>LEÇONS ENREGISTRÉES</Text>
+          {childLessons.length > 0 && (
+            <TouchableOpacity onPress={() => router.push('/lessons' as any)}>
+              <Text style={s.seeAll}>Voir tout</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {childLessons.length === 0 ? (
+          <TouchableOpacity onPress={() => router.push('/scan' as any)} style={s.emptyLessons} activeOpacity={0.85}>
+            <Ionicons name="scan-outline" size={20} color={T.primary} />
+            <Text style={s.emptyLessonsText}>Aucune leçon enregistrée. Scannez la première !</Text>
+          </TouchableOpacity>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ gap: 11 }}>
+            {childLessons.slice(0, 6).map((l) => {
+              const a = accentForMatiere(l.matiere);
+              return (
+                <TouchableOpacity
+                  key={l.id}
+                  onPress={() => router.push(`/lesson-detail?id=${l.id}` as any)}
+                  style={s.lessonCard}
+                  activeOpacity={0.88}
+                >
+                  <Squircle accentKey={a} size={38} r={12} icon={<Ionicons name={iconForMatiere(l.matiere) as any} size={19} color={T[a].fg} />} style={{ marginBottom: 9 }} />
+                  <Text style={s.lessonMatiere}>{l.matiere}</Text>
+                  <Text style={s.lessonTitre} numberOfLines={2}>{l.titre}</Text>
+                  <Text style={s.lessonMeta}>{formatLessonDate(l.createdAt)} · {l.notions.length} notions</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+
         {/* Weak points */}
         {child.faibles && child.faibles.length > 0 && (
           <>
@@ -216,6 +253,22 @@ const s = StyleSheet.create({
   },
   actionTitle: { fontWeight: '800', fontSize: 14, color: T.ink, letterSpacing: -0.3, marginBottom: 3 },
   actionDesc: { fontSize: 12, color: T.sub, fontWeight: '500' },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, marginTop: 4 },
+  seeAll: { fontSize: 13.5, fontWeight: '800', color: T.primary },
+  emptyLessons: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: T.primarySoft, borderRadius: 16, padding: 14, marginBottom: 20,
+  },
+  emptyLessonsText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: T.primaryDeep },
+  lessonCard: {
+    width: 180,
+    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
+    borderRadius: 20, padding: 13,
+    shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+  },
+  lessonMatiere: { fontSize: 11.5, fontWeight: '800', color: T.sub, letterSpacing: 0.2 },
+  lessonTitre: { fontSize: 14, fontWeight: '800', color: T.ink, letterSpacing: -0.3, marginTop: 2 },
+  lessonMeta: { fontSize: 11.5, color: T.faint, fontWeight: '600', marginTop: 6 },
   weakRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   weakChip: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
