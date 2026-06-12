@@ -395,3 +395,63 @@ Termine par J-1 (révision légère et confiance). ${JSON_ONLY}`,
   });
   return extractJSON<Planning>(text);
 }
+
+// ─── Daily drill generation ──────────────────────────────────────────────────
+
+export interface DrillExerciseAI {
+  numero: number;
+  matiere: string;
+  competence: string;
+  niveau: string;
+  consigne: string;
+  correction: string;
+  phraseParent: string;
+  type: 'calcul' | 'geometrie' | 'francais' | 'lecture' | 'science' | 'histoire' | 'anglais' | 'autre';
+}
+
+export interface GeneratedDrill {
+  titre: string;
+  dureeEstimee: number;
+  exercises: DrillExerciseAI[];
+}
+
+export interface DrillRequest {
+  childName: string;
+  classe: string;
+  date: string;
+  jourSemaine: string;
+  dureeMin: number;
+  matieres: string[];
+  niveauEstime: string;
+  objectif: string;
+  pointsFaibles: string[];
+  recentErrors?: string[];
+  controleAVenir?: string;
+}
+
+export async function generateDrill(request: DrillRequest, systemPrompt: string): Promise<GeneratedDrill> {
+  const nb = request.dureeMin <= 15 ? 3 : request.dureeMin <= 25 ? 4 : request.dureeMin <= 35 ? 5 : 6;
+  const faibles = request.pointsFaibles.length > 0 ? `Points faibles à réinjecter : ${request.pointsFaibles.join(' ; ')}.` : '';
+  const erreurs = request.recentErrors && request.recentErrors.length > 0 ? `Erreurs récentes : ${request.recentErrors.join(', ')}.` : '';
+  const controle = request.controleAVenir ? `Attention : ${request.controleAVenir} — augmenter la fréquence de cette matière.` : '';
+
+  const user = `Date : ${request.date} (${request.jourSemaine}).
+Élève : ${request.childName}, ${request.classe}.
+Durée : ${request.dureeMin} minutes → génère ${nb} exercices.
+Matières : ${request.matieres.join(', ')}.
+Niveau : ${request.niveauEstime}. Objectif : ${request.objectif}.
+${faibles}
+${erreurs}
+${controle}
+
+Génère un drill quotidien varié (une notion récente, une notion ancienne, un point faible, +1 si exigeant/concours).
+N'utilise PAS les mêmes valeurs numériques que d'habitude. Varie les contextes (noms, situations, unités).
+Structure de raisonnement géométrie : "Je sais que… / Or… / Donc…" (collège) ou "Je vois… / Je calcule… / Je conclus…" (primaire).
+Justification obligatoire dans la correction.
+
+${JSON_ONLY}
+{"titre": "Drill du ${request.date}", "dureeEstimee": ${request.dureeMin}, "exercises": [{"numero": 1, "matiere": "...", "competence": "...", "niveau": "${request.classe}", "consigne": "...", "correction": "correction détaillée mini-leçon...", "phraseParent": "question guide sans donner la réponse", "type": "calcul"}]}`;
+
+  const text = await askClaude({ system: systemPrompt, user, maxTokens: 4096 });
+  return extractJSON<GeneratedDrill>(text);
+}

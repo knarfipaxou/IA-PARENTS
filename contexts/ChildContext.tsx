@@ -11,6 +11,7 @@ import {
   checkBadges,
   XP_VALUES,
 } from '../lib/gamification';
+import type { ChildProfile, DrillSession, DrillResult } from '../types/childProfile';
 
 export type GeneratedKind =
   | 'lesson'
@@ -66,6 +67,19 @@ interface ChildCtxValue {
   getLesson: (id: string) => SavedLesson | undefined;
   gamification: (childId: string) => GamificationData;
   addXP: (childId: string, amount: number, reason: XPReason) => BadgeId[];
+  // profiles
+  profiles: Record<string, ChildProfile>;
+  addProfile: (profile: ChildProfile) => void;
+  updateProfile: (childId: string, patch: Partial<ChildProfile>) => void;
+  getProfile: (childId: string) => ChildProfile | undefined;
+  // drill sessions
+  drillSessions: DrillSession[];
+  addDrillSession: (session: DrillSession) => void;
+  updateDrillSession: (id: string, patch: Partial<DrillSession>) => void;
+  getDrillSessions: (childId: string) => DrillSession[];
+  drillResults: DrillResult[];
+  addDrillResult: (result: DrillResult) => void;
+  getDrillResults: (childId: string) => DrillResult[];
 }
 
 const ChildCtx = createContext<ChildCtxValue>({
@@ -92,6 +106,17 @@ const ChildCtx = createContext<ChildCtxValue>({
   getLesson: () => undefined,
   gamification: () => DEFAULT_GAMIFICATION,
   addXP: () => [],
+  profiles: {},
+  addProfile: () => {},
+  updateProfile: () => {},
+  getProfile: () => undefined,
+  drillSessions: [],
+  addDrillSession: () => {},
+  updateDrillSession: () => {},
+  getDrillSessions: () => [],
+  drillResults: [],
+  addDrillResult: () => {},
+  getDrillResults: () => [],
 });
 
 const KEY_CHILDREN = 'ppia.children';
@@ -99,6 +124,9 @@ const KEY_GENERATED = 'ppia.generated';
 const KEY_LESSONS = 'ppia.lessons';
 const KEY_DEMO = 'ppia.demoSeeded';
 const KEY_GAMIFICATION = 'ppia.gamification';
+const KEY_PROFILES = 'ppia.profiles';
+const KEY_DRILLS = 'ppia.drills';
+const KEY_DRILL_RESULTS = 'ppia.drillResults';
 
 function hydrateChild(c: Child): Child {
   return {
@@ -268,12 +296,19 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
   const [lessons, setLessons] = useState<SavedLesson[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [gamificationStore, setGamificationStore] = useState<Record<string, GamificationData>>({});
+  const [profiles, setProfiles] = useState<Record<string, ChildProfile>>({});
+  const [drillSessions, setDrillSessions] = useState<DrillSession[]>([]);
+  const [drillResults, setDrillResults] = useState<DrillResult[]>([]);
   const generatedRef = useRef(generated);
   generatedRef.current = generated;
   const lessonsRef = useRef(lessons);
   lessonsRef.current = lessons;
   const gamificationRef = useRef(gamificationStore);
   gamificationRef.current = gamificationStore;
+  const drillSessionsRef = useRef(drillSessions);
+  drillSessionsRef.current = drillSessions;
+  const drillResultsRef = useRef(drillResults);
+  drillResultsRef.current = drillResults;
 
   useEffect(() => {
     (async () => {
@@ -294,6 +329,12 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         setGenerated(gen);
         const gam = await getJSON<Record<string, GamificationData>>(KEY_GAMIFICATION, {});
         setGamificationStore(gam);
+        const profs = await getJSON<Record<string, ChildProfile>>(KEY_PROFILES, {});
+        setProfiles(profs);
+        const drills = await getJSON<DrillSession[]>(KEY_DRILLS, []);
+        setDrillSessions(Array.isArray(drills) ? drills : []);
+        const results = await getJSON<DrillResult[]>(KEY_DRILL_RESULTS, []);
+        setDrillResults(Array.isArray(results) ? results : []);
         setHydrated(true);
         return;
       } else {
@@ -306,6 +347,12 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
       setLessons(Array.isArray(less) ? less : []);
       const gam = await getJSON<Record<string, GamificationData>>(KEY_GAMIFICATION, {});
       setGamificationStore(gam);
+      const profs = await getJSON<Record<string, ChildProfile>>(KEY_PROFILES, {});
+      setProfiles(profs);
+      const drills = await getJSON<DrillSession[]>(KEY_DRILLS, []);
+      setDrillSessions(Array.isArray(drills) ? drills : []);
+      const results = await getJSON<DrillResult[]>(KEY_DRILL_RESULTS, []);
+      setDrillResults(Array.isArray(results) ? results : []);
       setHydrated(true);
     })();
   }, []);
@@ -501,6 +548,60 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
     return gamificationRef.current[childId] ?? DEFAULT_GAMIFICATION;
   }, []);
 
+  const addProfile = useCallback((profile: ChildProfile) => {
+    setProfiles((prev) => {
+      const next = { ...prev, [profile.childId]: profile };
+      setJSON(KEY_PROFILES, next);
+      return next;
+    });
+  }, []);
+
+  const updateProfile = useCallback((childId: string, patch: Partial<ChildProfile>) => {
+    setProfiles((prev) => {
+      const existing = prev[childId];
+      if (!existing) return prev;
+      const next = { ...prev, [childId]: { ...existing, ...patch, updatedAt: new Date().toISOString() } };
+      setJSON(KEY_PROFILES, next);
+      return next;
+    });
+  }, []);
+
+  const getProfile = useCallback((childId: string): ChildProfile | undefined => {
+    return profiles[childId];
+  }, [profiles]);
+
+  const addDrillSession = useCallback((session: DrillSession) => {
+    setDrillSessions((prev) => {
+      const next = [session, ...prev];
+      setJSON(KEY_DRILLS, next);
+      return next;
+    });
+  }, []);
+
+  const updateDrillSession = useCallback((id: string, patch: Partial<DrillSession>) => {
+    setDrillSessions((prev) => {
+      const next = prev.map((s) => (s.id === id ? { ...s, ...patch } : s));
+      setJSON(KEY_DRILLS, next);
+      return next;
+    });
+  }, []);
+
+  const getDrillSessions = useCallback((childId: string): DrillSession[] => {
+    return drillSessionsRef.current.filter((s) => s.childId === childId);
+  }, []);
+
+  const addDrillResult = useCallback((result: DrillResult) => {
+    setDrillResults((prev) => {
+      const next = [result, ...prev];
+      setJSON(KEY_DRILL_RESULTS, next);
+      return next;
+    });
+  }, []);
+
+  const getDrillResults = useCallback((childId: string): DrillResult[] => {
+    return drillResultsRef.current.filter((r) => r.childId === childId);
+  }, []);
+
   const addXP = useCallback((childId: string, amount: number, reason: XPReason): BadgeId[] => {
     let newBadges: BadgeId[] = [];
     setGamificationStore((prev) => {
@@ -541,6 +642,17 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         getLesson,
         gamification,
         addXP,
+        profiles,
+        addProfile,
+        updateProfile,
+        getProfile,
+        drillSessions,
+        addDrillSession,
+        updateDrillSession,
+        getDrillSessions,
+        drillResults,
+        addDrillResult,
+        getDrillResults,
       }}
     >
       {reactChildren}
