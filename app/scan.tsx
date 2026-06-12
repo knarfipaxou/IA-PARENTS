@@ -16,7 +16,7 @@ const TIPS = ['Utilisez une bonne lumière', 'Cadrez toute la page', 'Évitez le
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { child, addLesson } = useChild();
+  const { child, addLesson, addXP } = useChild();
   const [scanning, setScanning] = useState(false);
 
   const capture = async (fromLibrary = false) => {
@@ -39,6 +39,7 @@ export default function ScanScreen() {
         resume: result.resume,
         imageBase64: base64.length < 1500000 ? base64 : undefined,
       });
+      addXP(child.id, 10, 'lesson_scan');
       setScanning(false);
       router.push(`/result?lessonId=${lesson.id}` as any);
     } catch (e) {

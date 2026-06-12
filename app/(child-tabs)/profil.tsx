@@ -7,12 +7,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
-import { ProgressRing } from '../../components/ui/Progress';
+import { ProgressRing, ProgressBar } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
+import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS } from '../../lib/gamification';
 
 export default function ProfilScreen() {
   const router = useRouter();
-  const { child } = useChild();
+  const { child, gamification } = useChild();
 
   if (!child) {
     return (
@@ -23,6 +24,11 @@ export default function ProfilScreen() {
       </SafeAreaView>
     );
   }
+
+  const gam = gamification(child.id);
+  const level = getLevel(gam.xp);
+  const levelPct = getLevelProgress(gam.xp);
+  const nextXP = getNextLevelXP(gam.xp);
 
   return (
     <SafeAreaView style={s.safe}>
@@ -127,6 +133,40 @@ export default function ProfilScreen() {
             </Card>
           </>
         )}
+        {/* Récompenses */}
+        <Text style={s.sectionLabel}>RÉCOMPENSES</Text>
+        <Card pad={16} style={s.xpCard}>
+          <View style={s.xpHeaderRow}>
+            <View style={s.streakBox}>
+              <Text style={s.streakFire}>🔥</Text>
+              <Text style={s.streakBig}>{gam.streak}</Text>
+              <Text style={s.streakLbl}>jours</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 16 }}>
+              <View style={s.xpLabelRow}>
+                <Text style={s.xpLevelText}>{level.label}</Text>
+                <Text style={s.xpTotal}>{gam.xp} XP</Text>
+              </View>
+              <ProgressBar value={levelPct} color={level.color} h={8} />
+              <Text style={s.xpNextLabel}>Prochain niveau : {nextXP} XP</Text>
+            </View>
+          </View>
+        </Card>
+        <View style={s.badgeGrid}>
+          {BADGE_DEFS.map((b) => {
+            const unlocked = gam.badges.includes(b.id);
+            return (
+              <View key={b.id} style={[s.badgeTile, !unlocked && s.badgeTileLocked]}>
+                <View style={[s.badgeIcon, { backgroundColor: unlocked ? T[b.accent].soft : T.surfaceAlt }]}>
+                  <Ionicons name={b.icon as any} size={22} color={unlocked ? T[b.accent].fg : T.faint} />
+                </View>
+                <Text style={[s.badgeName, !unlocked && { color: T.faint }]} numberOfLines={1}>{b.label}</Text>
+                {!unlocked && <Ionicons name="lock-closed" size={11} color={T.faint} style={{ marginTop: 2 }} />}
+              </View>
+            );
+          })}
+        </View>
+
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
@@ -170,4 +210,19 @@ const s = StyleSheet.create({
   histTitle: { fontSize: 14.5, fontWeight: '700', color: T.ink },
   histDate: { fontSize: 12.5, color: T.faint, fontWeight: '600', marginTop: 1 },
   histScore: { fontSize: 16, fontWeight: '800' },
+  xpCard: { marginBottom: 14 },
+  xpHeaderRow: { flexDirection: 'row', alignItems: 'center' },
+  streakBox: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: T.coral.soft, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  streakFire: { fontSize: 20 },
+  streakBig: { fontSize: 22, fontWeight: '900', color: T.coral.fg },
+  streakLbl: { fontSize: 11, fontWeight: '700', color: T.coral.fg, marginTop: 4 },
+  xpLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  xpLevelText: { fontSize: 15, fontWeight: '800', color: T.ink, letterSpacing: -0.3 },
+  xpTotal: { fontSize: 13, fontWeight: '700', color: T.sub },
+  xpNextLabel: { fontSize: 11.5, color: T.faint, fontWeight: '600', marginTop: 5 },
+  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+  badgeTile: { width: '30%', alignItems: 'center', padding: 12, backgroundColor: T.surface, borderRadius: 18, borderWidth: 1, borderColor: T.line },
+  badgeTileLocked: { opacity: 0.55 },
+  badgeIcon: { width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 7 },
+  badgeName: { fontSize: 11.5, fontWeight: '700', color: T.ink, textAlign: 'center' },
 });

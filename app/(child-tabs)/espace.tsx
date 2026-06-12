@@ -9,9 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
-import { ProgressRing } from '../../components/ui/Progress';
+import { ProgressRing, ProgressBar } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
 import { iconForMatiere, accentForMatiere, formatLessonDate, isControle } from '../../lib/matiere';
+import { getLevel, getLevelProgress, BADGE_DEFS } from '../../lib/gamification';
 
 type ActionItem = {
   accent: keyof typeof T;
@@ -31,7 +32,7 @@ const COLLEGE_ACTIONS: ActionItem[] = [
 
 export default function EspaceScreen() {
   const router = useRouter();
-  const { child, setChild, lessons } = useChild();
+  const { child, setChild, lessons, gamification } = useChild();
   const childLessons = child ? lessons.filter((l) => l.childId === child.id) : [];
   const controles = (child?.echeances ?? []).filter((e) => isControle(e.type));
 
@@ -49,6 +50,10 @@ export default function EspaceScreen() {
   }
 
   const isCollege = child.kind === 'college';
+  const gam = gamification(child.id);
+  const level = getLevel(gam.xp);
+  const levelPct = getLevelProgress(gam.xp);
+  const recentBadges = BADGE_DEFS.filter((b) => gam.badges.includes(b.id)).slice(-3);
 
   return (
     <SafeAreaView style={s.safe}>
@@ -118,6 +123,33 @@ export default function EspaceScreen() {
             <Text style={s.missionMin}>{isCollege ? child.mission?.min : child.activity?.min} min</Text>
           </View>
         </TouchableOpacity>
+
+        {/* Gamification card */}
+        <View style={s.gamCard}>
+          <View style={s.gamRow}>
+            <View style={s.streakPill}>
+              <Text style={s.streakFlame}>🔥</Text>
+              <Text style={s.streakNum}>{gam.streak}</Text>
+            </View>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <View style={s.gamLabelRow}>
+                <Text style={s.gamLevel}>{level.label}</Text>
+                <Text style={s.gamXP}>{gam.xp} XP</Text>
+              </View>
+              <ProgressBar value={levelPct} color={level.color} h={7} />
+            </View>
+          </View>
+          {recentBadges.length > 0 && (
+            <View style={s.badgeRow}>
+              {recentBadges.map((b) => (
+                <TouchableOpacity key={b.id} onPress={() => router.push('/(child-tabs)/profil' as any)} style={[s.badgePill, { backgroundColor: T[b.accent].soft }]}>
+                  <Ionicons name={b.icon as any} size={14} color={T[b.accent].fg} />
+                  <Text style={[s.badgeLabel, { color: T[b.accent].fg }]}>{b.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
 
         {/* School actions */}
         <Text style={s.sectionLabel}>ACTIONS SCOLAIRES</Text>
@@ -340,6 +372,24 @@ const s = StyleSheet.create({
   lessonMatiere: { fontSize: 11.5, fontWeight: '800', color: T.sub, letterSpacing: 0.2 },
   lessonTitre: { fontSize: 14, fontWeight: '800', color: T.ink, letterSpacing: -0.3, marginTop: 2 },
   lessonMeta: { fontSize: 11.5, color: T.faint, fontWeight: '600', marginTop: 6 },
+  gamCard: {
+    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
+    borderRadius: 22, padding: 15, marginBottom: 20,
+    shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+  },
+  gamRow: { flexDirection: 'row', alignItems: 'center' },
+  streakPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: T.coral.soft, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10,
+  },
+  streakFlame: { fontSize: 18 },
+  streakNum: { fontSize: 20, fontWeight: '900', color: T.coral.fg },
+  gamLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gamLevel: { fontSize: 14, fontWeight: '800', color: T.ink, letterSpacing: -0.3 },
+  gamXP: { fontSize: 13, fontWeight: '700', color: T.sub },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
+  badgePill: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
+  badgeLabel: { fontSize: 12, fontWeight: '700' },
   weakRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   weakChip: {
     flexDirection: 'row', alignItems: 'center', gap: 7,

@@ -121,7 +121,7 @@ export default function GenerateScreen() {
   const lessonId = typeof params.lessonId === 'string' ? params.lessonId : undefined;
   const echeanceId = typeof params.echeanceId === 'string' ? params.echeanceId : undefined;
   const meta = META[kind] ?? META.fiche;
-  const { child, lessons, updateLesson, updateEcheance } = useChild();
+  const { child, lessons, updateLesson, updateEcheance, addXP } = useChild();
 
   // ── échéance (contrôle global) mode ──
   const echeance = echeanceId ? child?.echeances?.find((e) => e.id === echeanceId) : undefined;
@@ -195,6 +195,17 @@ export default function GenerateScreen() {
       }
       setContent(result);
       setLoading(false);
+      if (child) {
+        const xpMap: Record<string, import('../lib/gamification').XPReason> = {
+          fiche: 'fiche', flashcards: 'flashcard_set', exercices: 'exercise',
+          minitest: 'minitest', controle: 'controle', planning: 'fiche',
+        };
+        const reason = (xpMap[kind] ?? 'fiche') as import('../lib/gamification').XPReason;
+        const amountMap: Partial<Record<import('../lib/gamification').XPReason, number>> = {
+          fiche: 5, flashcard_set: 5, exercise: 5, minitest: 15, controle: 30,
+        };
+        addXP(child.id, amountMap[reason] ?? 5, reason);
+      }
     } catch (e) {
       setLoading(false);
       if (e instanceof AiError && e.code === 'NO_KEY') {
@@ -311,7 +322,7 @@ export default function GenerateScreen() {
     body = card ? (
       <>
         <Text style={s.counter}>{cardIndex + 1}/{cards.length}</Text>
-        <TouchableOpacity activeOpacity={0.9} onPress={() => setFlipped((f) => !f)} style={[s.flashcard, flipped && s.flashcardBack]}>
+        <TouchableOpacity activeOpacity={0.9} onPress={() => { setFlipped((f) => !f); if (child && !flipped) addXP(child.id, 2, 'flashcard_flip'); }} style={[s.flashcard, flipped && s.flashcardBack]}>
           <Text style={s.flashLabel}>{flipped ? 'RÉPONSE' : 'QUESTION'}</Text>
           <Text style={[s.flashText, flipped && { color: '#fff' }]}>{flipped ? card.verso : card.recto}</Text>
           <View style={s.flipHint}>
@@ -361,7 +372,7 @@ export default function GenerateScreen() {
     body = (
       <>
         {(mt.exercices ?? []).map((exo, i) => (
-          <QcmBlock key={i} exo={exo} index={i} onAnswered={(right) => setAnswers((prev) => [...prev, right])} />
+          <QcmBlock key={i} exo={exo} index={i} onAnswered={(right) => { setAnswers((prev) => [...prev, right]); if (child) addXP(child.id, right ? 5 : 1, right ? 'qcm_correct' : 'qcm_wrong'); }} />
         ))}
         {done && (
           <Card pad={18} style={{ marginTop: 4 }}>

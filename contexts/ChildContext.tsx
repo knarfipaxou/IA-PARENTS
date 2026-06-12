@@ -2,6 +2,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { type Child, type Echeance } from '../data/mock';
 import { getJSON, setJSON } from '../lib/storage';
 import type { RevisionSheet, Flashcards, Exercises, MiniTest, MockExam } from '../services/ai';
+import {
+  type GamificationData,
+  type XPReason,
+  type BadgeId,
+  DEFAULT_GAMIFICATION,
+  applyXP,
+  checkBadges,
+  XP_VALUES,
+} from '../lib/gamification';
 
 export type GeneratedKind =
   | 'lesson'
@@ -55,6 +64,8 @@ interface ChildCtxValue {
   removeLesson: (id: string) => void;
   lessonsForChild: (childId: string) => SavedLesson[];
   getLesson: (id: string) => SavedLesson | undefined;
+  gamification: (childId: string) => GamificationData;
+  addXP: (childId: string, amount: number, reason: XPReason) => BadgeId[];
 }
 
 const ChildCtx = createContext<ChildCtxValue>({
@@ -79,12 +90,15 @@ const ChildCtx = createContext<ChildCtxValue>({
   removeLesson: () => {},
   lessonsForChild: () => [],
   getLesson: () => undefined,
+  gamification: () => DEFAULT_GAMIFICATION,
+  addXP: () => [],
 });
 
 const KEY_CHILDREN = 'ppia.children';
 const KEY_GENERATED = 'ppia.generated';
 const KEY_LESSONS = 'ppia.lessons';
 const KEY_DEMO = 'ppia.demoSeeded';
+const KEY_GAMIFICATION = 'ppia.gamification';
 
 function hydrateChild(c: Child): Child {
   return {
@@ -253,10 +267,13 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
   const [generated, setGenerated] = useState<GeneratedStore>({});
   const [lessons, setLessons] = useState<SavedLesson[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const [gamificationStore, setGamificationStore] = useState<Record<string, GamificationData>>({});
   const generatedRef = useRef(generated);
   generatedRef.current = generated;
   const lessonsRef = useRef(lessons);
   lessonsRef.current = lessons;
+  const gamificationRef = useRef(gamificationStore);
+  gamificationRef.current = gamificationStore;
 
   useEffect(() => {
     (async () => {
@@ -275,6 +292,8 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         await setJSON(KEY_DEMO, true);
         const gen = await getJSON<GeneratedStore>(KEY_GENERATED, {});
         setGenerated(gen);
+        const gam = await getJSON<Record<string, GamificationData>>(KEY_GAMIFICATION, {});
+        setGamificationStore(gam);
         setHydrated(true);
         return;
       } else {
@@ -285,6 +304,8 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
       setGenerated(gen);
       const less = await getJSON<SavedLesson[]>(KEY_LESSONS, []);
       setLessons(Array.isArray(less) ? less : []);
+      const gam = await getJSON<Record<string, GamificationData>>(KEY_GAMIFICATION, {});
+      setGamificationStore(gam);
       setHydrated(true);
     })();
   }, []);
@@ -476,6 +497,24 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
     return lessonsRef.current.find((l) => l.id === id);
   }, []);
 
+  const gamification = useCallback((childId: string): GamificationData => {
+    return gamificationRef.current[childId] ?? DEFAULT_GAMIFICATION;
+  }, []);
+
+  const addXP = useCallback((childId: string, amount: number, reason: XPReason): BadgeId[] => {
+    let newBadges: BadgeId[] = [];
+    setGamificationStore((prev) => {
+      const current = prev[childId] ?? DEFAULT_GAMIFICATION;
+      const afterXP = applyXP(current, amount, reason);
+      const { data: afterBadges, newBadges: nb } = checkBadges(afterXP);
+      newBadges = nb;
+      const next = { ...prev, [childId]: afterBadges };
+      setJSON(KEY_GAMIFICATION, next);
+      return next;
+    });
+    return newBadges;
+  }, []);
+
   return (
     <ChildCtx.Provider
       value={{
@@ -500,6 +539,8 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         removeLesson,
         lessonsForChild,
         getLesson,
+        gamification,
+        addXP,
       }}
     >
       {reactChildren}
