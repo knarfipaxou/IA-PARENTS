@@ -33,18 +33,9 @@ export default function ChildTabsLayout() {
       <Tabs.Screen
         name="espace"
         options={{
-          title: 'Espace',
+          title: 'Accueil',
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="plan"
-        options={{
-          title: 'Planning',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={color} />
           ),
         }}
       />

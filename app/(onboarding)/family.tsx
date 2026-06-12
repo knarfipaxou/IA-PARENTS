@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
+import { setJSON } from '../../lib/storage';
 import { Btn } from '../../components/ui/Btn';
 import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
@@ -60,7 +61,10 @@ export default function FamilyScreen() {
         </View>
 
         <View style={{ flex: 1, minHeight: 24 }} />
-        <Btn full onPress={() => router.push('/(onboarding)/profile')} iconRight icon={<Ionicons name="arrow-forward" size={20} color="#fff" />}>
+        <Btn full onPress={async () => {
+          await setJSON('ppia.familyName', familyName.trim() || 'Ma famille');
+          router.push('/(onboarding)/profile');
+        }} iconRight icon={<Ionicons name="arrow-forward" size={20} color="#fff" />}>
           Continuer
         </Btn>
       </ScrollView>

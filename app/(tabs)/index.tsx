@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
@@ -6,21 +6,29 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
-import { Card } from '../../components/ui/Card';
-import { ProgressRing } from '../../components/ui/Progress';
 import { Squircle } from '../../components/ui/Squircle';
 import { useChild } from '../../contexts/ChildContext';
+import { getJSON } from '../../lib/storage';
 import { type Child } from '../../data/mock';
 
 export default function ParentHome() {
   const router = useRouter();
   const { setChild, children: allChildren } = useChild();
   const children = allChildren.filter((c) => !c.archived);
+  const [familyName, setFamilyName] = useState('Ma famille');
 
-  const alerts = [
-    { accent: 'coral' as const, icon: 'alert-circle-outline', text: 'Composition de SVT de Maxime dans 3 jours' },
-    { accent: 'amber' as const, icon: 'flash-outline', text: 'Mission du jour disponible pour Maxime' },
-  ];
+  useEffect(() => {
+    getJSON<string>('ppia.familyName', 'Ma famille').then(setFamilyName);
+  }, []);
+
+  // Dynamic alerts from real children data
+  const urgentEcheances = children.flatMap((c) =>
+    (c.echeances ?? []).filter((e) => e.days <= 5).map((e) => ({
+      accent: e.accent,
+      icon: 'alert-circle-outline' as const,
+      text: `${e.type} de ${e.subj} pour ${c.name} dans ${e.days === 0 ? "aujourd'hui" : `${e.days} jour${e.days > 1 ? 's' : ''}`}`,
+    }))
+  ).slice(0, 3);
 
   function handleSelectChild(c: Child) {
     setChild(c);
@@ -33,44 +41,53 @@ export default function ParentHome() {
         {/* Greeting */}
         <View style={s.greeting}>
           <View style={{ flex: 1 }}>
-            <Text style={s.greetTitle}>Bonjour, Franck</Text>
-            <Text style={s.greetSub}>Famille Martin · {children.length} {children.length > 1 ? 'enfants' : 'enfant'}</Text>
+            <Text style={s.greetTitle}>Bonjour 👋</Text>
+            <Text style={s.greetSub}>{familyName} · {children.length} {children.length > 1 ? 'enfants' : 'enfant'}</Text>
           </View>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/notifications' as any)}
             style={s.notifBtn}
           >
             <Ionicons name="notifications-outline" size={20} color={T.ink} />
-            <View style={s.notifDot} />
+            {urgentEcheances.length > 0 && <View style={s.notifDot} />}
           </TouchableOpacity>
         </View>
 
-        {/* Global alerts summary */}
-        <View style={s.alertsBox}>
-          {alerts.map((al, i) => (
-            <TouchableOpacity
-              key={i}
-              activeOpacity={0.8}
-              style={[s.alertRow, i < alerts.length - 1 && s.alertBorder]}
-            >
-              <Ionicons name={al.icon as any} size={20} color={T[al.accent].fg} />
-              <Text style={[s.alertText, { color: T.amber.fg }]} numberOfLines={2}>{al.text}</Text>
-              <Ionicons name="chevron-forward" size={17} color={T.amber.fg} style={{ opacity: 0.7 }} />
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Global alerts summary — only shown when there are urgent items */}
+        {urgentEcheances.length > 0 && (
+          <View style={s.alertsBox}>
+            {urgentEcheances.map((al, i) => (
+              <TouchableOpacity
+                key={i}
+                activeOpacity={0.8}
+                style={[s.alertRow, i < urgentEcheances.length - 1 && s.alertBorder]}
+              >
+                <Ionicons name={al.icon} size={20} color={T[al.accent].fg} />
+                <Text style={[s.alertText, { color: T.amber.fg }]} numberOfLines={2}>{al.text}</Text>
+                <Ionicons name="chevron-forward" size={17} color={T.amber.fg} style={{ opacity: 0.7 }} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* Child picker */}
         <Text style={s.sectionLabel}>CHOISIR UN ENFANT</Text>
         <View style={s.childList}>
+          {children.length === 0 && (
+            <View style={s.emptyBox}>
+              <Ionicons name="people-outline" size={40} color={T.faint} />
+              <Text style={s.emptyText}>Aucun enfant pour l'instant</Text>
+              <Text style={s.emptySub}>Ajoutez votre premier enfant ci-dessous.</Text>
+            </View>
+          )}
           {children.map((c) => {
             const isCollege = c.kind === 'college';
-            const tagAccent = isCollege ? c.next?.accent ?? c.accent : c.accent;
+            const tagAccent = isCollege ? (c.next?.accent ?? c.accent) : c.accent;
             const tagLabel = isCollege
-              ? `${c.next?.type ?? 'À planifier'}${c.next?.subj && c.next.subj !== '—' ? ` de ${c.next.subj}` : ''}`
-              : c.activity?.label ?? 'Activité';
+              ? `${c.next?.type ?? 'À planifier'}${c.next?.subj ? ` de ${c.next.subj}` : ''}`
+              : (c.activity?.label ?? 'Activité');
             const tagSub = isCollege
-              ? c.next && c.next.days > 0 ? `dans ${c.next.days} jours` : 'à planifier'
+              ? (c.next && c.next.days > 0 ? `dans ${c.next.days} jours` : 'à planifier')
               : `${c.activity?.min ?? 0} min · activité`;
             const tagIcon = isCollege ? 'flask-outline' : 'star-outline';
 
@@ -82,9 +99,9 @@ export default function ParentHome() {
                 activeOpacity={0.88}
               >
                 <View style={s.childCardTop}>
-                  <ProgressRing value={c.progress} size={58} sw={7} color={T[c.accent].solid}>
-                    <Text style={s.childInitial}>{c.name.charAt(0)}</Text>
-                  </ProgressRing>
+                  <View style={[s.childInitialCircle, { backgroundColor: T[c.accent].soft }]}>
+                    <Text style={[s.childInitialText, { color: T[c.accent].fg }]}>{c.name.charAt(0)}</Text>
+                  </View>
                   <View style={{ flex: 1, marginLeft: 14 }}>
                     <Text style={s.childName}>{c.name}</Text>
                     <Text style={s.childClass}>{c.classe} · {c.age} ans</Text>
@@ -142,6 +159,9 @@ const s = StyleSheet.create({
   alertBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(199,121,28,0.15)' },
   alertText: { flex: 1, fontSize: 13.5, fontWeight: '700', letterSpacing: -0.2 },
   sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginBottom: 12, letterSpacing: 0.2 },
+  emptyBox: { alignItems: 'center', paddingVertical: 32, gap: 8 },
+  emptyText: { fontSize: 16, fontWeight: '700', color: T.sub },
+  emptySub: { fontSize: 13.5, color: T.faint, fontWeight: '500' },
   childList: { gap: 12 },
   childCard: {
     backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
@@ -149,7 +169,8 @@ const s = StyleSheet.create({
     shadowColor: '#102818', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 16, elevation: 3,
   },
   childCardTop: { flexDirection: 'row', alignItems: 'center' },
-  childInitial: { fontSize: 19, fontWeight: '800', color: T.ink },
+  childInitialCircle: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  childInitialText: { fontSize: 22, fontWeight: '800' },
   childName: { fontWeight: '800', fontSize: 19, color: T.ink, letterSpacing: -0.4 },
   childClass: { fontSize: 13.5, color: T.sub, fontWeight: '600', marginTop: 1 },
   childCardBottom: {
