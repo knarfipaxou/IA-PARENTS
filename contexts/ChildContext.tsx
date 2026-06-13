@@ -138,7 +138,7 @@ function hydrateChild(c: Child): Child {
 
 // ─── Demo data ───────────────────────────────────────────────────────────────
 
-function buildDemoData(): { kids: Child[]; lessons: SavedLesson[] } {
+function buildDemoData(): { kids: Child[]; lessons: SavedLesson[]; profiles: Record<string, ChildProfile> } {
   const mockFiche = (titre: string, resume: string, notions: string[]): RevisionSheet => ({
     titre,
     sections: [{ titre: 'Points essentiels', contenu: resume, points_cles: notions.slice(0, 3) }],
@@ -281,9 +281,50 @@ function buildDemoData(): { kids: Child[]; lessons: SavedLesson[] } {
     ],
   } as Child;
 
+  const now = new Date().toISOString();
+  const demoProfiles: Record<string, ChildProfile> = {
+    'demo-child-lucas': {
+      childId: 'demo-child-lucas',
+      etablissement: 'Collège Jean Moulin',
+      pays: 'France',
+      niveauEstime: 'bon',
+      objectif: 'excellence',
+      matieresPrioritaires: ['Mathématiques', 'Français', 'Anglais'],
+      dureeQuotidienne: 30,
+      rythme: 'semaine_weekend',
+      pointsFaibles: ['fractions', 'problèmes écrits', 'orthographe'],
+      pointsForts: ['calcul mental', 'lecture'],
+      correctionDetaillee: true,
+      versionImprimable: false,
+      ton: 'exigeant',
+      noteLibre: "Lucas est motivé en sciences. Varier les contextes de problèmes pour maintenir son intérêt.",
+      createdAt: now,
+      updatedAt: now,
+    },
+    'demo-child-emma': {
+      childId: 'demo-child-emma',
+      etablissement: 'Collège Jean Moulin',
+      pays: 'France',
+      niveauEstime: 'moyen',
+      objectif: 'bon_niveau',
+      matieresPrioritaires: ['Mathématiques', 'Français'],
+      dureeQuotidienne: 20,
+      rythme: 'semaine',
+      pointsFaibles: ['proportionnalité', 'conjugaison'],
+      pointsForts: ['expression écrite', 'latin'],
+      correctionDetaillee: true,
+      versionImprimable: false,
+      ton: 'bienveillant',
+      noteLibre: undefined,
+      createdAt: now,
+      updatedAt: now,
+    },
+  };
+
   return {
     kids: [lucas, emma],
     lessons: [...lucasLessons, ...emmaLessons],
+    profiles: demoProfiles,
   };
 }
 
@@ -319,7 +360,7 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         setKids(stored.map(hydrateChild));
       } else if (!demoSeeded) {
         // First launch: seed demo data
-        const { kids: demoKids, lessons: demoLessons } = buildDemoData();
+        const { kids: demoKids, lessons: demoLessons, profiles: demoProfiles } = buildDemoData();
         setKids(demoKids);
         setLessons(demoLessons);
         await setJSON(KEY_CHILDREN, demoKids);
@@ -329,7 +370,9 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         setGenerated(gen);
         const gam = await getJSON<Record<string, GamificationData>>(KEY_GAMIFICATION, {});
         setGamificationStore(gam);
-        const profs = await getJSON<Record<string, ChildProfile>>(KEY_PROFILES, {});
+        const storedProfs = await getJSON<Record<string, ChildProfile>>(KEY_PROFILES, {});
+        const profs = Object.keys(storedProfs).length > 0 ? storedProfs : demoProfiles;
+        await setJSON(KEY_PROFILES, profs);
         setProfiles(profs);
         const drills = await getJSON<DrillSession[]>(KEY_DRILLS, []);
         setDrillSessions(Array.isArray(drills) ? drills : []);

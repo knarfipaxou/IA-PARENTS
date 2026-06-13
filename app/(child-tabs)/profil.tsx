@@ -11,9 +11,18 @@ import { ProgressRing, ProgressBar } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
 import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS } from '../../lib/gamification';
 
+const NIVEAU_LABELS: Record<string, string> = {
+  fragile: 'Fragile', moyen: 'Moyen', bon: 'Bon', avance: 'Avancé', tres_avance: 'Très avancé',
+};
+const OBJ_LABELS: Record<string, string> = {
+  consolidation: 'Consolidation', bon_niveau: 'Bon niveau', excellence: 'Excellence', concours: 'Concours / Prépa',
+};
+const TON_LABELS: Record<string, string> = { bienveillant: 'Bienveillant', exigeant: 'Exigeant' };
+
 export default function ProfilScreen() {
   const router = useRouter();
-  const { child, gamification } = useChild();
+  const { child, gamification, getProfile } = useChild();
+  const profile = child ? getProfile(child.id) : undefined;
 
   if (!child) {
     return (
@@ -52,6 +61,52 @@ export default function ProfilScreen() {
           <Text style={s.editRowText}>Modifier le profil</Text>
           <Ionicons name="chevron-forward" size={17} color={T.primaryDeep} />
         </TouchableOpacity>
+
+        {/* Profil scolaire personnalisé */}
+        {profile ? (
+          <>
+            <Text style={s.sectionLabel}>PROFIL SCOLAIRE</Text>
+            <View style={s.profGrid}>
+              <View style={s.profItem}>
+                <Ionicons name="bar-chart-outline" size={16} color={T.primary} />
+                <Text style={s.profItemLabel}>Niveau</Text>
+                <Text style={s.profItemValue}>{NIVEAU_LABELS[profile.niveauEstime]}</Text>
+              </View>
+              <View style={s.profItem}>
+                <Ionicons name="flag-outline" size={16} color={T.primary} />
+                <Text style={s.profItemLabel}>Objectif</Text>
+                <Text style={s.profItemValue}>{OBJ_LABELS[profile.objectif]}</Text>
+              </View>
+              <View style={s.profItem}>
+                <Ionicons name="time-outline" size={16} color={T.primary} />
+                <Text style={s.profItemLabel}>Durée/jour</Text>
+                <Text style={s.profItemValue}>{profile.dureeQuotidienne === 'custom' ? 'Libre' : `${profile.dureeQuotidienne} min`}</Text>
+              </View>
+              <View style={s.profItem}>
+                <Ionicons name="heart-outline" size={16} color={T.primary} />
+                <Text style={s.profItemLabel}>Ton</Text>
+                <Text style={s.profItemValue}>{TON_LABELS[profile.ton]}</Text>
+              </View>
+            </View>
+            {profile.etablissement && (
+              <View style={s.profSchool}>
+                <Ionicons name="school-outline" size={15} color={T.sub} />
+                <Text style={s.profSchoolText}>{profile.etablissement}</Text>
+              </View>
+            )}
+            {profile.noteLibre && (
+              <View style={s.profNote}>
+                <Text style={s.profNoteLabel}>NOTE POUR L'IA</Text>
+                <Text style={s.profNoteText}>{profile.noteLibre}</Text>
+              </View>
+            )}
+          </>
+        ) : (
+          <TouchableOpacity onPress={() => router.push('/edit-child' as any)} style={s.profEmpty} activeOpacity={0.85}>
+            <Ionicons name="add-circle-outline" size={20} color={T.primaryDeep} />
+            <Text style={s.profEmptyText}>Complétez le profil scolaire pour personnaliser l'IA</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Matieres */}
         <Text style={s.sectionLabel}>MATIÈRES SUIVIES</Text>
@@ -195,6 +250,23 @@ const s = StyleSheet.create({
   editRowText: { flex: 1, fontSize: 14.5, fontWeight: '800', color: T.primaryDeep },
   sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginBottom: 11, letterSpacing: 0.2, marginTop: 22 },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  profGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  profItem: {
+    width: '47.5%', backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
+    borderRadius: 16, padding: 13, gap: 3,
+  },
+  profItemLabel: { fontSize: 11.5, fontWeight: '700', color: T.faint, marginTop: 4 },
+  profItemValue: { fontSize: 15, fontWeight: '800', color: T.ink, letterSpacing: -0.3 },
+  profSchool: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10 },
+  profSchoolText: { fontSize: 13.5, fontWeight: '600', color: T.sub },
+  profNote: { backgroundColor: T.primarySoft, borderRadius: 14, padding: 13, marginTop: 10 },
+  profNoteLabel: { fontSize: 11, fontWeight: '800', color: T.primaryDeep, letterSpacing: 0.3, marginBottom: 5 },
+  profNoteText: { fontSize: 13.5, fontWeight: '500', color: T.primaryDeep, lineHeight: 19 },
+  profEmpty: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: T.primarySoft, borderRadius: 14, padding: 14,
+  },
+  profEmptyText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: T.primaryDeep },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
   chipText: { fontSize: 13.5, fontWeight: '700' },
   chipPct: { fontSize: 12, fontWeight: '800' },
