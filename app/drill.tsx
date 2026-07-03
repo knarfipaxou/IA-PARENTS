@@ -18,7 +18,18 @@ import { buildDrillHtml } from '../lib/drillPrint';
 import { buildAdaptationConsignes } from '../lib/adaptation';
 import { generateDrill, AiError } from '../services/ai';
 import type { DrillExerciseAI } from '../services/ai';
-import type { DrillSession, DrillExercise, DrillResult } from '../types/childProfile';
+import type { DrillSession, DrillExercise, DrillResult, ErrorType } from '../types/childProfile';
+
+const ERROR_TYPES: { key: ErrorType; label: string }[] = [
+  { key: 'calcul', label: 'Calcul' },
+  { key: 'methode', label: 'Méthode' },
+  { key: 'consigne', label: 'Consigne' },
+  { key: 'orthographe', label: 'Orthographe' },
+  { key: 'accord', label: 'Accord' },
+  { key: 'justification', label: 'Justification' },
+  { key: 'soin', label: 'Soin' },
+  { key: 'raisonnement', label: 'Autre' },
+];
 
 const LEVEL_MAP: Record<string, string> = {
   fragile: 'Fragile', moyen: 'Moyen', bon: 'Bon', avance: 'Avancé', tres_avance: 'Très avancé',
@@ -57,6 +68,7 @@ export default function DrillScreen() {
   const [session, setSession] = useState<DrillSession | null>(null);
   const [showCorrection, setShowCorrection] = useState<Record<number, boolean>>({});
   const [results, setResults] = useState<Record<number, 'ok' | 'err'>>({});
+  const [errorTypes, setErrorTypes] = useState<Record<number, ErrorType>>({});
   const [done, setDone] = useState(false);
 
   const profile = child ? getProfile(child.id) : undefined;
@@ -68,6 +80,7 @@ export default function DrillScreen() {
     setSession(null);
     setShowCorrection({});
     setResults({});
+    setErrorTypes({});
     setDone(false);
     try {
       const prof = getProfile(child.id);
@@ -139,6 +152,7 @@ export default function DrillScreen() {
 
   function markResult(i: number, ok: boolean) {
     setResults((prev) => ({ ...prev, [i]: ok ? 'ok' : 'err' }));
+    if (ok) setErrorTypes((prev) => { const next = { ...prev }; delete next[i]; return next; });
   }
 
   const [printing, setPrinting] = useState(false);
@@ -179,8 +193,8 @@ export default function DrillScreen() {
         matiere: ex.matiere,
         competence: ex.competence,
         reussite,
-        createdAt: new Date().toISOString(),
-      } as DrillResult;
+        typeErreur: reussite ? undefined : errorTypes[i],
+      };
       addDrillResult(r);
     });
 
@@ -354,6 +368,27 @@ export default function DrillScreen() {
                       <Text style={[s.resultBtnText, res === 'err' && { color: T.coral.fg }]}>Erreur</Text>
                     </TouchableOpacity>
                   </View>
+
+                  {res === 'err' && (
+                    <View style={s.errTypeBox}>
+                      <Text style={s.errTypeLabel}>Type d'erreur (aide l'IA à adapter les prochains drills)</Text>
+                      <View style={s.errTypeRow}>
+                        {ERROR_TYPES.map((et) => {
+                          const on = errorTypes[i] === et.key;
+                          return (
+                            <TouchableOpacity
+                              key={et.key}
+                              onPress={() => setErrorTypes((prev) => ({ ...prev, [i]: et.key }))}
+                              style={[s.errTypeChip, on && s.errTypeChipOn]}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={[s.errTypeChipText, on && s.errTypeChipTextOn]}>{et.label}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
                 </Card>
               );
             })}
@@ -443,6 +478,16 @@ const s = StyleSheet.create({
   resultBtnOk: { borderColor: T.green.fg, backgroundColor: T.green.soft },
   resultBtnErr: { borderColor: T.coral.fg, backgroundColor: T.coral.soft },
   resultBtnText: { fontSize: 14, fontWeight: '700', color: T.sub },
+  errTypeBox: { marginTop: 12 },
+  errTypeLabel: { fontSize: 12, color: T.faint, fontWeight: '600', marginBottom: 8 },
+  errTypeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+  errTypeChip: {
+    borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12,
+    backgroundColor: T.surfaceAlt, borderWidth: 1.5, borderColor: 'transparent',
+  },
+  errTypeChipOn: { backgroundColor: T.coral.soft, borderColor: T.coral.fg },
+  errTypeChipText: { fontSize: 12.5, fontWeight: '700', color: T.sub },
+  errTypeChipTextOn: { color: T.coral.fg },
   doneBox: { alignItems: 'center', paddingVertical: 32, gap: 8 },
   doneEmoji: { fontSize: 52 },
   doneTitle: { fontSize: 26, fontWeight: '900', color: T.ink, letterSpacing: -0.6 },
