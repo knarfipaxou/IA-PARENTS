@@ -10,6 +10,7 @@ import { Squircle } from '../../components/ui/Squircle';
 import { ProgressRing, ProgressBar } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
 import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS } from '../../lib/gamification';
+import { statsByMatiere, fragileCompetences, masteredCompetences } from '../../lib/adaptation';
 
 const NIVEAU_LABELS: Record<string, string> = {
   fragile: 'Fragile', moyen: 'Moyen', bon: 'Bon', avance: 'Avancé', tres_avance: 'Très avancé',
@@ -21,8 +22,12 @@ const TON_LABELS: Record<string, string> = { bienveillant: 'Bienveillant', exige
 
 export default function ProfilScreen() {
   const router = useRouter();
-  const { child, gamification, getProfile } = useChild();
+  const { child, gamification, getProfile, getDrillResults } = useChild();
   const profile = child ? getProfile(child.id) : undefined;
+  const drillResults = child ? getDrillResults(child.id) : [];
+  const matStats = statsByMatiere(drillResults);
+  const fragiles = fragileCompetences(drillResults);
+  const maitrisees = masteredCompetences(drillResults);
 
   if (!child) {
     return (
@@ -162,6 +167,47 @@ export default function ProfilScreen() {
           </View>
         </Card>
 
+        {/* Progression des drills */}
+        {matStats.length > 0 && (
+          <>
+            <Text style={s.sectionLabel}>PROGRESSION DES DRILLS</Text>
+            <Card pad={15} style={{ gap: 12 }}>
+              {matStats.map((m) => (
+                <View key={m.matiere}>
+                  <View style={s.matStatRow}>
+                    <Text style={s.matStatName}>{m.matiere}</Text>
+                    <Text style={[s.matStatPct, { color: m.taux >= 80 ? T.green.fg : m.taux >= 60 ? T.amber.fg : T.coral.fg }]}>
+                      {m.taux}% · {m.total} exo{m.total > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                  <ProgressBar value={m.taux / 100} color={m.taux >= 80 ? T.green.solid : m.taux >= 60 ? T.amber.solid : T.coral.solid} h={7} />
+                </View>
+              ))}
+            </Card>
+
+            {fragiles.length > 0 && (
+              <View style={[s.compBox, { backgroundColor: T.coral.soft }]}>
+                <Text style={[s.compLabel, { color: T.coral.fg }]}>À RETRAVAILLER (moins de 60% de réussite)</Text>
+                {fragiles.map((f) => (
+                  <Text key={`${f.matiere}-${f.competence}`} style={[s.compItem, { color: T.coral.fg }]}>
+                    • {f.competence} ({f.matiere}) — {f.taux}%
+                  </Text>
+                ))}
+              </View>
+            )}
+            {maitrisees.length > 0 && (
+              <View style={[s.compBox, { backgroundColor: T.green.soft }]}>
+                <Text style={[s.compLabel, { color: T.green.fg }]}>COMPÉTENCES MAÎTRISÉES (plus de 90%)</Text>
+                {maitrisees.map((f) => (
+                  <Text key={`${f.matiere}-${f.competence}`} style={[s.compItem, { color: T.green.fg }]}>
+                    • {f.competence} ({f.matiere}) — {f.taux}%
+                  </Text>
+                ))}
+              </View>
+            )}
+          </>
+        )}
+
         {/* History */}
         {child.history.length > 0 && (
           <>
@@ -267,6 +313,12 @@ const s = StyleSheet.create({
     backgroundColor: T.primarySoft, borderRadius: 14, padding: 14,
   },
   profEmptyText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: T.primaryDeep },
+  matStatRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  matStatName: { fontSize: 14, fontWeight: '800', color: T.ink, letterSpacing: -0.2 },
+  matStatPct: { fontSize: 12.5, fontWeight: '800' },
+  compBox: { borderRadius: 14, padding: 13, marginTop: 10, gap: 4 },
+  compLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.3, marginBottom: 3 },
+  compItem: { fontSize: 13, fontWeight: '600', lineHeight: 19 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 12, paddingVertical: 8, paddingHorizontal: 12 },
   chipText: { fontSize: 13.5, fontWeight: '700' },
   chipPct: { fontSize: 12, fontWeight: '800' },
