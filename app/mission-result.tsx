@@ -65,10 +65,10 @@ export default function MissionResult() {
             Retour à l'espace
           </Btn>
           <TouchableOpacity
-            onPress={() => router.push('/(child-tabs)/plan' as any)}
+            onPress={() => router.push('/(child-tabs)/echeances' as any)}
             style={s.ghostBtn}
           >
-            <Text style={s.ghostBtnText}>Voir le planning</Text>
+            <Text style={s.ghostBtnText}>Voir les échéances</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
