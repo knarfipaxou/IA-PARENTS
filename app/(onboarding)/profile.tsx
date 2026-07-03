@@ -37,7 +37,7 @@ export default function ProfileScreen() {
           <View style={[s.inputWrap, focus && { borderColor: T.primary }]}>
             <Ionicons name="person-outline" size={19} color={focus ? T.primary : T.faint} />
             <TextInput
-              value={prenom} onChangeText={setPrenom} placeholder="Maxime"
+              value={prenom} onChangeText={setPrenom} placeholder="Lucas"
               placeholderTextColor={T.faint}
               onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
               style={s.input}

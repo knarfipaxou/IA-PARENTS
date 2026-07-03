@@ -1,35 +1,75 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
+import { useChild } from '../../contexts/ChildContext';
+import type { Child } from '../../data/mock';
 
-const NOTIFS = [
-  { id: '1', icon: 'alert-circle-outline', accent: 'coral' as const, title: 'Composition de SVT de Maxime', sub: 'Dans 3 jours · 24 avr', time: "Il y a 2h" },
-  { id: '2', icon: 'flash-outline', accent: 'amber' as const, title: 'Mission du jour disponible', sub: 'Pour Maxime · SVT', time: "Ce matin" },
-  { id: '3', icon: 'checkmark-circle-outline', accent: 'green' as const, title: 'Mission terminée par Alexia', sub: 'Langage oral · 8 min', time: "Hier" },
-];
+interface AlertItem {
+  id: string;
+  child: Child;
+  icon: string;
+  accent: 'coral' | 'amber';
+  title: string;
+  sub: string;
+}
 
 export default function Notifications() {
+  const router = useRouter();
+  const { children: allChildren, setChild } = useChild();
+  const children = allChildren.filter((c) => !c.archived);
+
+  const alerts: AlertItem[] = children
+    .flatMap((c) =>
+      (c.echeances ?? [])
+        .filter((e) => e.days <= 7)
+        .map((e) => ({
+          id: `${c.id}-${e.id}`,
+          child: c,
+          icon: e.days <= 3 ? 'alert-circle-outline' : 'calendar-outline',
+          accent: (e.days <= 3 ? 'coral' : 'amber') as AlertItem['accent'],
+          title: `${e.type} de ${e.subj} — ${c.name}`,
+          sub: e.days === 0 ? "Aujourd'hui" : `Dans ${e.days} jour${e.days > 1 ? 's' : ''} · ${e.date}`,
+          days: e.days,
+        }))
+    )
+    .sort((a: any, b: any) => a.days - b.days);
+
+  function openAlert(a: AlertItem) {
+    setChild(a.child);
+    router.push('/(child-tabs)/echeances' as any);
+  }
+
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView style={s.scroll} contentContainerStyle={s.content}>
         <Text style={s.title}>Alertes</Text>
-        <Text style={s.sub}>Notifications de vos enfants</Text>
-        <View style={s.list}>
-          {NOTIFS.map((n) => (
-            <TouchableOpacity key={n.id} style={s.row} activeOpacity={0.85}>
-              <View style={[s.iconBox, { backgroundColor: T[n.accent].soft }]}>
-                <Ionicons name={n.icon as any} size={22} color={T[n.accent].fg} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.rowTitle}>{n.title}</Text>
-                <Text style={s.rowSub}>{n.sub}</Text>
-              </View>
-              <Text style={s.time}>{n.time}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Text style={s.sub}>Échéances des 7 prochains jours</Text>
+
+        {alerts.length === 0 ? (
+          <View style={s.emptyBox}>
+            <Ionicons name="checkmark-circle-outline" size={40} color={T.green.fg} />
+            <Text style={s.emptyText}>Tout est calme !</Text>
+            <Text style={s.emptySub}>Aucune échéance urgente dans les 7 prochains jours.</Text>
+          </View>
+        ) : (
+          <View style={s.list}>
+            {alerts.map((n) => (
+              <TouchableOpacity key={n.id} style={s.row} activeOpacity={0.85} onPress={() => openAlert(n)}>
+                <View style={[s.iconBox, { backgroundColor: T[n.accent].soft }]}>
+                  <Ionicons name={n.icon as any} size={22} color={T[n.accent].fg} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.rowTitle}>{n.title}</Text>
+                  <Text style={s.rowSub}>{n.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={17} color={T.faint} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -51,5 +91,7 @@ const s = StyleSheet.create({
   iconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { fontSize: 14.5, fontWeight: '700', color: T.ink, letterSpacing: -0.2 },
   rowSub: { fontSize: 12.5, color: T.sub, fontWeight: '500', marginTop: 2 },
-  time: { fontSize: 12, color: T.faint, fontWeight: '600' },
+  emptyBox: { alignItems: 'center', paddingVertical: 48, gap: 8 },
+  emptyText: { fontSize: 17, fontWeight: '800', color: T.ink },
+  emptySub: { fontSize: 13.5, color: T.sub, fontWeight: '500', textAlign: 'center', lineHeight: 19 },
 });

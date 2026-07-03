@@ -290,16 +290,28 @@ flowchart TD
 
 ---
 
-### ⚡ DRILL ADAPTATIF (nouveau)
+### ⚡ DRILL ADAPTATIF
 
 #### `drill` — Drill quotidien généré par l'IA
 | Élément | Comportement |
 |---|---|
-| Générer le drill du jour | Appelle l'IA avec le profil de l'enfant |
-| Afficher la correction parent | Masquée par défaut, dépliable par exercice |
-| ✓ Réussi / ✗ Erreur | Enregistre le résultat (suivi des erreurs) |
-| Terminer la séance | Score + XP, sauve la session |
+| Générer le drill du jour | IA + profil + règles d'adaptation (3 échecs → plus facile, 90% → plus dur) |
+| Afficher la correction parent | Masquée par défaut, dépliable par exercice, avec phrase-guide parent |
+| ✓ Réussi / ✗ Erreur | Enregistre le résultat ; si Erreur → chips de type d'erreur (calcul, méthode…) |
+| Version imprimable | PDF sobre 2 pages : feuille élève + feuille correction (expo-print) |
+| Séances précédentes | Historique dépliable : date, score, durée, liste des exercices |
+| Terminer la séance | Score + XP, sauve la session et les résultats par compétence |
 | _(Si profil incomplet)_ | Propose `edit-child` |
+
+### 📖 CARNET DE LECTURE
+
+#### `lecture` — Suivi de lecture avec questions IA
+| Élément | Comportement |
+|---|---|
+| Formulaire séance | Œuvre, auteur, pages lues, résumé de l'enfant, impression |
+| Générer les questions | 4 questions sur les pages lues UNIQUEMENT + 4 mots de vocabulaire + 1 question orale |
+| Réponse modèle (parent) | Masquée par défaut, réservée au parent |
+| Historique | Séances précédentes dépliables, suppression possible |
 
 ---
 
@@ -320,10 +332,10 @@ Restaurer ou supprimer définitivement les enfants archivés. ← Retour.
 
 ## 4. Écrans hérités / non reliés (legacy)
 
-Ces fichiers existent dans le code mais **ne sont pas reliés** à la navigation active (vestiges d'anciennes versions, à nettoyer éventuellement) :
-
-- `(tabs)/children.tsx`, `(tabs)/exercises.tsx`, `(tabs)/plan.tsx` — anciens onglets parent (remplacés par les 3 onglets actuels)
-- `coming-soon.tsx`, `photo-floue.tsx`, `validation.tsx`, `mock-test.tsx`, `pdf.tsx`, `correction.tsx`, `progress.tsx`, `agenda-results.tsx`, `plan-create.tsx`, `plan-edit.tsx`, `notifications.tsx` (racine, doublon)
+✅ **Nettoyage effectué** : les 15 écrans legacy (anciens onglets parent, flux plan,
+écrans de démo coming-soon/photo-floue/validation/mock-test/pdf/correction/progress/
+agenda-results/plan-create/plan-edit, doublon notifications racine) ont été supprimés.
+Tous les écrans restants sont actifs et reliés.
 
 ---
 

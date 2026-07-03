@@ -177,7 +177,7 @@ export default function EditChild() {
             <Text style={s.fieldLabel}>Prénom</Text>
             <View style={s.inputRow}>
               <Ionicons name="person-outline" size={19} color={T.faint} style={{ marginRight: 10 }} />
-              <TextInput style={s.input} value={prenom} onChangeText={setPrenom} placeholder="Maxime" placeholderTextColor={T.faint} />
+              <TextInput style={s.input} value={prenom} onChangeText={setPrenom} placeholder="Lucas" placeholderTextColor={T.faint} />
             </View>
           </View>
 
