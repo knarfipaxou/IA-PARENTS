@@ -15,6 +15,7 @@ import * as Sharing from 'expo-sharing';
 import { useChild } from '../contexts/ChildContext';
 import { buildSystemPrompt } from '../lib/systemPrompt';
 import { buildDrillHtml } from '../lib/drillPrint';
+import { buildAdaptationConsignes } from '../lib/adaptation';
 import { generateDrill, AiError } from '../services/ai';
 import type { DrillExerciseAI } from '../services/ai';
 import type { DrillSession, DrillExercise, DrillResult } from '../types/childProfile';
@@ -74,10 +75,12 @@ export default function DrillScreen() {
         ? buildSystemPrompt(child, prof)
         : `Tu es un professeur particulier pour ${child.name}, ${child.age} ans, classe de ${child.classe}.`;
 
-      const recentErrors = getDrillResults(child.id)
+      const allResults = getDrillResults(child.id);
+      const recentErrors = allResults
         .slice(0, 10)
         .filter((r) => !r.reussite && r.typeErreur)
         .map((r) => `${r.competence} (${r.typeErreur})`);
+      const consignesAdaptation = buildAdaptationConsignes(allResults);
 
       const urgentEcheance = (child.echeances ?? [])
         .filter((e) => e.days <= 7)
@@ -95,6 +98,7 @@ export default function DrillScreen() {
         pointsFaibles: prof ? prof.pointsFaibles : (child.faibles ?? []),
         recentErrors: recentErrors.slice(0, 5),
         controleAVenir: urgentEcheance,
+        consignesAdaptation,
       }, systemPrompt);
 
       const exercises: DrillExercise[] = drill.exercises.map((ex: DrillExerciseAI, i) => ({

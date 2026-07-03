@@ -427,6 +427,7 @@ export interface DrillRequest {
   pointsFaibles: string[];
   recentErrors?: string[];
   controleAVenir?: string;
+  consignesAdaptation?: string[];
 }
 
 export async function generateDrill(request: DrillRequest, systemPrompt: string): Promise<GeneratedDrill> {
@@ -434,6 +435,9 @@ export async function generateDrill(request: DrillRequest, systemPrompt: string)
   const faibles = request.pointsFaibles.length > 0 ? `Points faibles à réinjecter : ${request.pointsFaibles.join(' ; ')}.` : '';
   const erreurs = request.recentErrors && request.recentErrors.length > 0 ? `Erreurs récentes : ${request.recentErrors.join(', ')}.` : '';
   const controle = request.controleAVenir ? `Attention : ${request.controleAVenir} — augmenter la fréquence de cette matière.` : '';
+  const adaptation = request.consignesAdaptation && request.consignesAdaptation.length > 0
+    ? `RÈGLES D'ADAPTATION (issues de l'historique de l'élève, à respecter impérativement) :\n- ${request.consignesAdaptation.join('\n- ')}`
+    : '';
 
   const user = `Date : ${request.date} (${request.jourSemaine}).
 Élève : ${request.childName}, ${request.classe}.
@@ -443,6 +447,7 @@ Niveau : ${request.niveauEstime}. Objectif : ${request.objectif}.
 ${faibles}
 ${erreurs}
 ${controle}
+${adaptation}
 
 Génère un drill quotidien varié (une notion récente, une notion ancienne, un point faible, +1 si exigeant/concours).
 N'utilise PAS les mêmes valeurs numériques que d'habitude. Varie les contextes (noms, situations, unités).
