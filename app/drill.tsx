@@ -61,7 +61,7 @@ function jourSemaine() {
 
 export default function DrillScreen() {
   const router = useRouter();
-  const { child, getProfile, getDrillResults, addDrillSession, addDrillResult, addXP } = useChild();
+  const { child, getProfile, getDrillResults, getDrillSessions, addDrillSession, addDrillResult, addXP } = useChild();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +72,8 @@ export default function DrillScreen() {
   const [done, setDone] = useState(false);
 
   const profile = child ? getProfile(child.id) : undefined;
+  const pastSessions = child ? getDrillSessions(child.id).filter((ds) => ds.status === 'done') : [];
+  const [openHistory, setOpenHistory] = useState<string | null>(null);
 
   const generate = useCallback(async () => {
     if (!child) return;
@@ -283,6 +285,45 @@ export default function DrillScreen() {
           </View>
         )}
 
+        {/* Historique des séances */}
+        {!session && !loading && pastSessions.length > 0 && (
+          <>
+            <Text style={s.histSectionLabel}>SÉANCES PRÉCÉDENTES</Text>
+            {pastSessions.slice(0, 15).map((ds) => {
+              const open = openHistory === ds.id;
+              const scoreColor = (ds.scoreGlobal ?? 0) >= 80 ? T.green.fg : (ds.scoreGlobal ?? 0) >= 50 ? T.amber.fg : T.coral.fg;
+              const d = new Date(ds.date + 'T12:00:00');
+              const dateLabel = `${d.getDate()}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+              return (
+                <TouchableOpacity
+                  key={ds.id}
+                  onPress={() => setOpenHistory(open ? null : ds.id)}
+                  style={s.histCard}
+                  activeOpacity={0.85}
+                >
+                  <View style={s.histHead}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.histDate}>{dateLabel}</Text>
+                      <Text style={s.histMeta}>{ds.exercises.length} exercices · ~{ds.dureeMin} min</Text>
+                    </View>
+                    <Text style={[s.histScore, { color: scoreColor }]}>{ds.scoreGlobal ?? 0}%</Text>
+                    <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={17} color={T.sub} style={{ marginLeft: 8 }} />
+                  </View>
+                  {open && (
+                    <View style={s.histDetail}>
+                      {ds.exercises.map((ex, i) => (
+                        <Text key={ex.id} style={s.histExo} numberOfLines={2}>
+                          {i + 1}. [{ex.matiere}] {ex.competence}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </>
+        )}
+
         {loading && (
           <View style={s.loadingBox}>
             <ActivityIndicator size="large" color={T.primary} />
@@ -488,6 +529,17 @@ const s = StyleSheet.create({
   errTypeChipOn: { backgroundColor: T.coral.soft, borderColor: T.coral.fg },
   errTypeChipText: { fontSize: 12.5, fontWeight: '700', color: T.sub },
   errTypeChipTextOn: { color: T.coral.fg },
+  histSectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 8, marginBottom: 11, letterSpacing: 0.2 },
+  histCard: {
+    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
+    borderRadius: 18, padding: 14, marginBottom: 10,
+  },
+  histHead: { flexDirection: 'row', alignItems: 'center' },
+  histDate: { fontSize: 14.5, fontWeight: '800', color: T.ink, letterSpacing: -0.2 },
+  histMeta: { fontSize: 12.5, color: T.sub, fontWeight: '600', marginTop: 2 },
+  histScore: { fontSize: 17, fontWeight: '900' },
+  histDetail: { marginTop: 11, paddingTop: 11, borderTopWidth: 1, borderTopColor: T.line, gap: 5 },
+  histExo: { fontSize: 13, color: T.sub, fontWeight: '600', lineHeight: 18 },
   doneBox: { alignItems: 'center', paddingVertical: 32, gap: 8 },
   doneEmoji: { fontSize: 52 },
   doneTitle: { fontSize: 26, fontWeight: '900', color: T.ink, letterSpacing: -0.6 },
