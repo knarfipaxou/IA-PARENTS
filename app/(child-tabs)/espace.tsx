@@ -27,7 +27,7 @@ const COLLEGE_ACTIONS: ActionItem[] = [
   { accent: 'coral', iconName: 'scan-outline', title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan' },
   { accent: 'green', iconName: 'camera-outline', title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda' },
   { accent: 'amber', iconName: 'trophy-outline', title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control' },
-  { accent: 'violet', iconName: 'book-outline', title: 'Révisions', desc: 'Missions de révision', route: '/(child-tabs)/plan' },
+  { accent: 'violet', iconName: 'library-outline', title: 'Carnet de lecture', desc: 'Questions sur les pages lues', route: '/lecture' },
   { accent: 'blue', iconName: 'calendar-outline', title: 'Planning', desc: 'Voir les échéances', route: '/(child-tabs)/echeances' },
 ];
 

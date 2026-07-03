@@ -460,3 +460,34 @@ ${JSON_ONLY}
   const text = await askClaude({ system: systemPrompt, user, maxTokens: 4096 });
   return extractJSON<GeneratedDrill>(text);
 }
+
+// ─── Module lecture ──────────────────────────────────────────────────────────
+
+export interface ReadingQuestionsAI {
+  questions: { question: string; reponseModele: string }[];
+  vocabulaire: { mot: string; definition: string }[];
+  questionOrale: string;
+}
+
+export async function generateReadingQuestions(
+  oeuvre: string,
+  auteur: string | undefined,
+  pagesLues: string,
+  resumeEnfant: string | undefined,
+  child: Child
+): Promise<ReadingQuestionsAI> {
+  const user = `L'enfant (${child.name}, ${child.classe}) lit "${oeuvre}"${auteur ? ` de ${auteur}` : ''}.
+Il vient de lire : ${pagesLues}.
+${resumeEnfant ? `Son résumé : "${resumeEnfant}"` : ''}
+
+Génère un suivi de lecture portant UNIQUEMENT sur le passage lu (${pagesLues}) — ne révèle RIEN de la suite de l'œuvre :
+- 4 questions de compréhension adaptées à son niveau (personnages, intrigue, point de vue, compréhension fine). Les réponses modèles sont destinées au PARENT pour vérifier, pas à lire à l'enfant.
+- 4 mots de vocabulaire tirés de ce passage avec définition simple adaptée à l'âge.
+- 1 question orale ouverte à traiter en 3 points structurés (fondation de l'argumentation).
+
+${JSON_ONLY}
+{"questions": [{"question": "...", "reponseModele": "réponse détaillée pour le parent"}], "vocabulaire": [{"mot": "...", "definition": "..."}], "questionOrale": "..."}`;
+
+  const text = await askClaude({ system: SYSTEM, user, maxTokens: 3072 });
+  return extractJSON<ReadingQuestionsAI>(text);
+}
