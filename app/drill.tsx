@@ -10,8 +10,11 @@ import { Card } from '../components/ui/Card';
 import { Btn, GhostBtn } from '../components/ui/Btn';
 import { TopBar } from '../components/ui/TopBar';
 import { Squircle } from '../components/ui/Squircle';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { useChild } from '../contexts/ChildContext';
 import { buildSystemPrompt } from '../lib/systemPrompt';
+import { buildDrillHtml } from '../lib/drillPrint';
 import { generateDrill, AiError } from '../services/ai';
 import type { DrillExerciseAI } from '../services/ai';
 import type { DrillSession, DrillExercise, DrillResult } from '../types/childProfile';
@@ -132,6 +135,25 @@ export default function DrillScreen() {
 
   function markResult(i: number, ok: boolean) {
     setResults((prev) => ({ ...prev, [i]: ok ? 'ok' : 'err' }));
+  }
+
+  const [printing, setPrinting] = useState(false);
+  async function printDrill() {
+    if (!session || !child) return;
+    setPrinting(true);
+    try {
+      const html = buildDrillHtml(session, child.name, child.classe, todayFr());
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Drill imprimable' });
+      } else {
+        await Print.printAsync({ uri });
+      }
+    } catch {
+      Alert.alert('Impression impossible', "La génération du PDF a échoué. Réessayez.");
+    } finally {
+      setPrinting(false);
+    }
   }
 
   function finish() {
@@ -340,6 +362,14 @@ export default function DrillScreen() {
             >
               Terminer la séance
             </Btn>
+            <GhostBtn
+              full
+              onPress={printDrill}
+              style={{ marginTop: 12 }}
+              icon={<Ionicons name="print-outline" size={19} color={T.ink} />}
+            >
+              {printing ? 'Génération du PDF…' : 'Version imprimable'}
+            </GhostBtn>
             <GhostBtn full onPress={generate} style={{ marginTop: 12 }}>
               Régénérer les exercices
             </GhostBtn>
