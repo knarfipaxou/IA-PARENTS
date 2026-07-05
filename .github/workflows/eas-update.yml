@@ -1,0 +1,42 @@
+name: Publier sur Expo (EAS Update)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/lucid-lamport-AeSNN]
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installer les dépendances
+        run: npm ci || npm install
+
+      - name: Configurer le projet EAS
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx eas-cli init --non-interactive --force
+          npx eas-cli update:configure --non-interactive || true
+
+      - name: Publier la mise à jour
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          npx eas-cli update --branch preview --message "Publication automatique" --non-interactive
+
+      - name: Afficher le lien de test
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          echo "===== LIEN POUR EXPO GO ====="
+          npx eas-cli project:info --non-interactive || true
+          cat app.json | grep -A2 projectId || true
