@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Installer les dépendances
-        run: npm ci || npm install
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 
       - name: Configurer le projet EAS
         env:
