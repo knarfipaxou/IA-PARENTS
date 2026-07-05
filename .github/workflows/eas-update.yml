@@ -29,8 +29,8 @@ jobs:
           echo "--- Comptes visibles par le token ---"
           echo "$WHOAMI"
           echo "-------------------------------------"
-          ACCOUNT="$(echo "$WHOAMI" | grep -i 'Role: *Owner' | head -1 | sed 's/(Role.*//' | tr -d '•[:space:]')"
-          if [ -z "$ACCOUNT" ]; then ACCOUNT="$(echo "$WHOAMI" | head -1 | tr -d '•[:space:]')"; fi
+          ACCOUNT="$(echo "$WHOAMI" | grep '•' | grep -iE 'Owner|Admin' | head -1 | sed 's/(Role.*//' | tr -d '•[:space:]')"
+          if [ -z "$ACCOUNT" ]; then ACCOUNT="$(echo "$WHOAMI" | grep '•' | head -1 | sed 's/(Role.*//' | tr -d '•[:space:]')"; fi
           echo "Compte Expo retenu : $ACCOUNT"
           node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('app.json'));j.expo.owner=process.argv[1];fs.writeFileSync('app.json',JSON.stringify(j,null,2))" "$ACCOUNT"
           npx eas-cli init --non-interactive --force
