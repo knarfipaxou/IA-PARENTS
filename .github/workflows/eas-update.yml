@@ -22,21 +22,24 @@ jobs:
 
       - name: Configurer le projet EAS
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          RAW_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          export EXPO_TOKEN="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')"
           npx eas-cli init --non-interactive --force
           npx eas-cli update:configure --non-interactive || true
 
       - name: Publier la mise à jour
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          RAW_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          export EXPO_TOKEN="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')"
           npx eas-cli update --branch preview --message "Publication automatique" --non-interactive
 
       - name: Afficher le lien de test
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          RAW_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          export EXPO_TOKEN="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')"
           echo "===== LIEN POUR EXPO GO ====="
           npx eas-cli project:info --non-interactive || true
-          cat app.json | grep -A2 projectId || true
+          grep -A2 projectId app.json || true
