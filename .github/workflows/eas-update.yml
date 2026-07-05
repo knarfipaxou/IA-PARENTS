@@ -25,6 +25,9 @@ jobs:
           RAW_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           export EXPO_TOKEN="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')"
+          ACCOUNT="$(npx eas-cli whoami 2>/dev/null | tail -1 | tr -d '[:space:]')"
+          echo "Compte Expo détecté : $ACCOUNT"
+          node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('app.json'));j.expo.owner=process.argv[1];fs.writeFileSync('app.json',JSON.stringify(j,null,2))" "$ACCOUNT"
           npx eas-cli init --non-interactive --force
           npx eas-cli update:configure --non-interactive || true
 
