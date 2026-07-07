@@ -5,8 +5,10 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { T } from '../../constants/theme';
 import { Squircle } from '../../components/ui/Squircle';
+import { Breathe } from '../../components/anim/Breathe';
 import { useChild } from '../../contexts/ChildContext';
 import { getJSON } from '../../lib/storage';
 import { type Child } from '../../data/mock';
@@ -92,16 +94,18 @@ export default function ParentHome() {
             const tagIcon = isCollege ? 'flask-outline' : 'star-outline';
 
             return (
+              <Animated.View key={c.id} entering={FadeInDown.delay(children.indexOf(c) * 90).springify().damping(16)}>
               <TouchableOpacity
-                key={c.id}
                 onPress={() => handleSelectChild(c)}
                 style={s.childCard}
                 activeOpacity={0.88}
               >
                 <View style={s.childCardTop}>
-                  <View style={[s.childInitialCircle, { backgroundColor: T[c.accent].soft }]}>
-                    <Text style={[s.childInitialText, { color: T[c.accent].fg }]}>{c.name.charAt(0)}</Text>
-                  </View>
+                  <Breathe>
+                    <View style={[s.childInitialCircle, { backgroundColor: T[c.accent].soft }]}>
+                      <Text style={[s.childInitialText, { color: T[c.accent].fg }]}>{c.name.charAt(0)}</Text>
+                    </View>
+                  </Breathe>
                   <View style={{ flex: 1, marginLeft: 14 }}>
                     <Text style={s.childName}>{c.name}</Text>
                     <Text style={s.childClass}>{c.classe} · {c.age} ans</Text>
@@ -120,6 +124,7 @@ export default function ParentHome() {
                   <Text style={[s.tagSub, { color: T[tagAccent].fg }]}>{tagSub}</Text>
                 </View>
               </TouchableOpacity>
+              </Animated.View>
             );
           })}
 

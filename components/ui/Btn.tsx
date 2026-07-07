@@ -42,8 +42,8 @@ export function Btn({
         pad,
         { backgroundColor: c, width: full ? '100%' : undefined, opacity: disabled ? 0.5 : 1 },
         pressed
-          ? { transform: [{ translateY: lip }], shadowOpacity: 0 }
-          : { transform: [{ translateY: 0 }], shadowColor: d, shadowOffset: { width: 0, height: lip }, shadowOpacity: 1, shadowRadius: 0, elevation: lip },
+          ? { transform: [{ translateY: lip }, { scale: 0.98 }], shadowOpacity: 0 }
+          : { transform: [{ translateY: 0 }, { scale: 1 }], shadowColor: d, shadowOffset: { width: 0, height: lip }, shadowOpacity: 1, shadowRadius: 0, elevation: lip },
         style,
       ]}
     >
@@ -60,13 +60,17 @@ export function Btn({
 }
 
 export function GhostBtn({ children, onPress, full, icon, style }: { children: string; onPress: () => void; full?: boolean; icon?: React.ReactNode; style?: object }) {
+  const [pressed, setPressed] = useState(false);
   return (
     <TouchableOpacity
       onPress={onPress}
+      onPressIn={() => setPressed(true)}
+      onPressOut={() => setPressed(false)}
       activeOpacity={0.8}
       style={[
         styles.base,
         { paddingVertical: 16, paddingHorizontal: 24, backgroundColor: T.surface, borderWidth: 1.5, borderColor: T.lineStrong, width: full ? '100%' : undefined },
+        pressed && { transform: [{ scale: 0.97 }] },
         style,
       ]}
     >

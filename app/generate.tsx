@@ -8,6 +8,7 @@ import { Btn, GhostBtn } from '../components/ui/Btn';
 import { Card } from '../components/ui/Card';
 import { Chip } from '../components/ui/Chip';
 import { TopBar } from '../components/ui/TopBar';
+import { playSfx } from '../lib/sfx';
 import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
   AiError,
@@ -65,7 +66,7 @@ function QcmBlock({ exo, index, onAnswered }: { exo: QcmExercise; index: number;
             <TouchableOpacity
               key={oi}
               disabled={checked}
-              onPress={() => { setPick(oi); onAnswered?.(oi === exo.bonneReponse); }}
+              onPress={() => { setPick(oi); playSfx(oi === exo.bonneReponse ? 'correct' : 'wrong'); onAnswered?.(oi === exo.bonneReponse); }}
               style={[q.optRow, { backgroundColor: bgColor, borderColor: bdColor }]}
               activeOpacity={0.88}
             >

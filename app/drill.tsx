@@ -1,11 +1,20 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  FadeInDown, ZoomIn, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming,
+} from 'react-native-reanimated';
 import { T } from '../constants/theme';
+import { Confetti } from '../components/anim/Confetti';
+import { CountUp } from '../components/anim/CountUp';
+import { BadgeCelebration } from '../components/anim/BadgeCelebration';
+import { ProgressBar } from '../components/ui/Progress';
+import { playSfx } from '../lib/sfx';
+import type { BadgeId } from '../lib/gamification';
 import { Card } from '../components/ui/Card';
 import { Btn, GhostBtn } from '../components/ui/Btn';
 import { TopBar } from '../components/ui/TopBar';
@@ -59,6 +68,31 @@ function jourSemaine() {
   return jours[new Date().getDay()];
 }
 
+/** Rebond vert sur "Réussi", secousse sur "Erreur". */
+function FeedbackWrap({ res, children }: { res?: 'ok' | 'err'; children: React.ReactNode }) {
+  const tx = useSharedValue(0);
+  const sc = useSharedValue(1);
+  const prev = useRef<'ok' | 'err' | undefined>(undefined);
+  useEffect(() => {
+    if (res && res !== prev.current) {
+      if (res === 'ok') {
+        sc.value = withSequence(withSpring(1.03, { damping: 7, stiffness: 320 }), withSpring(1, { damping: 12 }));
+      } else {
+        tx.value = withSequence(
+          withTiming(-9, { duration: 55 }), withTiming(9, { duration: 55 }),
+          withTiming(-6, { duration: 55 }), withTiming(6, { duration: 55 }),
+          withTiming(0, { duration: 55 }),
+        );
+      }
+    }
+    prev.current = res;
+  }, [res]);
+  const anim = useAnimatedStyle(() => ({
+    transform: [{ translateX: tx.value }, { scale: sc.value }],
+  }));
+  return <Animated.View style={anim}>{children}</Animated.View>;
+}
+
 export default function DrillScreen() {
   const router = useRouter();
   const { child, getProfile, getDrillResults, getDrillSessions, addDrillSession, addDrillResult, addXP } = useChild();
@@ -70,6 +104,7 @@ export default function DrillScreen() {
   const [results, setResults] = useState<Record<number, 'ok' | 'err'>>({});
   const [errorTypes, setErrorTypes] = useState<Record<number, ErrorType>>({});
   const [done, setDone] = useState(false);
+  const [newBadges, setNewBadges] = useState<BadgeId[]>([]);
 
   const profile = child ? getProfile(child.id) : undefined;
   const pastSessions = child ? getDrillSessions(child.id).filter((ds) => ds.status === 'done') : [];
@@ -153,6 +188,7 @@ export default function DrillScreen() {
   }
 
   function markResult(i: number, ok: boolean) {
+    playSfx(ok ? 'correct' : 'wrong');
     setResults((prev) => ({ ...prev, [i]: ok ? 'ok' : 'err' }));
     if (ok) setErrorTypes((prev) => { const next = { ...prev }; delete next[i]; return next; });
   }
@@ -200,7 +236,9 @@ export default function DrillScreen() {
       addDrillResult(r);
     });
 
-    addXP(child.id, Math.max(5, ok * 3), 'exercise');
+    const unlocked = addXP(child.id, Math.max(5, ok * 3), 'exercise');
+    setNewBadges(unlocked);
+    if (score >= 80) playSfx('success');
     setDone(true);
   }
 
@@ -224,18 +262,24 @@ export default function DrillScreen() {
         <ScrollView contentContainerStyle={s.content}>
           <TopBar onBack={() => router.back()} />
           <View style={s.doneBox}>
-            <Text style={s.doneEmoji}>{score >= 80 ? '🎉' : score >= 50 ? '💪' : '📚'}</Text>
-            <Text style={s.doneTitle}>Séance terminée !</Text>
-            <Text style={s.doneSub}>{ok}/{total} exercices réussis — {score}%</Text>
-            <View style={s.scoreBar}>
-              <View style={[s.scoreBarFill, { width: `${score}%` as any, backgroundColor: score >= 80 ? T.green.solid : score >= 50 ? T.amber.solid : T.coral.solid }]} />
+            <Animated.Text entering={ZoomIn.springify().damping(9)} style={s.doneEmoji}>
+              {score >= 80 ? '🎉' : score >= 50 ? '💪' : '📚'}
+            </Animated.Text>
+            <Animated.Text entering={FadeInDown.delay(150)} style={s.doneTitle}>Séance terminée !</Animated.Text>
+            <Text style={s.doneSub}>
+              {ok}/{total} exercices réussis — <CountUp value={score} suffix="%" style={s.doneSub} />
+            </Text>
+            <View style={{ width: '80%', marginVertical: 6 }}>
+              <ProgressBar value={score} h={10} color={score >= 80 ? T.green.solid : score >= 50 ? T.amber.solid : T.coral.solid} />
             </View>
-            <Text style={s.doneXP}>+{Math.max(5, ok * 3)} XP gagnés ✨</Text>
+            <Animated.Text entering={FadeInDown.delay(600)} style={s.doneXP}>+{Math.max(5, ok * 3)} XP gagnés ✨</Animated.Text>
           </View>
           <Btn full onPress={() => router.back()} icon={<Ionicons name="checkmark" size={19} color="#fff" />}>Retour à l'espace</Btn>
           <GhostBtn full onPress={() => { setDone(false); generate(); }} style={{ marginTop: 12 }}>Nouveau drill</GhostBtn>
           <View style={{ height: 32 }} />
         </ScrollView>
+        {score >= 80 && <Confetti />}
+        <BadgeCelebration badges={newBadges} onFinished={() => setNewBadges([])} />
       </SafeAreaView>
     );
   }
@@ -355,7 +399,9 @@ export default function DrillScreen() {
               const corrShown = showCorrection[i];
 
               return (
-                <Card key={ex.id} pad={16} style={s.exCard}>
+                <Animated.View key={ex.id} entering={FadeInDown.delay(Math.min(i, 6) * 80).springify().damping(16)}>
+                <FeedbackWrap res={res}>
+                <Card pad={16} style={s.exCard}>
                   {/* Exercise header */}
                   <View style={s.exHeader}>
                     <Squircle accentKey={accent as any} size={36} r={11} icon={<Ionicons name={icon as any} size={18} color={(T as any)[accent].fg} />} style={{ marginRight: 11 }} />
@@ -431,6 +477,8 @@ export default function DrillScreen() {
                     </View>
                   )}
                 </Card>
+                </FeedbackWrap>
+                </Animated.View>
               );
             })}
 

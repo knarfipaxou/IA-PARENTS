@@ -6,7 +6,9 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { T } from '../../constants/theme';
+import { Breathe } from '../../components/anim/Breathe';
 import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
 import { ProgressRing, ProgressBar } from '../../components/ui/Progress';
@@ -79,9 +81,11 @@ export default function EspaceScreen() {
         {/* Hero panel */}
         <LinearGradient colors={[T.heroFrom, T.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.hero}>
           <View style={s.heroContent}>
-            <View style={s.heroAvatar}>
-              <Text style={s.heroAvatarText}>{child.name.charAt(0)}</Text>
-            </View>
+            <Breathe>
+              <View style={s.heroAvatar}>
+                <Text style={s.heroAvatarText}>{child.name.charAt(0)}</Text>
+              </View>
+            </Breathe>
             <View style={{ flex: 1 }}>
               <Text style={s.heroName}>{child.name}</Text>
               <Text style={s.heroClass}>{child.classe} · {child.age} ans</Text>
@@ -156,8 +160,8 @@ export default function EspaceScreen() {
         <Text style={s.sectionLabel}>ACTIONS SCOLAIRES</Text>
         <View style={s.actionsGrid}>
           {(isCollege ? COLLEGE_ACTIONS : COLLEGE_ACTIONS.slice(3, 5)).map((ac, i) => (
+            <Animated.View key={i} entering={FadeInDown.delay(i * 70).springify().damping(16)} style={s.actionTileWrap}>
             <TouchableOpacity
-              key={i}
               onPress={() => router.push(ac.route as any)}
               style={s.actionTile}
               activeOpacity={0.88}
@@ -172,6 +176,7 @@ export default function EspaceScreen() {
               <Text style={s.actionTitle}>{ac.title}</Text>
               <Text style={s.actionDesc}>{ac.desc}</Text>
             </TouchableOpacity>
+            </Animated.View>
           ))}
         </View>
 
@@ -332,8 +337,9 @@ const s = StyleSheet.create({
   missionMin: { fontSize: 12.5, fontWeight: '700', color: T.amber.fg },
   sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginBottom: 12, letterSpacing: 0.2, marginTop: 4 },
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginBottom: 20 },
+  actionTileWrap: { width: '47.5%' },
   actionTile: {
-    width: '47.5%',
+    width: '100%',
     backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
     borderRadius: 22, padding: 14,
     shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { T } from '../../constants/theme';
 import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
@@ -254,16 +255,16 @@ export default function ProfilScreen() {
           </View>
         </Card>
         <View style={s.badgeGrid}>
-          {BADGE_DEFS.map((b) => {
+          {BADGE_DEFS.map((b, i) => {
             const unlocked = gam.badges.includes(b.id);
             return (
-              <View key={b.id} style={[s.badgeTile, !unlocked && s.badgeTileLocked]}>
+              <Animated.View key={b.id} entering={FadeInDown.delay(i * 45).springify().damping(16)} style={[s.badgeTile, !unlocked && s.badgeTileLocked]}>
                 <View style={[s.badgeIcon, { backgroundColor: unlocked ? T[b.accent].soft : T.surfaceAlt }]}>
                   <Ionicons name={b.icon as any} size={22} color={unlocked ? T[b.accent].fg : T.faint} />
                 </View>
                 <Text style={[s.badgeName, !unlocked && { color: T.faint }]} numberOfLines={1}>{b.label}</Text>
                 {!unlocked && <Ionicons name="lock-closed" size={11} color={T.faint} style={{ marginTop: 2 }} />}
-              </View>
+              </Animated.View>
             );
           })}
         </View>
