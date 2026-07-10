@@ -25,8 +25,8 @@ export function ProgressBar({ value, color, h = 9 }: { value: number; color?: st
 }
 
 export function ProgressRing({
-  value, size = 64, sw = 7, color, children,
-}: { value: number; size?: number; sw?: number; color?: string; children?: React.ReactNode }) {
+  value, size = 64, sw = 7, color, trackColor, children,
+}: { value: number; size?: number; sw?: number; color?: string; trackColor?: string; children?: React.ReactNode }) {
   const r = (size - sw) / 2;
   const circ = 2 * Math.PI * r;
   const v = useSharedValue(0);
@@ -37,7 +37,7 @@ export function ProgressRing({
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
       <Svg width={size} height={size} style={{ position: 'absolute' }}>
-        <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={T.surfaceAlt} strokeWidth={sw} />
+        <Circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor || T.surfaceAlt} strokeWidth={sw} />
         <AnimatedCircle
           cx={size / 2} cy={size / 2} r={r} fill="none"
           stroke={color || T.primary} strokeWidth={sw}
