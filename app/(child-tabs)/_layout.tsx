@@ -1,27 +1,24 @@
-import { Tabs, useRouter } from 'expo-router';
+import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
-import { T } from '../../constants/theme';
-import { useChild } from '../../contexts/ChildContext';
+
+// Thème sombre néon de l'espace enfant (cf. maquette)
+const DK = {
+  bg: '#0B1023',
+  border: 'rgba(148,168,255,0.16)',
+  active: '#2EE6D6',
+  inactive: '#5D6890',
+};
 
 export default function ChildTabsLayout() {
-  const router = useRouter();
-  const { child, setChild } = useChild();
-
-  function goBack() {
-    setChild(null);
-    router.replace('/(tabs)/' as any);
-  }
-
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: T.primary,
-        tabBarInactiveTintColor: T.faint,
+        tabBarActiveTintColor: DK.active,
+        tabBarInactiveTintColor: DK.inactive,
         tabBarStyle: {
-          backgroundColor: T.surface,
-          borderTopColor: T.line,
+          backgroundColor: DK.bg,
+          borderTopColor: DK.border,
           borderTopWidth: 1,
           paddingBottom: 22,
           paddingTop: 10,
@@ -48,6 +45,7 @@ export default function ChildTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="plan" options={{ href: null }} />
       <Tabs.Screen
         name="profil"
         options={{

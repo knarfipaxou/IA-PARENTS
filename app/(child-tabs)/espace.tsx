@@ -7,38 +7,71 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { T, type AccentKey } from '../../constants/theme';
+import { T } from '../../constants/theme';
 import { Breathe } from '../../components/anim/Breathe';
-import { Squircle } from '../../components/ui/Squircle';
-import { ProgressRing, ProgressBar } from '../../components/ui/Progress';
+import { ProgressRing } from '../../components/ui/Progress';
 import { useChild } from '../../contexts/ChildContext';
-import { iconForMatiere, accentForMatiere, isControle } from '../../lib/matiere';
+import { isControle } from '../../lib/matiere';
 import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS } from '../../lib/gamification';
 
-type ActionItem = {
-  accent: AccentKey;
-  iconName: string;
-  title: string;
-  desc: string;
-  route: string;
+// ===== Thème sombre néon (maquette) =====
+export const DK = {
+  bgTop: '#0B1023',
+  bgBottom: '#131A38',
+  card: 'rgba(148,168,255,0.08)',
+  cardBorder: 'rgba(148,168,255,0.16)',
+  ink: '#FFFFFF',
+  sub: '#93A0C7',
+  faint: '#5D6890',
+  cyan: '#2EE6D6',
+  xpFrom: '#FF3D8A',
+  xpTo: '#FF9E2C',
+  gold: '#F5C24B',
+} as const;
+
+const ICONS = {
+  avatar: require('../../assets/icons/avatar.png'),
+  target: require('../../assets/icons/target.png'),
+  flame: require('../../assets/icons/flame.png'),
+  lightning: require('../../assets/icons/lightning.png'),
+  scan: require('../../assets/icons/scan.png'),
+  agenda: require('../../assets/icons/agenda.png'),
+  trophy: require('../../assets/icons/trophy.png'),
+  book: require('../../assets/icons/book.png'),
+  planning: require('../../assets/icons/planning.png'),
+  music: require('../../assets/icons/music.png'),
+  sqrt: require('../../assets/icons/sqrt.png'),
+  calculator: require('../../assets/icons/calculator.png'),
+  warning: require('../../assets/icons/warning.png'),
+  flashcards: require('../../assets/icons/flashcards.png'),
+  pencil: require('../../assets/icons/pencil.png'),
+  medal: require('../../assets/icons/medal.png'),
+  clock: require('../../assets/icons/clock.png'),
 };
 
-// Grille pastel « Actions scolaires » — icônes 3D découpées de la maquette,
-// fond de tuile = couleur exacte du fond de l'icône pour une fusion parfaite
-const PASTEL_ACTIONS: (ActionItem & { img: any; bg: string })[] = [
-  { accent: 'green', iconName: 'flash', title: 'Drill du jour', desc: 'Exercices IA adaptés', route: '/drill', img: require('../../assets/icons/drill_tile.png'), bg: '#F2F4F0' },
-  { accent: 'violet', iconName: 'scan', title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan', img: require('../../assets/icons/scan_tile.png'), bg: '#F2F0FB' },
-  { accent: 'blue', iconName: 'camera', title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda', img: require('../../assets/icons/agenda_tile.png'), bg: '#EFF9F2' },
-  { accent: 'amber', iconName: 'trophy', title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control', img: require('../../assets/icons/trophy_tile.png'), bg: '#FDF1E8' },
-];
+// icône par matière pour les listes
+function iconForSubject(subj?: string) {
+  const s = (subj ?? '').toLowerCase();
+  if (s.includes('musi')) return ICONS.music;
+  if (s.includes('math')) return ICONS.sqrt;
+  if (s.includes('fran') || s.includes('lect')) return ICONS.book;
+  return ICONS.planning;
+}
+const BADGE_ICON: Record<string, any> = {
+  first_flashcard: ICONS.flashcards, first_exercise: ICONS.pencil, first_controle: ICONS.medal,
+  first_minitest: ICONS.medal, first_scan: ICONS.scan, perfect_test: ICONS.trophy,
+};
 
-// Grandes cartes colorées — dégradés et icônes 3D de la maquette
-const BOLD_CARDS: { colors: [string, string]; img: any; title: string; desc: string; route: string }[] = [
-  { colors: ['#6D40A8', '#40296E'], img: require('../../assets/icons/lecture_big.png'), title: 'Carnet de lecture', desc: 'Questions sur les pages lues', route: '/lecture' },
-  { colors: ['#5366BE', '#324489'], img: require('../../assets/icons/planning_big.png'), title: 'Planning', desc: 'Voir les échéances', route: '/(child-tabs)/echeances' },
+const ACTIONS = [
+  { img: ICONS.lightning, tint: 'rgba(255,158,44,0.13)', border: 'rgba(255,158,44,0.3)', title: 'Drill du jour', desc: 'Exercices quotidiens IA', route: '/drill' },
+  { img: ICONS.scan, tint: 'rgba(80,140,255,0.13)', border: 'rgba(80,140,255,0.3)', title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan' },
+  { img: ICONS.agenda, tint: 'rgba(46,230,150,0.11)', border: 'rgba(46,230,150,0.28)', title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda' },
+  { img: ICONS.trophy, tint: 'rgba(200,90,255,0.12)', border: 'rgba(200,90,255,0.3)', title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control' },
 ];
-
-const GOLD = '#F5C24B';
+const BOLD_CARDS = [
+  { img: ICONS.book, tint: 'rgba(160,100,255,0.16)', border: 'rgba(160,100,255,0.35)', title: 'Carnet de lecture', desc: 'Questions sur les pages lues', route: '/lecture' },
+  { img: ICONS.planning, tint: 'rgba(80,120,255,0.16)', border: 'rgba(80,120,255,0.35)', title: 'Planning', desc: 'Voir les échéances', route: '/(child-tabs)/echeances' },
+];
 
 export default function EspaceScreen() {
   const router = useRouter();
@@ -48,13 +81,11 @@ export default function EspaceScreen() {
 
   if (!child) {
     return (
-      <SafeAreaView style={s.safe}>
-        <View style={s.center}>
-          <Text style={s.noChildText}>Aucun enfant sélectionné</Text>
-          <TouchableOpacity onPress={() => router.replace('/(tabs)/' as any)} style={s.backBtn}>
-            <Text style={s.backBtnText}>Retour à l'accueil</Text>
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView style={[s.safe, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ fontSize: 16, color: DK.sub, marginBottom: 16 }}>Aucun enfant sélectionné</Text>
+        <TouchableOpacity onPress={() => router.replace('/(tabs)/' as any)} style={s.backBtn}>
+          <Text style={s.backBtnText}>Retour à l'accueil</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -62,7 +93,7 @@ export default function EspaceScreen() {
   const isCollege = child.kind === 'college';
   const gam = gamification(child.id);
   const level = getLevel(gam.xp);
-  const levelPct = getLevelProgress(gam.xp) * 100;
+  const levelPct = Math.min(100, getLevelProgress(gam.xp) * 100);
   const nextXP = getNextLevelXP(gam.xp);
   const recentBadges = BADGE_DEFS.filter((b) => gam.badges.includes(b.id)).slice(-3);
   const missionLabel = isCollege
@@ -70,186 +101,169 @@ export default function EspaceScreen() {
     : (child.activity?.label ?? 'Découverte');
   const missionMin = (isCollege ? child.mission?.min : child.activity?.min) ?? 20;
   const noLessonControle = controles.find((e) => (e.lessonIds ?? []).length === 0);
+  const visibleActions = isCollege ? ACTIONS : ACTIONS.slice(2, 4);
 
   return (
-    <SafeAreaView style={s.safe} edges={['left', 'right']}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
+      <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* ===== HERO vert profond ===== */}
-        <LinearGradient colors={[T.heroFrom, T.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 0.8, y: 1 }} style={s.hero}>
           {/* nav */}
           <View style={s.topNav}>
             <TouchableOpacity onPress={() => { setChild(null); router.replace('/(tabs)/' as any); }} style={s.backLink}>
-              <Ionicons name="arrow-back" size={19} color="rgba(255,255,255,0.8)" />
+              <Ionicons name="arrow-back" size={19} color={DK.sub} />
               <Text style={s.backLinkText}>Retour aux enfants</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push('/(child-tabs)/profil' as any)} style={s.profileBtn}>
-              <Ionicons name="person-outline" size={18} color="#fff" />
+              <Ionicons name="person-outline" size={18} color={DK.cyan} />
             </TouchableOpacity>
           </View>
 
-          {/* identité + anneau */}
-          <View style={s.heroIdRow}>
+          {/* ===== Identité ===== */}
+          <View style={s.idRow}>
             <Breathe>
-              <View style={s.heroAvatar}>
-                <Text style={s.heroAvatarText}>{child.name.charAt(0)}</Text>
-              </View>
+              <Image source={ICONS.avatar} style={s.avatar} />
             </Breathe>
             <View style={{ flex: 1, marginLeft: 14 }}>
-              <Text style={s.heroName}>{child.name}</Text>
-              <Text style={s.heroClass}>{child.classe} • {child.age} ans</Text>
+              <Text style={s.name}>{child.name}</Text>
+              <Text style={s.classe}>{child.classe} • {child.age} ans</Text>
+              {isCollege && child.next && (
+                <View style={s.planPill}>
+                  <Ionicons name="calendar-outline" size={13} color={DK.cyan} />
+                  <Text style={s.planPillText} numberOfLines={1}>
+                    {child.next.subj ? `${child.next.type} ${child.next.subj}` : 'Planification'}
+                  </Text>
+                  <View style={s.planPillDivider} />
+                  <Text style={s.planPillJ}>J-{child.next.days}</Text>
+                </View>
+              )}
             </View>
             <View style={{ alignItems: 'center' }}>
-              <ProgressRing value={child.progress} size={64} sw={7} color={GOLD}>
-                <Text style={s.heroProgress}>{child.progress}%</Text>
+              <ProgressRing value={child.progress} size={64} sw={6} color={DK.cyan}>
+                <Text style={s.ringText}>{child.progress}%</Text>
               </ProgressRing>
-              <Text style={s.heroProgressCaption}>de progression</Text>
+              <Text style={s.ringCaption}>Avancement</Text>
             </View>
           </View>
 
-          {/* prochaine échéance */}
-          {isCollege && child.next && (
-            <View style={s.nextRow}>
-              <Ionicons name="calendar-outline" size={16} color="rgba(255,255,255,0.85)" />
-              <Text style={s.nextText} numberOfLines={1}>
-                {child.next.type}{child.next.subj ? ` de ${child.next.subj}` : ' de —'}
-              </Text>
-              <View style={s.jPillHero}>
-                <Text style={s.jPillHeroText}>J-{child.next.days}</Text>
-              </View>
+          {/* ===== Mission du jour ===== */}
+          <TouchableOpacity onPress={() => router.push('/mission' as any)} activeOpacity={0.88} style={s.missionCard}>
+            <Image source={ICONS.target} style={s.missionIcon} />
+            <View style={{ flex: 1, marginLeft: 13 }}>
+              <Text style={s.missionLabel}>{isCollege ? 'MISSION DU JOUR' : 'ACTIVITÉ DU JOUR'}</Text>
+              <Text style={s.missionTitle} numberOfLines={1}>{missionLabel}</Text>
+              <Text style={s.missionSub}>Explore ta journée d'apprentissage</Text>
             </View>
-          )}
-
-          {/* Mission du jour */}
-          <TouchableOpacity onPress={() => router.push('/mission' as any)} activeOpacity={0.9}>
-            <LinearGradient colors={['#E8F7EC', '#C9EAD3']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.missionCard}>
-              <View style={s.missionPlay}>
-                <Ionicons name="play" size={22} color="#fff" style={{ marginLeft: 2 }} />
-              </View>
-              <View style={{ flex: 1, marginLeft: 13 }}>
-                <Text style={s.missionLabel}>{isCollege ? 'MISSION DU JOUR' : 'ACTIVITÉ DU JOUR'}</Text>
-                <Text style={s.missionTitle} numberOfLines={1}>{missionLabel}</Text>
-              </View>
-              <View style={s.missionChip}>
-                <Ionicons name="time-outline" size={14} color={T.heroFrom} />
-                <Text style={s.missionChipText}>{missionMin} min</Text>
-              </View>
-            </LinearGradient>
+            <View style={s.minChip}>
+              <Ionicons name="time-outline" size={13} color={DK.ink} />
+              <Text style={s.minChipText}>{missionMin} min</Text>
+            </View>
           </TouchableOpacity>
 
-          {/* Niveau + badges */}
-          <View style={s.gamCard}>
-            <View style={s.gamRow}>
-              <View style={s.levelHex}>
-                <Text style={{ fontSize: 22 }}>🔥</Text>
-                <View style={s.levelNum}><Text style={s.levelNumText}>{gam.streak}</Text></View>
-              </View>
+          {/* ===== Niveau ===== */}
+          <View style={s.levelCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Image source={ICONS.flame} style={s.flameIcon} />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <View style={s.gamLabelRow}>
-                  <Text style={s.gamLevel}>{level.label}</Text>
-                  <Text style={s.gamXP}>{gam.xp} XP</Text>
+                <Text style={s.levelSub}>Niveau actuel</Text>
+                <View style={s.levelRow}>
+                  <Text style={s.levelName}>{level.label}</Text>
+                  <Text style={s.levelXP}>{gam.xp} XP</Text>
                 </View>
-                <ProgressBar value={levelPct} color={T.primary} h={7} />
-                <Text style={s.gamNext}>Prochain palier : {nextXP} XP</Text>
+                <View style={s.xpTrack}>
+                  <LinearGradient
+                    colors={[DK.xpFrom, DK.xpTo]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={[s.xpFill, { width: `${Math.max(2, levelPct)}%` }]}
+                  />
+                </View>
+                <Text style={s.levelNext}>vers {nextXP} XP</Text>
               </View>
             </View>
             {recentBadges.length > 0 && (
               <View style={s.badgeRow}>
-                {recentBadges.map((b, i) => (
-                  <TouchableOpacity
-                    key={b.id}
-                    onPress={() => router.push('/(child-tabs)/profil' as any)}
-                    style={[
-                      s.badgePill,
-                      i < 2
-                        ? { backgroundColor: T[b.accent].solid }
-                        : { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.45)' },
-                    ]}
-                  >
+                {recentBadges.map((b) => (
+                  <TouchableOpacity key={b.id} onPress={() => router.push('/(child-tabs)/profil' as any)} style={s.badgePill}>
+                    {BADGE_ICON[b.id]
+                      ? <Image source={BADGE_ICON[b.id]} style={{ width: 17, height: 17 }} />
+                      : <Ionicons name={b.icon as any} size={13} color={DK.cyan} />}
                     <Text style={s.badgePillText}>{b.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
           </View>
-        </LinearGradient>
 
-        <View style={s.body}>
           {/* ===== Actions scolaires ===== */}
-          <View style={s.sectionRow}>
-            <Text style={s.sectionLabel}>ACTIONS SCOLAIRES</Text>
-            <Text style={{ fontSize: 14 }}>✨</Text>
-          </View>
-          <View style={s.actionsGrid}>
-            {(isCollege ? PASTEL_ACTIONS : PASTEL_ACTIONS.slice(2, 4)).map((ac, i) => (
-              <Animated.View key={ac.route} entering={FadeInDown.delay(i * 70).springify().damping(16)} style={s.actionTileWrap}>
+          <Text style={s.sectionLabel}>ACTIONS SCOLAIRES</Text>
+          <View style={s.grid}>
+            {visibleActions.map((ac, i) => (
+              <Animated.View key={ac.route} entering={FadeInDown.delay(i * 70).springify().damping(16)} style={s.tileWrap}>
                 <TouchableOpacity
                   onPress={() => router.push(ac.route as any)}
-                  style={[s.actionTile, { backgroundColor: ac.bg }]}
-                  activeOpacity={0.88}
+                  style={[s.tile, { backgroundColor: ac.tint, borderColor: ac.border }]}
+                  activeOpacity={0.85}
                 >
-                  <Image source={ac.img} style={s.actionImg} />
-                  <Text style={s.actionTitle}>{ac.title}</Text>
-                  <Text style={s.actionDesc} numberOfLines={2}>{ac.desc}</Text>
-                  <View style={s.actionChevron}>
-                    <Ionicons name="chevron-forward" size={14} color={T[ac.accent].fg} />
+                  <Image source={ac.img} style={s.tileIcon} />
+                  <Text style={s.tileTitle}>{ac.title}</Text>
+                  <Text style={s.tileDesc} numberOfLines={2}>{ac.desc}</Text>
+                  <View style={s.tileChevron}>
+                    <Ionicons name="chevron-forward" size={13} color={DK.ink} />
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            ))}
+            {isCollege && BOLD_CARDS.map((c, i) => (
+              <Animated.View key={c.route} entering={FadeInDown.delay(280 + i * 70).springify().damping(16)} style={s.tileWrap}>
+                <TouchableOpacity
+                  onPress={() => router.push(c.route as any)}
+                  style={[s.tile, { backgroundColor: c.tint, borderColor: c.border }]}
+                  activeOpacity={0.85}
+                >
+                  <Image source={c.img} style={s.tileIcon} />
+                  <Text style={s.tileTitle}>{c.title}</Text>
+                  <Text style={s.tileDesc} numberOfLines={2}>{c.desc}</Text>
+                  <View style={s.tileChevron}>
+                    <Ionicons name="chevron-forward" size={13} color={DK.ink} />
                   </View>
                 </TouchableOpacity>
               </Animated.View>
             ))}
           </View>
 
-          {/* ===== Grandes cartes colorées ===== */}
-          {isCollege && (
-            <View style={s.boldGrid}>
-              {BOLD_CARDS.map((c, i) => (
-                <Animated.View key={c.route} entering={FadeInDown.delay(250 + i * 80).springify().damping(16)} style={s.actionTileWrap}>
-                  <TouchableOpacity onPress={() => router.push(c.route as any)} activeOpacity={0.9}>
-                    <LinearGradient colors={c.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.boldCard}>
-                      <Image source={c.img} style={s.boldImg} />
-                      <Text style={s.boldTitle}>{c.title}</Text>
-                      <Text style={s.boldDesc} numberOfLines={2}>{c.desc}</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </Animated.View>
-              ))}
-            </View>
-          )}
-
           {/* ===== Contrôles à venir ===== */}
           {controles.length > 0 && (
             <>
               <View style={s.sectionRow}>
-                <Text style={s.sectionLabel}>CONTRÔLES À VENIR</Text>
-                <View style={s.countChip}><Text style={s.countChipText}>{controles.length}</Text></View>
+                <Ionicons name="time-outline" size={16} color={DK.sub} />
+                <Text style={s.sectionLabel2}>CONTRÔLES À VENIR</Text>
               </View>
-              <View style={{ gap: 11, marginBottom: 18 }}>
+              <View style={{ gap: 11, marginBottom: 16 }}>
                 {controles.map((e) => {
                   const noLesson = (e.lessonIds ?? []).length === 0;
                   return (
                     <TouchableOpacity
                       key={e.id}
                       onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
-                      style={s.controleRow}
-                      activeOpacity={0.88}
+                      style={s.row}
+                      activeOpacity={0.85}
                     >
-                      <Squircle accentKey={e.accent} size={44} r={14} icon={<Ionicons name={(e.icon || 'school-outline') as any} size={21} color={T[e.accent].fg} />} style={{ marginRight: 12 }} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={s.controleTitle}>{e.type} de {e.subj}</Text>
-                        <Text style={s.controleSub}>
+                      <Image source={iconForSubject(e.subj)} style={s.rowIcon} />
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={s.rowTitle}>{e.type} de {e.subj}</Text>
+                        <Text style={s.rowSub}>
                           {e.date} · {(e.lessonIds ?? []).length} {(e.lessonIds ?? []).length > 1 ? 'leçons liées' : 'leçon liée'}
                         </Text>
                         {noLesson && (
-                          <View style={s.controleWarn}>
-                            <Ionicons name="warning-outline" size={13} color={T.amber.fg} />
-                            <Text style={s.controleWarnText}>Aucune leçon rattachée</Text>
+                          <View style={s.rowWarn}>
+                            <Ionicons name="warning" size={12} color="#FF6B5A" />
+                            <Text style={s.rowWarnText}>Aucune leçon rattachée</Text>
                           </View>
                         )}
                       </View>
-                      <View style={[s.jBadge, { backgroundColor: T[e.accent].solid }]}>
-                        <Text style={s.jBadgeText}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
+                      <View style={s.jPill}>
+                        <Text style={s.jPillText}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={16} color={T.faint} style={{ marginLeft: 6 }} />
                     </TouchableOpacity>
                   );
                 })}
@@ -257,22 +271,25 @@ export default function EspaceScreen() {
             </>
           )}
 
-          {/* ===== Bannière verte : leçons à rattacher ===== */}
+          {/* ===== Alerte leçons non rattachées ===== */}
           {noLessonControle && (
-            <LinearGradient colors={[T.heroFrom, T.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.banner}>
-              <Text style={{ fontSize: 22 }}>🎼</Text>
+            <LinearGradient
+              colors={['rgba(200,60,40,0.35)', 'rgba(120,30,60,0.25)']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={s.alert}
+            >
+              <Image source={ICONS.warning} style={{ width: 40, height: 40 }} />
               <View style={{ flex: 1 }}>
-                <Text style={s.bannerText}>
-                  <Text style={{ color: GOLD, fontWeight: '800' }}>Contrôle de {noLessonControle.subj} dans {noLessonControle.days} {noLessonControle.days > 1 ? 'jours' : 'jour'} :</Text>
-                  {' '}avez-vous rattaché les leçons concernées ?
+                <Text style={s.alertText}>
+                  Contrôle de {noLessonControle.subj} dans {noLessonControle.days} {noLessonControle.days > 1 ? 'jours' : 'jour'} : avez-vous rattaché les leçons concernées ?
                 </Text>
                 <TouchableOpacity
                   onPress={() => router.push(`/link-lessons?echeanceId=${noLessonControle.id}` as any)}
-                  style={s.bannerBtn}
-                  activeOpacity={0.88}
+                  style={s.alertBtn}
+                  activeOpacity={0.85}
                 >
-                  <Text style={s.bannerBtnText}>Rattacher des leçons</Text>
-                  <Ionicons name="arrow-forward" size={15} color={T.heroTo} />
+                  <Text style={s.alertBtnText}>Rattacher des leçons</Text>
+                  <Ionicons name="arrow-forward" size={14} color={DK.gold} />
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -280,178 +297,167 @@ export default function EspaceScreen() {
 
           {/* ===== Leçons enregistrées ===== */}
           <View style={s.sectionRow}>
-            <Text style={s.sectionLabel}>LEÇONS ENREGISTRÉES</Text>
+            <Text style={s.sectionLabel2}>LEÇONS ENREGISTRÉES</Text>
             {childLessons.length > 0 && (
-              <TouchableOpacity onPress={() => router.push('/lessons' as any)}>
+              <TouchableOpacity onPress={() => router.push('/lessons' as any)} style={{ marginLeft: 'auto' }}>
                 <Text style={s.seeAll}>Voir tout</Text>
               </TouchableOpacity>
             )}
           </View>
           {childLessons.length === 0 ? (
             <TouchableOpacity onPress={() => router.push('/scan' as any)} style={s.emptyLessons} activeOpacity={0.85}>
-              <Ionicons name="scan-outline" size={20} color={T.primary} />
+              <Ionicons name="scan-outline" size={19} color={DK.cyan} />
               <Text style={s.emptyLessonsText}>Aucune leçon enregistrée. Scannez la première !</Text>
             </TouchableOpacity>
           ) : (
-            <View style={{ gap: 10, marginBottom: 18 }}>
-              {childLessons.slice(0, 4).map((l) => {
-                const a = accentForMatiere(l.matiere);
-                return (
-                  <TouchableOpacity
-                    key={l.id}
-                    onPress={() => router.push(`/lesson-detail?id=${l.id}` as any)}
-                    style={s.lessonRow}
-                    activeOpacity={0.88}
-                  >
-                    <Squircle accentKey={a} size={42} r={13} icon={<Ionicons name={iconForMatiere(l.matiere) as any} size={20} color={T[a].fg} />} style={{ marginRight: 12 }} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.lessonMatiere}>{l.matiere}</Text>
-                      <Text style={s.lessonTitre} numberOfLines={1}>{l.titre}</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color={T.faint} />
-                  </TouchableOpacity>
-                );
-              })}
+            <View style={{ gap: 10 }}>
+              {childLessons.slice(0, 4).map((l) => (
+                <TouchableOpacity
+                  key={l.id}
+                  onPress={() => router.push(`/lesson-detail?id=${l.id}` as any)}
+                  style={s.row}
+                  activeOpacity={0.85}
+                >
+                  <Image source={iconForSubject(l.matiere)} style={s.rowIcon} />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={s.rowSub}>{l.matiere}</Text>
+                    <Text style={s.rowTitle} numberOfLines={2}>{l.titre}</Text>
+                    <Text style={s.rowMeta}>{l.notions.length} {l.notions.length > 1 ? 'notions' : 'notion'}</Text>
+                  </View>
+                  <View style={s.rowChevron}>
+                    <Ionicons name="chevron-forward" size={14} color={DK.ink} />
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
           )}
 
-          <View style={{ height: 24 }} />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={{ height: 28 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
-  scroll: { flex: 1 },
-  content: { paddingBottom: 32 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  noChildText: { fontSize: 16, color: T.sub, textAlign: 'center', marginBottom: 16 },
-  backBtn: { backgroundColor: T.primary, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24 },
-  backBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  safe: { flex: 1 },
+  content: { padding: 18, paddingBottom: 32 },
+  backBtn: { backgroundColor: DK.cyan, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24 },
+  backBtnText: { color: DK.bgTop, fontWeight: '800', fontSize: 15 },
 
-  // Hero
-  hero: {
-    paddingTop: 58, paddingHorizontal: 18, paddingBottom: 20,
-    borderBottomLeftRadius: 30, borderBottomRightRadius: 30, marginBottom: 18,
-  },
   topNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   backLink: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 6 },
-  backLinkText: { color: 'rgba(255,255,255,0.8)', fontWeight: '700', fontSize: 13.5 },
+  backLinkText: { color: DK.sub, fontWeight: '700', fontSize: 13.5 },
   profileBtn: {
-    width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center', justifyContent: 'center',
+    width: 38, height: 38, borderRadius: 999, backgroundColor: DK.card,
+    borderWidth: 1, borderColor: DK.cardBorder, alignItems: 'center', justifyContent: 'center',
   },
-  heroIdRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  heroAvatar: {
-    width: 64, height: 64, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.16)',
-    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)',
+
+  idRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  avatar: { width: 72, height: 72, borderRadius: 36, borderWidth: 2, borderColor: 'rgba(46,230,214,0.4)' },
+  name: { color: DK.ink, fontSize: 27, fontWeight: '900', letterSpacing: -0.6 },
+  classe: { color: DK.sub, fontSize: 14, fontWeight: '600', marginTop: 2 },
+  planPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
+    borderWidth: 1, borderColor: 'rgba(46,230,214,0.45)', borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 5, marginTop: 7, backgroundColor: 'rgba(46,230,214,0.07)',
   },
-  heroAvatarText: { color: '#fff', fontWeight: '800', fontSize: 27 },
-  heroName: { color: '#fff', fontSize: 26, fontWeight: '900', letterSpacing: -0.6 },
-  heroClass: { color: 'rgba(255,255,255,0.66)', fontSize: 14.5, fontWeight: '600', marginTop: 2 },
-  heroProgress: { fontSize: 15, fontWeight: '800', color: '#fff' },
-  heroProgressCaption: { color: 'rgba(255,255,255,0.6)', fontSize: 10.5, fontWeight: '600', marginTop: 4 },
-  nextRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
-  nextText: { flex: 1, color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: '600' },
-  jPillHero: { backgroundColor: T.primary, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
-  jPillHeroText: { color: '#fff', fontWeight: '800', fontSize: 12.5 },
+  planPillText: { color: DK.ink, fontSize: 12, fontWeight: '700', maxWidth: 130 },
+  planPillDivider: { width: 1, height: 12, backgroundColor: 'rgba(46,230,214,0.35)' },
+  planPillJ: { color: DK.cyan, fontSize: 12, fontWeight: '900' },
+  ringText: { fontSize: 14.5, fontWeight: '800', color: DK.ink },
+  ringCaption: { color: DK.sub, fontSize: 10.5, fontWeight: '600', marginTop: 4 },
+
   missionCard: {
-    flexDirection: 'row', alignItems: 'center', borderRadius: 20, padding: 14, marginBottom: 12,
-  },
-  missionPlay: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: T.heroFrom,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#0B2A23', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4,
-  },
-  missionLabel: { fontSize: 11, fontWeight: '800', color: T.primaryDeep, letterSpacing: 0.5 },
-  missionTitle: { fontWeight: '900', fontSize: 17.5, color: T.heroTo, letterSpacing: -0.3, marginTop: 2 },
-  missionChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: '#fff', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7,
-  },
-  missionChipText: { fontSize: 13, fontWeight: '800', color: T.heroFrom },
-  gamCard: { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: 14 },
-  gamRow: { flexDirection: 'row', alignItems: 'center' },
-  levelHex: {
-    width: 48, height: 48, borderRadius: 15, backgroundColor: 'rgba(0,0,0,0.25)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  levelNum: {
-    position: 'absolute', bottom: -4, right: -4, width: 19, height: 19, borderRadius: 999,
-    backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center',
-  },
-  levelNumText: { fontSize: 11, fontWeight: '900', color: T.heroTo },
-  gamLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  gamLevel: { fontSize: 15.5, fontWeight: '800', color: '#fff', letterSpacing: -0.3 },
-  gamXP: { fontSize: 14, fontWeight: '800', color: '#fff' },
-  gamNext: { fontSize: 11.5, fontWeight: '600', color: 'rgba(255,255,255,0.55)', marginTop: 5, textAlign: 'right' },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  badgePill: { borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7 },
-  badgePillText: { fontSize: 12.5, fontWeight: '800', color: '#fff' },
-
-  // Body
-  body: { paddingHorizontal: 18 },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12, marginTop: 4 },
-  sectionLabel: { fontSize: 13, fontWeight: '800', color: T.ink, letterSpacing: 0.3 },
-  countChip: {
-    minWidth: 22, height: 22, borderRadius: 999, backgroundColor: T.primarySoft,
-    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7,
-  },
-  countChipText: { fontSize: 12, fontWeight: '800', color: T.primaryDeep },
-  seeAll: { fontSize: 13.5, fontWeight: '800', color: T.primary, marginLeft: 'auto' },
-
-  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginBottom: 14 },
-  actionTileWrap: { width: '47.8%' },
-  actionTile: { width: '100%', borderRadius: 22, padding: 14, minHeight: 128 },
-  actionImg: { width: 54, height: 58, borderRadius: 12, marginBottom: 8 },
-  actionTitle: { fontWeight: '800', fontSize: 14.5, color: T.ink, letterSpacing: -0.3, marginBottom: 3 },
-  actionDesc: { fontSize: 12, color: T.sub, fontWeight: '500', paddingRight: 20 },
-  actionChevron: {
-    position: 'absolute', bottom: 12, right: 12, width: 26, height: 26, borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.8)', alignItems: 'center', justifyContent: 'center',
-  },
-
-  boldGrid: { flexDirection: 'row', gap: 11, marginBottom: 18 },
-  boldCard: { width: '100%', borderRadius: 22, padding: 15, minHeight: 140 },
-  boldImg: { width: 74, height: 60, borderRadius: 12, marginBottom: 9 },
-  boldTitle: { fontWeight: '900', fontSize: 15.5, color: '#fff', letterSpacing: -0.3, marginBottom: 3 },
-  boldDesc: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
-
-  controleRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
-    borderRadius: 20, padding: 13,
-    shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 22, padding: 14, marginBottom: 12,
   },
-  controleTitle: { fontWeight: '800', fontSize: 15, color: T.ink, letterSpacing: -0.3 },
-  controleSub: { fontSize: 12.5, color: T.sub, fontWeight: '600', marginTop: 2 },
-  controleWarn: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
-  controleWarnText: { fontSize: 12, fontWeight: '800', color: T.amber.fg },
-  jBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
-  jBadgeText: { color: '#fff', fontWeight: '800', fontSize: 11.5 },
+  missionIcon: { width: 56, height: 56 },
+  missionLabel: { color: DK.cyan, fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
+  missionTitle: { color: DK.ink, fontWeight: '900', fontSize: 18.5, letterSpacing: -0.3, marginTop: 2 },
+  missionSub: { color: DK.sub, fontSize: 12, fontWeight: '500', marginTop: 2 },
+  minChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1, borderColor: DK.cardBorder, backgroundColor: 'rgba(11,16,35,0.5)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
+  },
+  minChipText: { color: DK.ink, fontSize: 12.5, fontWeight: '700' },
 
-  banner: {
+  levelCard: {
+    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 22, padding: 14, marginBottom: 18,
+  },
+  flameIcon: { width: 54, height: 54 },
+  levelSub: { color: DK.sub, fontSize: 11.5, fontWeight: '600' },
+  levelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 1, marginBottom: 7 },
+  levelName: { color: DK.ink, fontSize: 19, fontWeight: '900', letterSpacing: -0.4 },
+  levelXP: { color: DK.ink, fontSize: 15, fontWeight: '800' },
+  xpTrack: { height: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' },
+  xpFill: { height: '100%', borderRadius: 999 },
+  levelNext: { color: DK.faint, fontSize: 11, fontWeight: '600', marginTop: 5, textAlign: 'right' },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  badgePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderColor: DK.cardBorder, backgroundColor: 'rgba(11,16,35,0.4)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
+  },
+  badgePillText: { color: DK.ink, fontSize: 12, fontWeight: '700' },
+
+  sectionLabel: { color: DK.ink, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.6, marginBottom: 12 },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12, marginTop: 2 },
+  sectionLabel2: { color: DK.ink, fontSize: 13.5, fontWeight: '800', letterSpacing: 0.6 },
+  seeAll: { color: DK.cyan, fontSize: 13.5, fontWeight: '800' },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginBottom: 18 },
+  tileWrap: { width: '47.8%' },
+  tile: { width: '100%', borderRadius: 22, borderWidth: 1, padding: 13, minHeight: 132 },
+  tileIcon: { width: 52, height: 52, marginBottom: 7 },
+  tileTitle: { color: DK.ink, fontWeight: '800', fontSize: 14.5, letterSpacing: -0.3, marginBottom: 3 },
+  tileDesc: { color: DK.sub, fontSize: 11.5, fontWeight: '500', paddingRight: 18 },
+  tileChevron: {
+    position: 'absolute', bottom: 11, right: 11, width: 25, height: 25, borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center',
+  },
+
+  row: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 20, padding: 12,
+  },
+  rowIcon: { width: 46, height: 46 },
+  rowTitle: { color: DK.ink, fontWeight: '800', fontSize: 15, letterSpacing: -0.3 },
+  rowSub: { color: DK.sub, fontSize: 12.5, fontWeight: '600', marginTop: 2 },
+  rowMeta: { color: DK.faint, fontSize: 11.5, fontWeight: '600', marginTop: 3 },
+  rowWarn: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+  rowWarnText: { fontSize: 12, fontWeight: '800', color: '#FF6B5A' },
+  rowChevron: {
+    width: 26, height: 26, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  jPill: {
+    borderWidth: 1.5, borderColor: 'rgba(46,230,214,0.5)', backgroundColor: 'rgba(46,230,214,0.08)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5,
+  },
+  jPillText: { color: DK.cyan, fontWeight: '900', fontSize: 12 },
+
+  alert: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    borderRadius: 22, padding: 16, marginBottom: 18,
+    borderRadius: 22, padding: 15, marginBottom: 18,
+    borderWidth: 1, borderColor: 'rgba(255,107,90,0.35)',
   },
-  bannerText: { fontSize: 13.5, fontWeight: '600', color: 'rgba(255,255,255,0.9)', lineHeight: 20 },
-  bannerBtn: {
+  alertText: { color: DK.ink, fontSize: 13.5, fontWeight: '600', lineHeight: 20 },
+  alertBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
-    backgroundColor: GOLD, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 9, marginTop: 11,
+    borderWidth: 1.5, borderColor: DK.gold, borderRadius: 999,
+    paddingHorizontal: 14, paddingVertical: 8, marginTop: 10,
   },
-  bannerBtnText: { fontSize: 13.5, fontWeight: '800', color: T.heroTo },
+  alertBtnText: { color: DK.gold, fontSize: 13.5, fontWeight: '800' },
 
   emptyLessons: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: T.primarySoft, borderRadius: 16, padding: 14, marginBottom: 18,
+    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 16, padding: 14,
   },
-  emptyLessonsText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: T.primaryDeep },
-  lessonRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line, borderRadius: 18, padding: 12,
-  },
-  lessonMatiere: { fontSize: 11.5, fontWeight: '800', color: T.sub, letterSpacing: 0.2 },
-  lessonTitre: { fontSize: 14.5, fontWeight: '800', color: T.ink, letterSpacing: -0.3, marginTop: 1 },
+  emptyLessonsText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: DK.sub },
 });
