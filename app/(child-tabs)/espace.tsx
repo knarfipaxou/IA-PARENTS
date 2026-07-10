@@ -14,59 +14,18 @@ import { useChild } from '../../contexts/ChildContext';
 import { isControle } from '../../lib/matiere';
 import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS, type Badge } from '../../lib/gamification';
 
-// ===== Thème sombre néon (maquette) =====
-export const DK = {
-  bgTop: '#0A0E22',
-  bgBottom: '#141B3C',
-  card: 'rgba(148,168,255,0.07)',
-  cardBorder: 'rgba(148,168,255,0.18)',
-  ink: '#FFFFFF',
-  sub: '#96A3CC',
-  faint: '#5D6890',
-  cyan: '#35E4D2',
-  xpFrom: '#FF3D8A',
-  xpMid: '#FF7A3D',
-  xpTo: '#FFC24B',
-  gold: '#F5C24B',
-} as const;
-
-const ICONS = {
-  avatar: require('../../assets/icons/avatar.png'),
-  target: require('../../assets/icons/target.png'),
-  flame: require('../../assets/icons/flame.png'),
-  lightning: require('../../assets/icons/lightning.png'),
-  scan: require('../../assets/icons/scan.png'),
-  agenda: require('../../assets/icons/agenda.png'),
-  trophy: require('../../assets/icons/trophy.png'),
-  book: require('../../assets/icons/book.png'),
-  planning: require('../../assets/icons/planning.png'),
-  music: require('../../assets/icons/music.png'),
-  sqrt: require('../../assets/icons/sqrt.png'),
-  calculator: require('../../assets/icons/calculator.png'),
-  warning: require('../../assets/icons/warning.png'),
-  flashcards: require('../../assets/icons/flashcards.png'),
-  pencil: require('../../assets/icons/pencil.png'),
-  medal: require('../../assets/icons/medal.png'),
-};
-
-function iconForSubject(subj?: string) {
-  const s = (subj ?? '').toLowerCase();
-  if (s.includes('musi')) return ICONS.music;
-  if (s.includes('math')) return ICONS.sqrt;
-  if (s.includes('fran') || s.includes('lect')) return ICONS.book;
-  return ICONS.planning;
-}
+import { DK, DK_ICONS as ICONS, dkIconForSubject as iconForSubject } from '../../constants/darkTheme';
 const BADGE_ICON: Record<string, any> = {
   first_flashcard: ICONS.flashcards, first_exercise: ICONS.pencil, first_controle: ICONS.medal,
   first_minitest: ICONS.medal, first_scan: ICONS.scan, perfect_test: ICONS.trophy,
 };
-// pilules badges teintées selon l'accent du badge (comme la maquette)
-const PILL_TINT: Record<Badge['accent'], { bg: string; border: string }> = {
-  violet: { bg: 'rgba(150,90,230,0.18)', border: 'rgba(150,90,230,0.55)' },
-  amber: { bg: 'rgba(239,160,46,0.16)', border: 'rgba(239,160,46,0.55)' },
-  green: { bg: 'rgba(53,228,210,0.12)', border: 'rgba(53,228,210,0.5)' },
-  blue: { bg: 'rgba(80,120,255,0.16)', border: 'rgba(80,120,255,0.55)' },
-  coral: { bg: 'rgba(240,101,76,0.16)', border: 'rgba(240,101,76,0.55)' },
+// pilules teintées selon l'accent (wireframe 1a : texte coloré assorti)
+const PILL_TINT: Record<Badge['accent'], { bg: string; border: string; fg: string }> = {
+  violet: { bg: 'rgba(139,124,246,0.12)', border: 'rgba(139,124,246,0.55)', fg: '#C9A8FF' },
+  amber: { bg: 'rgba(255,122,61,0.12)', border: 'rgba(255,122,61,0.55)', fg: '#FFB27A' },
+  green: { bg: 'rgba(53,228,210,0.1)', border: 'rgba(53,228,210,0.5)', fg: '#35E4D2' },
+  blue: { bg: 'rgba(80,150,255,0.15)', border: 'rgba(80,150,255,0.55)', fg: '#7CB4FF' },
+  coral: { bg: 'rgba(255,107,90,0.13)', border: 'rgba(255,107,90,0.55)', fg: '#FF9C8A' },
 };
 
 type Tile = {
@@ -200,7 +159,7 @@ export default function EspaceScreen() {
           {/* ===== Mission du jour ===== */}
           <TouchableOpacity onPress={() => router.push('/mission' as any)} activeOpacity={0.88}>
             <LinearGradient
-              colors={['rgba(53,228,210,0.13)', 'rgba(148,168,255,0.06)']}
+              colors={['rgba(35,80,110,0.45)', 'rgba(19,26,58,0.65)']}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
               style={s.missionCard}
             >
@@ -221,7 +180,7 @@ export default function EspaceScreen() {
 
           {/* ===== Niveau ===== */}
           <LinearGradient
-            colors={['rgba(255,61,138,0.1)', 'rgba(80,90,220,0.12)']}
+            colors={['rgba(60,40,80,0.4)', 'rgba(19,26,58,0.65)']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={s.levelCard}
           >
@@ -255,8 +214,8 @@ export default function EspaceScreen() {
                     >
                       {BADGE_ICON[b.id]
                         ? <Image source={BADGE_ICON[b.id]} style={{ width: 19, height: 19 }} />
-                        : <Ionicons name={b.icon as any} size={14} color={DK.ink} />}
-                      <Text style={s.badgePillText}>{b.label}</Text>
+                        : <Ionicons name={b.icon as any} size={14} color={tint.fg} />}
+                      <Text style={[s.badgePillText, { color: tint.fg }]}>{b.label}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -313,11 +272,11 @@ export default function EspaceScreen() {
           {/* ===== Alerte leçons non rattachées ===== */}
           {noLessonControle && (
             <LinearGradient
-              colors={['rgba(210,70,45,0.4)', 'rgba(110,30,60,0.3)']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              colors={['rgba(120,30,30,0.55)', 'rgba(140,60,20,0.45)']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.6 }}
               style={s.alert}
             >
-              <Image source={ICONS.warning} style={{ width: 44, height: 44 }} />
+              <View style={s.alertBang}><Text style={s.alertBangText}>!</Text></View>
               <View style={{ flex: 1 }}>
                 <Text style={s.alertText}>
                   Contrôle de {noLessonControle.subj} dans {noLessonControle.days} {noLessonControle.days > 1 ? 'jours' : 'jour'} : avez-vous rattaché les leçons concernées ?
@@ -331,6 +290,7 @@ export default function EspaceScreen() {
                   <Ionicons name="arrow-forward" size={14} color={DK.gold} />
                 </TouchableOpacity>
               </View>
+              <Image source={require('../../assets/icons/lamp.png')} style={s.alertLamp} />
             </LinearGradient>
           )}
 
@@ -453,9 +413,9 @@ const s = StyleSheet.create({
   },
   badgePillText: { color: DK.ink, fontSize: 13, fontWeight: '700' },
 
-  sectionLabel: { color: DK.ink, fontSize: 14, fontWeight: '800', letterSpacing: 0.8, marginBottom: 13 },
+  sectionLabel: { color: 'rgba(200,210,255,0.55)', fontSize: 12, fontWeight: '800', letterSpacing: 2, marginBottom: 13 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 12, marginTop: 2 },
-  sectionLabel2: { color: DK.ink, fontSize: 14, fontWeight: '800', letterSpacing: 0.8 },
+  sectionLabel2: { color: 'rgba(200,210,255,0.55)', fontSize: 12, fontWeight: '800', letterSpacing: 2 },
   seeAll: { color: DK.cyan, fontSize: 13.5, fontWeight: '800' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
@@ -496,10 +456,17 @@ const s = StyleSheet.create({
   jPillText: { color: DK.cyan, fontWeight: '900', fontSize: 12.5 },
 
   alert: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    borderRadius: 24, padding: 16, marginBottom: 20,
-    borderWidth: 1, borderColor: 'rgba(255,107,90,0.4)',
+    flexDirection: 'row', alignItems: 'center', gap: 11,
+    borderRadius: 22, paddingVertical: 14, paddingLeft: 14, marginBottom: 20,
+    borderWidth: 1, borderColor: 'rgba(255,120,80,0.4)', overflow: 'hidden',
   },
+  alertBang: {
+    width: 27, height: 27, borderRadius: 999, backgroundColor: '#FF5A3C',
+    alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start',
+    shadowColor: '#FF5A3C', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 8, elevation: 5,
+  },
+  alertBangText: { color: '#fff', fontWeight: '900', fontSize: 16 },
+  alertLamp: { width: 84, height: 110, borderTopRightRadius: 22, borderBottomRightRadius: 22 },
   alertText: { color: DK.ink, fontSize: 13.5, fontWeight: '600', lineHeight: 20 },
   alertBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
