@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,18 +23,19 @@ type ActionItem = {
   route: string;
 };
 
-// Grille pastel « Actions scolaires »
-const PASTEL_ACTIONS: ActionItem[] = [
-  { accent: 'green', iconName: 'flash', title: 'Drill du jour', desc: 'Exercices IA adaptés', route: '/drill' },
-  { accent: 'violet', iconName: 'scan', title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan' },
-  { accent: 'blue', iconName: 'camera', title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda' },
-  { accent: 'amber', iconName: 'trophy', title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control' },
+// Grille pastel « Actions scolaires » — icônes 3D découpées de la maquette,
+// fond de tuile = couleur exacte du fond de l'icône pour une fusion parfaite
+const PASTEL_ACTIONS: (ActionItem & { img: any; bg: string })[] = [
+  { accent: 'green', iconName: 'flash', title: 'Drill du jour', desc: 'Exercices IA adaptés', route: '/drill', img: require('../../assets/icons/drill_tile.png'), bg: '#F2F4F0' },
+  { accent: 'violet', iconName: 'scan', title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan', img: require('../../assets/icons/scan_tile.png'), bg: '#F2F0FB' },
+  { accent: 'blue', iconName: 'camera', title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda', img: require('../../assets/icons/agenda_tile.png'), bg: '#EFF9F2' },
+  { accent: 'amber', iconName: 'trophy', title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control', img: require('../../assets/icons/trophy_tile.png'), bg: '#FDF1E8' },
 ];
 
-// Grandes cartes colorées
-const BOLD_CARDS: { bg: string; iconName: string; title: string; desc: string; route: string }[] = [
-  { bg: '#6030A8', iconName: 'library', title: 'Carnet de lecture', desc: 'Questions sur les pages lues', route: '/lecture' },
-  { bg: '#3B5BD9', iconName: 'calendar', title: 'Planning', desc: 'Voir les échéances', route: '/(child-tabs)/echeances' },
+// Grandes cartes colorées — dégradés et icônes 3D de la maquette
+const BOLD_CARDS: { colors: [string, string]; img: any; title: string; desc: string; route: string }[] = [
+  { colors: ['#6D40A8', '#40296E'], img: require('../../assets/icons/lecture_big.png'), title: 'Carnet de lecture', desc: 'Questions sur les pages lues', route: '/lecture' },
+  { colors: ['#5366BE', '#324489'], img: require('../../assets/icons/planning_big.png'), title: 'Planning', desc: 'Voir les échéances', route: '/(child-tabs)/echeances' },
 ];
 
 const GOLD = '#F5C24B';
@@ -184,12 +185,10 @@ export default function EspaceScreen() {
               <Animated.View key={ac.route} entering={FadeInDown.delay(i * 70).springify().damping(16)} style={s.actionTileWrap}>
                 <TouchableOpacity
                   onPress={() => router.push(ac.route as any)}
-                  style={[s.actionTile, { backgroundColor: T[ac.accent].soft }]}
+                  style={[s.actionTile, { backgroundColor: ac.bg }]}
                   activeOpacity={0.88}
                 >
-                  <View style={[s.actionIcon, { backgroundColor: T[ac.accent].solid }]}>
-                    <Ionicons name={ac.iconName as any} size={21} color="#fff" />
-                  </View>
+                  <Image source={ac.img} style={s.actionImg} />
                   <Text style={s.actionTitle}>{ac.title}</Text>
                   <Text style={s.actionDesc} numberOfLines={2}>{ac.desc}</Text>
                   <View style={s.actionChevron}>
@@ -205,16 +204,12 @@ export default function EspaceScreen() {
             <View style={s.boldGrid}>
               {BOLD_CARDS.map((c, i) => (
                 <Animated.View key={c.route} entering={FadeInDown.delay(250 + i * 80).springify().damping(16)} style={s.actionTileWrap}>
-                  <TouchableOpacity
-                    onPress={() => router.push(c.route as any)}
-                    style={[s.boldCard, { backgroundColor: c.bg }]}
-                    activeOpacity={0.9}
-                  >
-                    <View style={s.boldIcon}>
-                      <Ionicons name={c.iconName as any} size={24} color="#fff" />
-                    </View>
-                    <Text style={s.boldTitle}>{c.title}</Text>
-                    <Text style={s.boldDesc} numberOfLines={2}>{c.desc}</Text>
+                  <TouchableOpacity onPress={() => router.push(c.route as any)} activeOpacity={0.9}>
+                    <LinearGradient colors={c.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.boldCard}>
+                      <Image source={c.img} style={s.boldImg} />
+                      <Text style={s.boldTitle}>{c.title}</Text>
+                      <Text style={s.boldDesc} numberOfLines={2}>{c.desc}</Text>
+                    </LinearGradient>
                   </TouchableOpacity>
                 </Animated.View>
               ))}
@@ -410,10 +405,7 @@ const s = StyleSheet.create({
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11, marginBottom: 14 },
   actionTileWrap: { width: '47.8%' },
   actionTile: { width: '100%', borderRadius: 22, padding: 14, minHeight: 128 },
-  actionIcon: {
-    width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 10,
-    shadowColor: '#102818', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5, elevation: 3,
-  },
+  actionImg: { width: 54, height: 58, borderRadius: 12, marginBottom: 8 },
   actionTitle: { fontWeight: '800', fontSize: 14.5, color: T.ink, letterSpacing: -0.3, marginBottom: 3 },
   actionDesc: { fontSize: 12, color: T.sub, fontWeight: '500', paddingRight: 20 },
   actionChevron: {
@@ -422,11 +414,8 @@ const s = StyleSheet.create({
   },
 
   boldGrid: { flexDirection: 'row', gap: 11, marginBottom: 18 },
-  boldCard: { width: '100%', borderRadius: 22, padding: 15, minHeight: 130 },
-  boldIcon: {
-    width: 44, height: 44, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 10,
-  },
+  boldCard: { width: '100%', borderRadius: 22, padding: 15, minHeight: 140 },
+  boldImg: { width: 74, height: 60, borderRadius: 12, marginBottom: 9 },
   boldTitle: { fontWeight: '900', fontSize: 15.5, color: '#fff', letterSpacing: -0.3, marginBottom: 3 },
   boldDesc: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
 
