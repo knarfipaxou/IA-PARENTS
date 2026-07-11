@@ -206,13 +206,13 @@ export default function EspaceScreen() {
   const missionMin = (isCollege ? child.mission?.min : child.activity?.min) ?? 20;
   const prochainControles = [...controles].sort((a, b) => a.days - b.days).slice(0, 3);
 
+  // 3 cartes verticales côte à côte (maquette) — « Préparer un contrôle » retiré
   const TILES = [
-    { img: A.drill, title: 'Drill du jour', desc: `Exercices quotidiens IA adaptés à ${child.name}`, route: '/drill' },
-    { img: A.scan, title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan' },
-    { img: A.agenda, title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda' },
-    { img: A.trophy, title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control' },
+    { img: A.drill, title: 'Drill du jour', desc: 'Exercices quotidiens IA adaptés à ses besoins', route: '/drill', accent: '#2BC48A', bodyBg: P.scheme === 'dark' ? '#01313F' : '#F0FAF7' },
+    { img: A.scan, title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan', accent: '#3D7BFF', bodyBg: P.scheme === 'dark' ? '#0A1E4A' : '#F2F6FE' },
+    { img: A.agenda, title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda', accent: '#2E9E5B', bodyBg: P.scheme === 'dark' ? '#0A2E22' : '#F2FAF4' },
   ];
-  const visibleTiles = isCollege ? TILES : TILES.slice(2, 4);
+  const visibleTiles = isCollege ? TILES : TILES.slice(2, 3);
 
   return (
     <LinearGradient colors={P.bg} style={{ flex: 1 }}>
@@ -301,12 +301,7 @@ export default function EspaceScreen() {
                       }]}
                       activeOpacity={0.85}
                     >
-                      <View style={[s.ctrlIconTile, {
-                        backgroundColor: P.scheme === 'dark' ? 'rgba(38,50,79,0.55)' : '#F2F5FB',
-                        borderColor: P.cardBorder,
-                      }]}>
-                        <Image source={subjectIcon(e.subj)} style={s.ctrlIconImg} />
-                      </View>
+                      <Image source={subjectIcon(e.subj)} style={s.ctrlIconTile} />
                       <View style={{ flex: 1, marginLeft: 14 }}>
                         <Text style={[s.ctrlTitle, { color: P.ink }]} numberOfLines={1}>{e.type} de {e.subj}</Text>
                         <Text style={[s.ctrlSub, { color: P.sub }]}>
@@ -344,29 +339,24 @@ export default function EspaceScreen() {
             <Text style={[s.sectionLabel, { color: P.ink }]}>ACTIONS SCOLAIRES</Text>
           </View>
           <View style={s.grid}>
-            {visibleTiles.map((t, i) => {
-              const th = P.tiles[TILES.indexOf(t)];
-              return (
-                <Animated.View key={t.route} entering={FadeInDown.delay(i * 70).springify().damping(16)} style={s.tileWrap}>
-                  <TouchableOpacity
-                    onPress={() => router.push(t.route as any)}
-                    style={[s.tile, { backgroundColor: th.bg, borderColor: P.tileBorder }]}
-                    activeOpacity={0.88}
-                  >
-                    <Image source={t.img} style={s.tileArt} />
-                    <View style={s.tileBody}>
-                      <Text style={[s.tileTitle, { color: P.scheme === 'dark' ? '#fff' : P.ink }]}>{t.title}</Text>
-                      <View style={s.tileBottom}>
-                        <Text style={[s.tileDesc, { color: P.scheme === 'dark' ? 'rgba(220,230,255,0.7)' : P.sub }]} numberOfLines={2}>{t.desc}</Text>
-                        <View style={[s.tileChevron, { backgroundColor: th.accent }]}>
-                          <Ionicons name="chevron-forward" size={15} color="#fff" />
-                        </View>
-                      </View>
+            {visibleTiles.map((t, i) => (
+              <Animated.View key={t.route} entering={FadeInDown.delay(i * 70).springify().damping(16)} style={s.tileWrap}>
+                <TouchableOpacity
+                  onPress={() => router.push(t.route as any)}
+                  style={[s.tile, { backgroundColor: t.bodyBg, borderColor: P.tileBorder }]}
+                  activeOpacity={0.88}
+                >
+                  <Image source={t.img} style={s.tileArt} />
+                  <View style={s.tileBody}>
+                    <Text style={[s.tileTitle, { color: P.scheme === 'dark' ? '#fff' : P.ink }]}>{t.title}</Text>
+                    <Text style={[s.tileDesc, { color: P.scheme === 'dark' ? 'rgba(220,230,255,0.7)' : P.sub }]} numberOfLines={3}>{t.desc}</Text>
+                    <View style={[s.tileChevron, { backgroundColor: t.accent }]}>
+                      <Ionicons name="chevron-forward" size={16} color="#fff" />
                     </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            ))}
           </View>
 
           {/* ===== Mission du jour ===== */}
@@ -467,11 +457,7 @@ const s = StyleSheet.create({
     borderWidth: 1.2, borderRadius: 22, padding: 14,
     minHeight: 122,
   },
-  ctrlIconTile: {
-    width: 72, height: 72, borderRadius: 18, borderWidth: 1.2,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  ctrlIconImg: { width: 52, height: 52, borderRadius: 10 },
+  ctrlIconTile: { width: 72, height: 78, borderRadius: 18 },
   ctrlTitle: { fontSize: 16.5, fontWeight: '800', letterSpacing: -0.3 },
   ctrlSub: { fontSize: 13, fontWeight: '600', marginTop: 3 },
   ctrlTrack: { height: 6, borderRadius: 999, marginTop: 9, overflow: 'hidden', width: '85%' },
@@ -483,17 +469,18 @@ const s = StyleSheet.create({
   jPillText: { fontWeight: '900', fontSize: 15.5 },
 
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 13, marginBottom: 22 },
-  tileWrap: { width: '47.6%' },
-  tile: { width: '100%', borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
-  tileArt: { width: '100%', aspectRatio: 367 / 158 },
-  tileBody: { paddingHorizontal: 14, paddingBottom: 13, paddingTop: 2 },
-  tileTitle: { fontWeight: '800', fontSize: 16.5, letterSpacing: -0.3, marginBottom: 5 },
-  tileBottom: { flexDirection: 'row', alignItems: 'flex-end' },
-  tileDesc: { flex: 1, fontSize: 12.5, fontWeight: '500', lineHeight: 17 },
+  // 3 cartes verticales côte à côte (maquette) : illustration en haut,
+  // texte dessous, bulle chevron colorée en bas à droite
+  grid: { flexDirection: 'row', gap: 11, marginBottom: 22 },
+  tileWrap: { flex: 1 },
+  tile: { width: '100%', borderRadius: 24, borderWidth: 1, overflow: 'hidden', minHeight: 268 },
+  tileArt: { width: '100%', height: 128 },
+  tileBody: { flex: 1, paddingHorizontal: 12, paddingBottom: 12, paddingTop: 10 },
+  tileTitle: { fontWeight: '800', fontSize: 15.5, letterSpacing: -0.3, marginBottom: 6, lineHeight: 20 },
+  tileDesc: { fontSize: 12, fontWeight: '500', lineHeight: 17 },
   tileChevron: {
-    width: 32, height: 32, borderRadius: 999,
-    alignItems: 'center', justifyContent: 'center', marginLeft: 6,
+    width: 36, height: 36, borderRadius: 999, alignSelf: 'flex-end', marginTop: 'auto',
+    alignItems: 'center', justifyContent: 'center',
   },
 
   missionCard: {
