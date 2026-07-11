@@ -40,6 +40,33 @@ const ART = {
 };
 const AVATAR_DEFAULT = require('../../assets/home/avatar.png');
 
+// icônes minimalistes par matière (banque d'images)
+const SUBJECT_ICONS: { match: RegExp; img: any }[] = [
+  { match: /math|calcul|conversion|éval|eval/i, img: require('../../assets/subjects/maths.png') },
+  { match: /fran|lettre|dictée|dictee|lecture|conjugaison|grammaire|orthographe/i, img: require('../../assets/subjects/francais.png') },
+  { match: /angl|english/i, img: require('../../assets/subjects/anglais.png') },
+  { match: /espa|spanish/i, img: require('../../assets/subjects/espagnol.png') },
+  { match: /latin|grec/i, img: require('../../assets/subjects/latin.png') },
+  { match: /hist|géo|geo/i, img: require('../../assets/subjects/histgeo.png') },
+  { match: /svt|bio|vie|terre|science/i, img: require('../../assets/subjects/svt.png') },
+  { match: /phys|chim/i, img: require('../../assets/subjects/physchim.png') },
+  { match: /techno|informat/i, img: require('../../assets/subjects/techno.png') },
+  { match: /art|dessin|plastique/i, img: require('../../assets/subjects/arts.png') },
+  { match: /musi/i, img: require('../../assets/subjects/musique.png') },
+  { match: /eps|sport/i, img: require('../../assets/subjects/eps.png') },
+];
+const SUBJECT_DEFAULT = require('../../assets/subjects/defaut.png');
+function subjectIcon(subj?: string) {
+  const found = SUBJECT_ICONS.find((x) => x.match.test(subj ?? ''));
+  return found ? found.img : SUBJECT_DEFAULT;
+}
+// couleur du badge J-x selon l'urgence uniquement
+function urgencyColor(days: number) {
+  if (days <= 3) return '#F5C24B';
+  if (days <= 10) return '#5A8CFF';
+  return 'rgba(148,168,255,0.65)';
+}
+
 // ─── Palettes clair / sombre (couleurs échantillonnées dans les maquettes) ──
 const PALETTES = {
   dark: {
@@ -177,7 +204,6 @@ export default function EspaceScreen() {
     ? (child.mission?.notion ?? child.mission?.obj ?? 'Découverte')
     : (child.activity?.label ?? 'Découverte');
   const missionMin = (isCollege ? child.mission?.min : child.activity?.min) ?? 20;
-  const noLessonControle = controles.find((e) => (e.lessonIds ?? []).length === 0);
   const prochainControles = [...controles].sort((a, b) => a.days - b.days).slice(0, 3);
 
   const TILES = [
@@ -259,69 +285,55 @@ export default function EspaceScreen() {
                 </TouchableOpacity>
               </View>
               <View style={{ gap: 12, marginBottom: 22 }}>
-                {prochainControles.map((e, idx) => {
-                  const th = P.ctrl[Math.min(idx, P.ctrl.length - 1)];
-                  const isMath = (e.subj ?? '').toLowerCase().includes('math');
-                  // jauge de maîtrise (dernier contrôle blanc de la matière), sinon proximité de la date
+                {prochainControles.map((e) => {
+                  // jauge de maîtrise (dernier contrôle blanc de la matière), toujours turquoise
                   const mastery = masteryFor(e.subj);
-                  const pct = mastery ? Math.max(0.04, mastery.pct / 100) : Math.max(0.08, Math.min(1, 1 - e.days / 21));
-                  const barColor = mastery
-                    ? (mastery.note >= 12 ? '#34D696' : mastery.note >= 8 ? '#F5C24B' : '#FF6B5A')
-                    : th.accent;
+                  const pct = mastery ? Math.max(0.04, mastery.pct / 100) : 0.08;
+                  const urg = urgencyColor(e.days);
+                  const nLessons = (e.lessonIds ?? []).length;
                   return (
                     <TouchableOpacity
                       key={e.id}
                       onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
-                      style={[s.ctrlRow, { backgroundColor: th.bg, borderColor: th.border }]}
+                      style={[s.ctrlRow, {
+                        backgroundColor: P.scheme === 'dark' ? 'rgba(20,27,51,0.75)' : '#FFFFFF',
+                        borderColor: P.cardBorder,
+                      }]}
                       activeOpacity={0.85}
                     >
-                      <Image source={isMath ? A.ctrlSqrt : A.ctrlDoc} style={s.ctrlIcon} />
+                      <View style={[s.ctrlIconTile, {
+                        backgroundColor: P.scheme === 'dark' ? 'rgba(38,50,79,0.55)' : '#F2F5FB',
+                        borderColor: P.cardBorder,
+                      }]}>
+                        <Image source={subjectIcon(e.subj)} style={s.ctrlIconImg} />
+                      </View>
                       <View style={{ flex: 1, marginLeft: 14 }}>
                         <Text style={[s.ctrlTitle, { color: P.ink }]} numberOfLines={1}>{e.type} de {e.subj}</Text>
                         <Text style={[s.ctrlSub, { color: P.sub }]}>
-                          {e.date}  •  {(e.lessonIds ?? []).length} {(e.lessonIds ?? []).length > 1 ? 'leçons liées' : 'leçon liée'}
+                          {e.date}  •  {nLessons} {nLessons > 1 ? 'leçons liées' : 'leçon liée'}
                         </Text>
-                        <View style={[s.ctrlTrack, { backgroundColor: th.track }]}>
-                          <View style={[s.ctrlFill, { width: `${pct * 100}%`, backgroundColor: barColor }]} />
+                        <View style={[s.ctrlTrack, {
+                          backgroundColor: P.scheme === 'dark' ? 'rgba(255,255,255,0.13)' : 'rgba(27,37,89,0.1)',
+                        }]}>
+                          <View style={[s.ctrlFill, { width: `${pct * 100}%`, backgroundColor: P.teal }]} />
                         </View>
-                        {mastery && (
-                          <Text style={[s.ctrlMastery, { color: barColor }]}>
-                            {mastery.pct} % de maîtrise · dernier contrôle blanc {mastery.note}/20
-                          </Text>
-                        )}
+                        <Text
+                          style={[s.ctrlMastery, { color: mastery ? P.teal : P.sub }]}
+                          numberOfLines={2}
+                        >
+                          {mastery
+                            ? `${mastery.pct} % de maîtrise • dernier contrôle blanc ${mastery.note}/20`
+                            : 'Pas encore de contrôle blanc noté'}
+                        </Text>
                       </View>
-                      <View style={[s.jPill, { borderColor: th.accent }]}>
-                        <Text style={[s.jPillText, { color: th.accent }]}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
+                      <View style={[s.jPill, { borderColor: urg }]}>
+                        <Text style={[s.jPillText, { color: urg }]}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
                       </View>
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </>
-          )}
-
-          {/* Alerte leçons non rattachées */}
-          {noLessonControle && (
-            <LinearGradient
-              colors={P.scheme === 'dark' ? ['rgba(120,30,30,0.55)', 'rgba(140,60,20,0.45)'] : ['#FDEDE6', '#FBE3D2']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.6 }}
-              style={[s.alert, { borderColor: 'rgba(255,120,80,0.4)' }]}
-            >
-              <View style={s.alertBang}><Text style={s.alertBangText}>!</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.alertText, { color: P.scheme === 'dark' ? '#FFE9DF' : '#8A3A1B' }]}>
-                  Contrôle de {noLessonControle.subj} dans {noLessonControle.days} {noLessonControle.days > 1 ? 'jours' : 'jour'} : avez-vous rattaché les leçons concernées ?
-                </Text>
-                <TouchableOpacity
-                  onPress={() => router.push(`/link-lessons?echeanceId=${noLessonControle.id}` as any)}
-                  style={[s.alertBtn, { borderColor: P.scheme === 'dark' ? '#F5C24B' : '#D07A18' }]}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[s.alertBtnText, { color: P.scheme === 'dark' ? '#F5C24B' : '#D07A18' }]}>Rattacher des leçons</Text>
-                  <Ionicons name="arrow-forward" size={14} color={P.scheme === 'dark' ? '#F5C24B' : '#D07A18'} />
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
           )}
 
           {/* ===== Actions scolaires ===== */}
@@ -453,8 +465,13 @@ const s = StyleSheet.create({
   ctrlRow: {
     flexDirection: 'row', alignItems: 'center',
     borderWidth: 1.2, borderRadius: 22, padding: 14,
+    minHeight: 122,
   },
-  ctrlIcon: { width: 62, height: 62, borderRadius: 16 },
+  ctrlIconTile: {
+    width: 72, height: 72, borderRadius: 18, borderWidth: 1.2,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  ctrlIconImg: { width: 52, height: 52, borderRadius: 10 },
   ctrlTitle: { fontSize: 16.5, fontWeight: '800', letterSpacing: -0.3 },
   ctrlSub: { fontSize: 13, fontWeight: '600', marginTop: 3 },
   ctrlTrack: { height: 6, borderRadius: 999, marginTop: 9, overflow: 'hidden', width: '85%' },
@@ -465,22 +482,6 @@ const s = StyleSheet.create({
   },
   jPillText: { fontWeight: '900', fontSize: 15.5 },
 
-  alert: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 11,
-    borderRadius: 22, padding: 15, marginBottom: 22, borderWidth: 1,
-  },
-  alertBang: {
-    width: 27, height: 27, borderRadius: 999, backgroundColor: '#FF5A3C',
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#FF5A3C', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 8, elevation: 5,
-  },
-  alertBangText: { color: '#fff', fontWeight: '900', fontSize: 16 },
-  alertText: { fontSize: 13.5, fontWeight: '600', lineHeight: 20 },
-  alertBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
-    borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 15, paddingVertical: 9, marginTop: 10,
-  },
-  alertBtnText: { fontSize: 13.5, fontWeight: '800' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 13, marginBottom: 22 },
   tileWrap: { width: '47.6%' },
