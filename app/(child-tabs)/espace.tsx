@@ -73,7 +73,6 @@ function ActionTile({ t, delay }: { t: Tile; delay: number }) {
 export default function EspaceScreen() {
   const router = useRouter();
   const { child, setChild, lessons, gamification } = useChild();
-  const childLessons = child ? lessons.filter((l) => l.childId === child.id) : [];
   const controles = (child?.echeances ?? []).filter((e) => isControle(e.type));
 
   if (!child) {
@@ -101,6 +100,7 @@ export default function EspaceScreen() {
     : (child.activity?.label ?? 'Découverte');
   const missionMin = (isCollege ? child.mission?.min : child.activity?.min) ?? 20;
   const noLessonControle = controles.find((e) => (e.lessonIds ?? []).length === 0);
+  const prochainControles = [...controles].sort((a, b) => a.days - b.days).slice(0, 3);
   const visibleActions = isCollege ? [...ACTIONS, ...BOLD_CARDS] : ACTIONS.slice(2, 4);
 
   return (
@@ -154,6 +154,92 @@ export default function EspaceScreen() {
               </ProgressRing>
               <Text style={s.ringCaption}>Avancement</Text>
             </View>
+          </View>
+
+          {/* ===== Contrôles à venir (les 3 plus proches, en premier) ===== */}
+          {prochainControles.length > 0 && (
+            <>
+              <View style={s.sectionRow}>
+                <Ionicons name="time-outline" size={16} color={DK.sub} />
+                <Text style={s.sectionLabel2}>CONTRÔLES À VENIR</Text>
+              </View>
+              <View style={{ gap: 11, marginBottom: 16 }}>
+                {prochainControles.map((e, idx) => {
+                  const noLesson = (e.lessonIds ?? []).length === 0;
+                  const urgent = idx === 0;
+                  const inner = (
+                    <>
+                      <Image source={iconForSubject(e.subj)} style={s.rowIcon} />
+                      <View style={{ flex: 1, marginLeft: 13 }}>
+                        <Text style={s.rowTitle}>{e.type} de {e.subj}</Text>
+                        <Text style={s.rowSub}>
+                          {e.date} · {(e.lessonIds ?? []).length} {(e.lessonIds ?? []).length > 1 ? 'leçons liées' : 'leçon liée'}
+                        </Text>
+                        {noLesson && (
+                          <View style={s.rowWarn}>
+                            <Ionicons name="warning" size={12} color={urgent ? '#FFD9CF' : '#FF6B5A'} />
+                            <Text style={[s.rowWarnText, urgent && { color: '#FFD9CF' }]}>Aucune leçon rattachée</Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={[s.jPill, urgent && s.jPillUrgent]}>
+                        <Text style={[s.jPillText, urgent && s.jPillTextUrgent]}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
+                      </View>
+                    </>
+                  );
+                  return (
+                    <TouchableOpacity
+                      key={e.id}
+                      onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
+                      activeOpacity={0.85}
+                    >
+                      {urgent ? (
+                        <LinearGradient
+                          colors={['rgba(220,55,35,0.6)', 'rgba(210,110,25,0.45)']}
+                          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.8 }}
+                          style={[s.row, s.rowUrgent]}
+                        >
+                          {inner}
+                        </LinearGradient>
+                      ) : (
+                        <View style={s.row}>{inner}</View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
+          {/* ===== Alerte leçons non rattachées ===== */}
+          {noLessonControle && (
+            <LinearGradient
+              colors={['rgba(120,30,30,0.55)', 'rgba(140,60,20,0.45)']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.6 }}
+              style={s.alert}
+            >
+              <View style={s.alertBang}><Text style={s.alertBangText}>!</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.alertText}>
+                  Contrôle de {noLessonControle.subj} dans {noLessonControle.days} {noLessonControle.days > 1 ? 'jours' : 'jour'} : avez-vous rattaché les leçons concernées ?
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push(`/link-lessons?echeanceId=${noLessonControle.id}` as any)}
+                  style={s.alertBtn}
+                  activeOpacity={0.85}
+                >
+                  <Text style={s.alertBtnText}>Rattacher des leçons</Text>
+                  <Ionicons name="arrow-forward" size={14} color={DK.gold} />
+                </TouchableOpacity>
+              </View>
+              <Image source={require('../../assets/icons/lamp.png')} style={s.alertLamp} />
+            </LinearGradient>
+          )}
+
+          {/* ===== Actions scolaires ===== */}
+          <Text style={s.sectionLabel}>ACTIONS SCOLAIRES</Text>
+          <View style={s.grid}>
+            {visibleActions.map((t, i) => <ActionTile key={t.route} t={t} delay={i * 70} />)}
           </View>
 
           {/* ===== Mission du jour ===== */}
@@ -222,114 +308,6 @@ export default function EspaceScreen() {
               </View>
             )}
           </LinearGradient>
-
-          {/* ===== Actions scolaires ===== */}
-          <Text style={s.sectionLabel}>ACTIONS SCOLAIRES</Text>
-          <View style={s.grid}>
-            {visibleActions.map((t, i) => <ActionTile key={t.route} t={t} delay={i * 70} />)}
-          </View>
-
-          {/* ===== Contrôles à venir ===== */}
-          {controles.length > 0 && (
-            <>
-              <View style={s.sectionRow}>
-                <Ionicons name="time-outline" size={16} color={DK.sub} />
-                <Text style={s.sectionLabel2}>CONTRÔLES À VENIR</Text>
-              </View>
-              <View style={{ gap: 11, marginBottom: 16 }}>
-                {controles.map((e) => {
-                  const noLesson = (e.lessonIds ?? []).length === 0;
-                  return (
-                    <TouchableOpacity
-                      key={e.id}
-                      onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
-                      style={s.row}
-                      activeOpacity={0.85}
-                    >
-                      <Image source={iconForSubject(e.subj)} style={s.rowIcon} />
-                      <View style={{ flex: 1, marginLeft: 13 }}>
-                        <Text style={s.rowTitle}>{e.type} de {e.subj}</Text>
-                        <Text style={s.rowSub}>
-                          {e.date} · {(e.lessonIds ?? []).length} {(e.lessonIds ?? []).length > 1 ? 'leçons liées' : 'leçon liée'}
-                        </Text>
-                        {noLesson && (
-                          <View style={s.rowWarn}>
-                            <Ionicons name="warning" size={12} color="#FF6B5A" />
-                            <Text style={s.rowWarnText}>Aucune leçon rattachée</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={s.jPill}>
-                        <Text style={s.jPillText}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          {/* ===== Alerte leçons non rattachées ===== */}
-          {noLessonControle && (
-            <LinearGradient
-              colors={['rgba(120,30,30,0.55)', 'rgba(140,60,20,0.45)']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.6 }}
-              style={s.alert}
-            >
-              <View style={s.alertBang}><Text style={s.alertBangText}>!</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.alertText}>
-                  Contrôle de {noLessonControle.subj} dans {noLessonControle.days} {noLessonControle.days > 1 ? 'jours' : 'jour'} : avez-vous rattaché les leçons concernées ?
-                </Text>
-                <TouchableOpacity
-                  onPress={() => router.push(`/link-lessons?echeanceId=${noLessonControle.id}` as any)}
-                  style={s.alertBtn}
-                  activeOpacity={0.85}
-                >
-                  <Text style={s.alertBtnText}>Rattacher des leçons</Text>
-                  <Ionicons name="arrow-forward" size={14} color={DK.gold} />
-                </TouchableOpacity>
-              </View>
-              <Image source={require('../../assets/icons/lamp.png')} style={s.alertLamp} />
-            </LinearGradient>
-          )}
-
-          {/* ===== Leçons enregistrées ===== */}
-          <View style={s.sectionRow}>
-            <Text style={s.sectionLabel2}>LEÇONS ENREGISTRÉES</Text>
-            {childLessons.length > 0 && (
-              <TouchableOpacity onPress={() => router.push('/lessons' as any)} style={{ marginLeft: 'auto' }}>
-                <Text style={s.seeAll}>Voir tout</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {childLessons.length === 0 ? (
-            <TouchableOpacity onPress={() => router.push('/scan' as any)} style={s.emptyLessons} activeOpacity={0.85}>
-              <Ionicons name="scan-outline" size={19} color={DK.cyan} />
-              <Text style={s.emptyLessonsText}>Aucune leçon enregistrée. Scannez la première !</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={{ gap: 10 }}>
-              {childLessons.slice(0, 4).map((l) => (
-                <TouchableOpacity
-                  key={l.id}
-                  onPress={() => router.push(`/lesson-detail?id=${l.id}` as any)}
-                  style={s.row}
-                  activeOpacity={0.85}
-                >
-                  <Image source={iconForSubject(l.matiere)} style={s.rowIcon} />
-                  <View style={{ flex: 1, marginLeft: 13 }}>
-                    <Text style={s.rowSub}>{l.matiere}</Text>
-                    <Text style={s.rowTitle} numberOfLines={2}>{l.titre}</Text>
-                    <Text style={s.rowMeta}>{l.notions.length} {l.notions.length > 1 ? 'notions' : 'notion'}</Text>
-                  </View>
-                  <View style={s.rowChevron}>
-                    <Ionicons name="chevron-forward" size={14} color={DK.ink} />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
 
           <View style={{ height: 28 }} />
         </ScrollView>
@@ -454,6 +432,15 @@ const s = StyleSheet.create({
     shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 7,
   },
   jPillText: { color: DK.cyan, fontWeight: '900', fontSize: 12.5 },
+  rowUrgent: {
+    backgroundColor: 'transparent', borderColor: 'rgba(255,140,90,0.55)',
+    shadowColor: '#FF5A3C', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 16, elevation: 6,
+  },
+  jPillUrgent: {
+    borderColor: 'rgba(255,255,255,0.75)', backgroundColor: 'rgba(255,255,255,0.16)',
+    shadowColor: '#fff', shadowOpacity: 0.25,
+  },
+  jPillTextUrgent: { color: '#fff' },
 
   alert: {
     flexDirection: 'row', alignItems: 'center', gap: 11,

@@ -45,6 +45,15 @@ export default function ChildTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="lecons"
+        options={{
+          title: 'Leçons',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen name="plan" options={{ href: null }} />
       <Tabs.Screen
         name="profil"
