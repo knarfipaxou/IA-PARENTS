@@ -1,16 +1,33 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DK, DK_ICONS } from '../constants/darkTheme';
 import { useChild } from '../contexts/ChildContext';
+import { loadExamResults, type ExamResult } from '../lib/examResults';
+
+function noteColor(note: number) {
+  return note >= 14 ? DK.green : note >= 10 ? DK.gold : DK.red;
+}
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getDate()}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
 
 export default function PrepareControl() {
   const router = useRouter();
   const { child } = useChild();
+  const [results, setResults] = useState<ExamResult[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (child) loadExamResults(child.id).then(setResults);
+    }, [child?.id])
+  );
+  const last = results[0];
 
   const OPTIONS = [
     {
@@ -75,6 +92,56 @@ export default function PrepareControl() {
             ))}
           </View>
 
+          {/* ===== Tableau de bord des contrôles blancs ===== */}
+          {last && (
+            <>
+              <Text style={s.sectionLabel}>RÉSULTATS DES CONTRÔLES BLANCS</Text>
+              <LinearGradient
+                colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={s.dashCard}
+              >
+                <View style={s.dashHead}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.dashKicker}>DERNIER CONTRÔLE • {fmtDate(last.date)}</Text>
+                    <Text style={s.dashTitle} numberOfLines={2}>{last.titre}</Text>
+                    <Text style={s.dashMeta}>{last.matiere} · {last.totalOk}/{last.totalMax} points</Text>
+                  </View>
+                  <View style={[s.noteCircle, { borderColor: noteColor(last.note) }]}>
+                    <Text style={[s.noteBig, { color: noteColor(last.note) }]}>{last.note}</Text>
+                    <Text style={s.noteSur}>/20</Text>
+                  </View>
+                </View>
+                {last.acquis.length > 0 && (
+                  <View style={s.dashBlock}>
+                    <Text style={[s.dashLabel, { color: DK.green }]}>✅ ACQUIS</Text>
+                    <Text style={s.dashText}>{last.acquis.join(' · ')}</Text>
+                  </View>
+                )}
+                {last.aRenforcer.length > 0 && (
+                  <View style={s.dashBlock}>
+                    <Text style={[s.dashLabel, { color: DK.gold }]}>🔶 À RENFORCER</Text>
+                    <Text style={s.dashText}>{last.aRenforcer.join(' · ')}</Text>
+                  </View>
+                )}
+              </LinearGradient>
+
+              {results.length > 1 && (
+                <View style={s.histList}>
+                  {results.slice(1, 5).map((r) => (
+                    <View key={r.id} style={s.histRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.histTitle} numberOfLines={1}>{r.titre}</Text>
+                        <Text style={s.histMeta}>{r.matiere} · {fmtDate(r.date)}</Text>
+                      </View>
+                      <Text style={[s.histNote, { color: noteColor(r.note) }]}>{r.note}/20</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+
           {/* Info plan de révision */}
           <LinearGradient
             colors={['rgba(53,228,210,0.1)', 'rgba(148,168,255,0.05)']}
@@ -130,6 +197,30 @@ const s = StyleSheet.create({
     width: 28, height: 28, borderRadius: 999, borderWidth: 1,
     backgroundColor: 'rgba(10,14,34,0.45)', alignItems: 'center', justifyContent: 'center',
   },
+
+  dashCard: { borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 22, padding: 16 },
+  dashHead: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  dashKicker: { fontSize: 10.5, fontWeight: '800', letterSpacing: 1, color: DK.sub },
+  dashTitle: { fontSize: 16.5, fontWeight: '800', color: DK.ink, letterSpacing: -0.3, marginTop: 4, lineHeight: 22 },
+  dashMeta: { fontSize: 12.5, fontWeight: '600', color: DK.sub, marginTop: 3 },
+  noteCircle: {
+    width: 74, height: 74, borderRadius: 999, borderWidth: 3,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  noteBig: { fontSize: 24, fontWeight: '900', letterSpacing: -0.5 },
+  noteSur: { fontSize: 11, fontWeight: '700', color: DK.sub, marginTop: -2 },
+  dashBlock: { marginTop: 12 },
+  dashLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8 },
+  dashText: { fontSize: 13, color: 'rgba(230,236,255,0.9)', fontWeight: '600', lineHeight: 19, marginTop: 4 },
+  histList: { gap: 8, marginTop: 10 },
+  histRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 16, paddingHorizontal: 14, paddingVertical: 11,
+  },
+  histTitle: { fontSize: 13.5, fontWeight: '700', color: DK.ink },
+  histMeta: { fontSize: 11.5, fontWeight: '600', color: DK.sub, marginTop: 2 },
+  histNote: { fontSize: 15.5, fontWeight: '900' },
 
   infoBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,

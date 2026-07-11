@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { DK, DK_ICONS } from '../constants/darkTheme';
 import { playSfx } from '../lib/sfx';
+import { saveExamResult } from '../lib/examResults';
 import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
   AiError,
@@ -219,11 +220,16 @@ export default function GenerateScreen() {
         resume: savedLesson.resume,
       }
     : undefined;
-  const cached = echeanceMode
+  const cachedRaw = echeanceMode
     ? echeance?.generated?.[kind]
     : savedLesson
       ? (savedLesson as any)[LESSON_FIELD[kind] ?? 'fiche']
       : undefined;
+  // un contrôle blanc de l'ancien format (sans sous-questions) est périmé :
+  // on le régénère pour obtenir la notation 1 point par sous-question
+  const cachedStale = kind === 'controle' && cachedRaw
+    && !(cachedRaw.questions ?? []).some((q: any) => (q.sousQuestions ?? []).length > 0);
+  const cached = cachedStale ? undefined : cachedRaw;
 
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
@@ -615,6 +621,19 @@ export default function GenerateScreen() {
           reussite: !!subChecks[`${qi}-${si}`],
         } as any);
       }));
+      // mémorisation du résultat pour le tableau de bord des contrôles blancs
+      saveExamResult({
+        id: sessionId,
+        childId: child.id,
+        date: now,
+        titre: exam.titre,
+        matiere,
+        note,
+        totalOk,
+        totalMax,
+        acquis,
+        aRenforcer,
+      });
       playSfx(note >= 14 ? 'success' : 'correct');
       setExamDone(true);
     }
