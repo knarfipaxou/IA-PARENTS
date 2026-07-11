@@ -11,7 +11,7 @@ import {
   checkBadges,
   XP_VALUES,
 } from '../lib/gamification';
-import type { ChildProfile, DrillSession, DrillResult, LectureEntry } from '../types/childProfile';
+import type { ChildProfile, DrillSession, DrillResult } from '../types/childProfile';
 
 export type GeneratedKind =
   | 'lesson'
@@ -80,12 +80,6 @@ interface ChildCtxValue {
   drillResults: DrillResult[];
   addDrillResult: (result: DrillResult) => void;
   getDrillResults: (childId: string) => DrillResult[];
-  // lectures
-  lectures: LectureEntry[];
-  addLecture: (entry: LectureEntry) => void;
-  updateLecture: (id: string, patch: Partial<LectureEntry>) => void;
-  removeLecture: (id: string) => void;
-  getLectures: (childId: string) => LectureEntry[];
 }
 
 const ChildCtx = createContext<ChildCtxValue>({
@@ -123,11 +117,6 @@ const ChildCtx = createContext<ChildCtxValue>({
   drillResults: [],
   addDrillResult: () => {},
   getDrillResults: () => [],
-  lectures: [],
-  addLecture: () => {},
-  updateLecture: () => {},
-  removeLecture: () => {},
-  getLectures: () => [],
 });
 
 const KEY_CHILDREN = 'ppia.children';
@@ -138,7 +127,6 @@ const KEY_GAMIFICATION = 'ppia.gamification';
 const KEY_PROFILES = 'ppia.profiles';
 const KEY_DRILLS = 'ppia.drills';
 const KEY_DRILL_RESULTS = 'ppia.drillResults';
-const KEY_LECTURES = 'ppia.lectures';
 
 function hydrateChild(c: Child): Child {
   return {
@@ -362,9 +350,6 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
   drillSessionsRef.current = drillSessions;
   const drillResultsRef = useRef(drillResults);
   drillResultsRef.current = drillResults;
-  const [lectures, setLectures] = useState<LectureEntry[]>([]);
-  const lecturesRef = useRef(lectures);
-  lecturesRef.current = lectures;
 
   useEffect(() => {
     (async () => {
@@ -411,8 +396,6 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
       setDrillSessions(Array.isArray(drills) ? drills : []);
       const results = await getJSON<DrillResult[]>(KEY_DRILL_RESULTS, []);
       setDrillResults(Array.isArray(results) ? results : []);
-      const lect = await getJSON<LectureEntry[]>(KEY_LECTURES, []);
-      setLectures(Array.isArray(lect) ? lect : []);
       setHydrated(true);
     })();
   }, []);
@@ -662,34 +645,6 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
     return drillResultsRef.current.filter((r) => r.childId === childId);
   }, []);
 
-  const addLecture = useCallback((entry: LectureEntry) => {
-    setLectures((prev) => {
-      const next = [entry, ...prev];
-      setJSON(KEY_LECTURES, next);
-      return next;
-    });
-  }, []);
-
-  const updateLecture = useCallback((id: string, patch: Partial<LectureEntry>) => {
-    setLectures((prev) => {
-      const next = prev.map((l) => (l.id === id ? { ...l, ...patch } : l));
-      setJSON(KEY_LECTURES, next);
-      return next;
-    });
-  }, []);
-
-  const removeLecture = useCallback((id: string) => {
-    setLectures((prev) => {
-      const next = prev.filter((l) => l.id !== id);
-      setJSON(KEY_LECTURES, next);
-      return next;
-    });
-  }, []);
-
-  const getLectures = useCallback((childId: string): LectureEntry[] => {
-    return lecturesRef.current.filter((l) => l.childId === childId);
-  }, []);
-
   const addXP = useCallback((childId: string, amount: number, reason: XPReason): BadgeId[] => {
     let newBadges: BadgeId[] = [];
     setGamificationStore((prev) => {
@@ -741,11 +696,6 @@ export function ChildProvider({ children: reactChildren }: { children: React.Rea
         drillResults,
         addDrillResult,
         getDrillResults,
-        lectures,
-        addLecture,
-        updateLecture,
-        removeLecture,
-        getLectures,
       }}
     >
       {reactChildren}

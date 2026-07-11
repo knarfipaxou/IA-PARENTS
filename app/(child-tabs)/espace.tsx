@@ -38,11 +38,6 @@ const ACTIONS: Tile[] = [
   { img: ICONS.agenda, grad: ['rgba(22,132,88,0.48)', 'rgba(14,28,44,0.35)'], border: 'rgba(52,214,150,0.45)', glow: '#34D696', title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda' },
   { img: ICONS.trophy, grad: ['rgba(122,60,196,0.48)', 'rgba(24,18,52,0.35)'], border: 'rgba(178,102,255,0.45)', glow: '#B266FF', title: 'Préparer un contrôle', desc: 'Manuel ou par photo', route: '/prepare-control' },
 ];
-const BOLD_CARDS: Tile[] = [
-  { img: ICONS.book, grad: ['rgba(140,76,220,0.5)', 'rgba(30,20,60,0.4)'], border: 'rgba(170,110,255,0.5)', glow: '#AA6EFF', title: 'Carnet de lecture', desc: 'Questions sur les pages lues', route: '/lecture' },
-  { img: ICONS.planning, grad: ['rgba(56,86,210,0.5)', 'rgba(18,25,60,0.4)'], border: 'rgba(100,130,255,0.5)', glow: '#6482FF', title: 'Planning', desc: 'Voir les échéances', route: '/(child-tabs)/echeances' },
-];
-
 // petites étoiles du fond (positions fixes, discrètes)
 const STARS = [
   { top: 24, left: '18%', s: 2 }, { top: 60, left: '58%', s: 3 }, { top: 36, left: '84%', s: 2 },
@@ -101,7 +96,7 @@ export default function EspaceScreen() {
   const missionMin = (isCollege ? child.mission?.min : child.activity?.min) ?? 20;
   const noLessonControle = controles.find((e) => (e.lessonIds ?? []).length === 0);
   const prochainControles = [...controles].sort((a, b) => a.days - b.days).slice(0, 3);
-  const visibleActions = isCollege ? [...ACTIONS, ...BOLD_CARDS] : ACTIONS.slice(2, 4);
+  const visibleActions = isCollege ? ACTIONS : ACTIONS.slice(2, 4);
 
   return (
     <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>

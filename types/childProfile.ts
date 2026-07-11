@@ -66,32 +66,3 @@ export interface DrillResult {
   tempsPasseMin?: number;
 }
 
-// ─── Module lecture ──────────────────────────────────────────────────────────
-
-export interface ReadingQuestion {
-  question: string;
-  reponseModele: string; // destinée au parent, pas à l'enfant
-}
-
-export interface ReadingVocab {
-  mot: string;
-  definition: string;
-}
-
-export interface ReadingQuestions {
-  questions: ReadingQuestion[];
-  vocabulaire: ReadingVocab[];
-  questionOrale: string; // question ouverte hebdomadaire
-}
-
-export interface LectureEntry {
-  id: string;
-  childId: string;
-  oeuvre: string;
-  auteur?: string;
-  pagesLues: string;        // ex. "chapitres 1 à 3" ou "pages 10-25"
-  resumeEnfant?: string;    // résumé écrit par l'enfant
-  impression?: string;      // impression personnelle
-  questions?: ReadingQuestions;
-  createdAt: string;
-}

@@ -33,7 +33,6 @@ export default function RootLayout() {
           <Stack.Screen name="mission-exo" />
           <Stack.Screen name="mission-result" />
           <Stack.Screen name="drill" />
-          <Stack.Screen name="lecture" />
         </Stack>
       </ChildProvider>
     </SafeAreaProvider>
