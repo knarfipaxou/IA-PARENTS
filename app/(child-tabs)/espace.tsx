@@ -3,7 +3,9 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert,
 } from 'react-native';
 import { useScheme } from '../../lib/useScheme';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { loadExamResults, type ExamResult } from '../../lib/examResults';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -121,6 +123,19 @@ export default function EspaceScreen() {
   const A = scheme === 'light' ? ART.light : ART.dark;
   const { child, setChild, updateChild, gamification } = useChild();
   const controles = (child?.echeances ?? []).filter((e) => isControle(e.type));
+
+  // maîtrise par matière (dernière note de contrôle blanc)
+  const [examResults, setExamResults] = useState<ExamResult[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      if (child) loadExamResults(child.id).then(setExamResults);
+    }, [child?.id])
+  );
+  function masteryFor(subj?: string): { pct: number; note: number } | null {
+    const m = (subj ?? '').toLowerCase();
+    const r = examResults.find((x) => (x.matiere ?? '').toLowerCase() === m);
+    return r ? { pct: Math.round((r.note / 20) * 100), note: r.note } : null;
+  }
 
   async function changePhoto() {
     if (!child) return;
@@ -247,7 +262,12 @@ export default function EspaceScreen() {
                 {prochainControles.map((e, idx) => {
                   const th = P.ctrl[Math.min(idx, P.ctrl.length - 1)];
                   const isMath = (e.subj ?? '').toLowerCase().includes('math');
-                  const pct = Math.max(0.08, Math.min(1, 1 - e.days / 21));
+                  // jauge de maîtrise (dernier contrôle blanc de la matière), sinon proximité de la date
+                  const mastery = masteryFor(e.subj);
+                  const pct = mastery ? Math.max(0.04, mastery.pct / 100) : Math.max(0.08, Math.min(1, 1 - e.days / 21));
+                  const barColor = mastery
+                    ? (mastery.note >= 12 ? '#34D696' : mastery.note >= 8 ? '#F5C24B' : '#FF6B5A')
+                    : th.accent;
                   return (
                     <TouchableOpacity
                       key={e.id}
@@ -262,8 +282,13 @@ export default function EspaceScreen() {
                           {e.date}  •  {(e.lessonIds ?? []).length} {(e.lessonIds ?? []).length > 1 ? 'leçons liées' : 'leçon liée'}
                         </Text>
                         <View style={[s.ctrlTrack, { backgroundColor: th.track }]}>
-                          <View style={[s.ctrlFill, { width: `${pct * 100}%`, backgroundColor: th.accent }]} />
+                          <View style={[s.ctrlFill, { width: `${pct * 100}%`, backgroundColor: barColor }]} />
                         </View>
+                        {mastery && (
+                          <Text style={[s.ctrlMastery, { color: barColor }]}>
+                            {mastery.pct} % de maîtrise · dernier contrôle blanc {mastery.note}/20
+                          </Text>
+                        )}
                       </View>
                       <View style={[s.jPill, { borderColor: th.accent }]}>
                         <Text style={[s.jPillText, { color: th.accent }]}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
@@ -434,6 +459,7 @@ const s = StyleSheet.create({
   ctrlSub: { fontSize: 13, fontWeight: '600', marginTop: 3 },
   ctrlTrack: { height: 6, borderRadius: 999, marginTop: 9, overflow: 'hidden', width: '85%' },
   ctrlFill: { height: '100%', borderRadius: 999 },
+  ctrlMastery: { fontSize: 11, fontWeight: '700', marginTop: 5 },
   jPill: {
     borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 12, marginLeft: 8,
   },

@@ -7,7 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { DK, DK_ICONS } from '../constants/darkTheme';
 import { playSfx } from '../lib/sfx';
-import { saveExamResult } from '../lib/examResults';
+import { saveExamResult, loadExamResults, filterForLesson, analyzeExams, type ExamResult } from '../lib/examResults';
+import { ExamDashboard } from '../components/ExamDashboard';
 import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
   AiError,
@@ -245,6 +246,15 @@ export default function GenerateScreen() {
   // controle blanc : notation par sous-question (clé "qi-si" → juste)
   const [subChecks, setSubChecks] = useState<Record<string, boolean>>({});
   const [examDone, setExamDone] = useState(false);
+  // tableau de bord de progression (résultats des contrôles de CETTE leçon/matière)
+  const [examHistory, setExamHistory] = useState<ExamResult[]>([]);
+  useEffect(() => {
+    if (kind === 'controle' && child) {
+      loadExamResults(child.id).then((all) =>
+        setExamHistory(filterForLesson(all, savedLesson?.id ?? undefined, echeanceMode ? echeance?.subj : lesson?.matiere)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, child?.id, savedLesson?.id, examDone]);
 
   const generate = useCallback(async () => {
     if (!child) return;
@@ -634,6 +644,8 @@ export default function GenerateScreen() {
         acquis,
         aRenforcer,
         notionsDetail: Object.entries(notions).map(([notion, v]) => ({ notion, ok: v.ok, total: v.total })),
+        lessonId: savedLesson?.id,
+        echeanceId: echeance?.id,
       });
       playSfx(note >= 14 ? 'success' : 'correct');
       setExamDone(true);
@@ -641,6 +653,9 @@ export default function GenerateScreen() {
 
     body = (
       <>
+        {/* tableau de bord de progression pour cette leçon/matière */}
+        <ExamDashboard an={analyzeExams(examHistory)} />
+
         <Text style={s.contentTitle}>{exam.titre}</Text>
         <View style={s.examMeta}>
           <View style={s.examChip}>

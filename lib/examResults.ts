@@ -18,6 +18,16 @@ export interface ExamResult {
   acquis: string[];
   aRenforcer: string[];
   notionsDetail?: ExamNotionDetail[]; // détail par notion (analyse multi-contrôles)
+  lessonId?: string; // leçon d'origine (tableau de bord par leçon)
+  echeanceId?: string; // échéance d'origine
+}
+
+/** Résultats d'une leçon donnée (ou à défaut de la même matière). */
+export function filterForLesson(results: ExamResult[], lessonId?: string, matiere?: string): ExamResult[] {
+  const byLesson = lessonId ? results.filter((r) => r.lessonId === lessonId) : [];
+  if (byLesson.length > 0) return byLesson;
+  if (matiere) return results.filter((r) => (r.matiere ?? '').toLowerCase() === matiere.toLowerCase());
+  return results;
 }
 
 const KEY = 'ppia.examResults';
