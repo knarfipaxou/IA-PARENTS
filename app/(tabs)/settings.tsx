@@ -9,6 +9,7 @@ import { Card } from '../../components/ui/Card';
 import { Squircle } from '../../components/ui/Squircle';
 import { Btn } from '../../components/ui/Btn';
 import { getApiKey, setApiKey } from '../../services/ai';
+import { useScheme, setDarkMode } from '../../lib/useScheme';
 
 function Row({ icon, label, value, onPress, showArrow = true }: { icon: string; label: string; value?: string; onPress?: () => void; showArrow?: boolean }) {
   return (
@@ -26,7 +27,8 @@ export default function SettingsScreen() {
   const { children } = useChild();
   const activeCount = children.filter((c) => !c.archived).length;
   const archivedCount = children.filter((c) => c.archived).length;
-  const [dark, setDark] = React.useState(false);
+  const dark = useScheme() === 'dark';
+  const setDark = setDarkMode;
   const [notifs, setNotifs] = React.useState(true);
   const [keyInput, setKeyInput] = React.useState('');
   const [keySaved, setKeySaved] = React.useState(false);
