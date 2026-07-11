@@ -193,7 +193,7 @@ export default function GenerateScreen() {
   const lessonId = typeof params.lessonId === 'string' ? params.lessonId : undefined;
   const echeanceId = typeof params.echeanceId === 'string' ? params.echeanceId : undefined;
   const meta = META[kind] ?? META.fiche;
-  const { child, lessons, updateLesson, updateEcheance, addXP } = useChild();
+  const { child, lessons, updateLesson, updateEcheance, addXP, addDrillResult } = useChild();
 
   // ── mode échéance (contrôle global) ──
   const echeance = echeanceId ? child?.echeances?.find((e) => e.id === echeanceId) : undefined;
@@ -236,6 +236,9 @@ export default function GenerateScreen() {
   const [answers, setAnswers] = useState<boolean[]>([]);
   // controle corrections
   const [shownCorrections, setShownCorrections] = useState<Set<number>>(new Set());
+  // controle blanc : notation par sous-question (clé "qi-si" → juste)
+  const [subChecks, setSubChecks] = useState<Record<string, boolean>>({});
+  const [examDone, setExamDone] = useState(false);
 
   const generate = useCallback(async () => {
     if (!child) return;
@@ -247,6 +250,8 @@ export default function GenerateScreen() {
     setFlipped(false);
     setAnswers([]);
     setShownCorrections(new Set());
+    setSubChecks({});
+    setExamDone(false);
     try {
       let result: any;
       if (echeanceMode && echeance) {
@@ -568,6 +573,52 @@ export default function GenerateScreen() {
 
   if (kind === 'controle' && content) {
     const exam = content as MockExam;
+    // normalisation : ancien format (correction seule) → une sous-question unique
+    const questions = (exam.questions ?? []).map((qu) => ({
+      ...qu,
+      sousQuestions: (qu.sousQuestions && qu.sousQuestions.length > 0)
+        ? qu.sousQuestions
+        : [{ texte: qu.enonce, reponse: qu.correction ?? '', notion: echeanceMode ? (echeance?.subj ?? 'général') : (lesson?.matiere ?? 'général') }],
+    }));
+    const totalMax = questions.reduce((acc, qu) => acc + qu.sousQuestions.length, 0);
+    const totalOk = questions.reduce((acc, qu, qi) =>
+      acc + qu.sousQuestions.filter((_, si) => subChecks[`${qi}-${si}`]).length, 0);
+    const note = totalMax > 0 ? Math.round((totalOk / totalMax) * 20) : 0;
+
+    // classement des erreurs / acquis par notion
+    const notions: Record<string, { ok: number; total: number }> = {};
+    questions.forEach((qu, qi) => qu.sousQuestions.forEach((sq, si) => {
+      const n = sq.notion || 'général';
+      notions[n] = notions[n] ?? { ok: 0, total: 0 };
+      notions[n].total += 1;
+      if (subChecks[`${qi}-${si}`]) notions[n].ok += 1;
+    }));
+    const acquis = Object.entries(notions).filter(([, v]) => v.ok === v.total && v.total > 0).map(([n]) => n);
+    const aRenforcer = Object.entries(notions).filter(([, v]) => v.ok < v.total).map(([n, v]) => `${n} (${v.ok}/${v.total})`);
+
+    function finishExam() {
+      if (!child) return;
+      const matiere = echeanceMode ? (echeance?.subj ?? 'Contrôle') : (lesson?.matiere ?? 'Contrôle');
+      const now = new Date().toISOString();
+      const today = now.slice(0, 10);
+      const sessionId = `controle-${Date.now()}`;
+      // réinjection dans le moteur d'adaptation : un résultat par sous-question
+      questions.forEach((qu, qi) => qu.sousQuestions.forEach((sq, si) => {
+        addDrillResult({
+          id: `${sessionId}-${qi}-${si}`,
+          sessionId,
+          exerciseId: `${sessionId}-q${qi}${String.fromCharCode(97 + si)}`,
+          childId: child.id,
+          date: today,
+          matiere,
+          competence: sq.notion || 'général',
+          reussite: !!subChecks[`${qi}-${si}`],
+        } as any);
+      }));
+      playSfx(note >= 14 ? 'success' : 'correct');
+      setExamDone(true);
+    }
+
     body = (
       <>
         <Text style={s.contentTitle}>{exam.titre}</Text>
@@ -576,11 +627,15 @@ export default function GenerateScreen() {
             <Text style={s.examChipText}>Durée : {exam.duree_min} min</Text>
           </View>
           <View style={s.examChip}>
-            <Text style={s.examChipText}>{exam.questions?.length ?? 0} questions</Text>
+            <Text style={s.examChipText}>{questions.length} questions · /{totalMax} pts</Text>
           </View>
         </View>
-        {(exam.questions ?? []).map((qu, i) => {
+        <Text style={s.examHint}>Cochez chaque sous-question réussie : le score se met à jour en direct.</Text>
+
+        {questions.map((qu, i) => {
           const shown = shownCorrections.has(i);
+          const nSub = qu.sousQuestions.length;
+          const nOk = qu.sousQuestions.filter((_, si) => subChecks[`${i}-${si}`]).length;
           return (
             <LinearGradient
               key={i}
@@ -590,11 +645,43 @@ export default function GenerateScreen() {
             >
               <View style={s.examQHeader}>
                 <Text style={s.examQNum}>QUESTION {i + 1}</Text>
-                <View style={s.pointsBadge}>
-                  <Text style={s.pointsText}>{qu.points} pts</Text>
+                <View style={[s.pointsBadge, nOk === nSub && s.pointsBadgeFull, nOk > 0 && nOk < nSub && s.pointsBadgePartial]}>
+                  <Text style={[s.pointsText, nOk === nSub && { color: DK.green }, nOk > 0 && nOk < nSub && { color: DK.gold }]}>
+                    {nOk}/{nSub} pts
+                  </Text>
                 </View>
               </View>
               <Text style={s.examEnonce}>{qu.enonce}</Text>
+
+              {/* sous-questions cochables */}
+              <View style={{ gap: 8, marginTop: 12 }}>
+                {qu.sousQuestions.map((sq, si) => {
+                  const key = `${i}-${si}`;
+                  const on = !!subChecks[key];
+                  return (
+                    <View key={si}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          playSfx(on ? 'wrong' : 'correct');
+                          setSubChecks((prev) => ({ ...prev, [key]: !on }));
+                        }}
+                        style={[s.subQRow, on && s.subQRowOn]}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[s.subQCheck, on && s.subQCheckOn]}>
+                          {on && <Ionicons name="checkmark" size={14} color="#062A14" />}
+                        </View>
+                        <Text style={[s.subQText, on && { color: '#9FF0BE' }]}>{sq.texte}</Text>
+                        <Text style={s.subQPoint}>{on ? '1 pt' : '0 pt'}</Text>
+                      </TouchableOpacity>
+                      {shown && !!sq.reponse && (
+                        <Text style={s.subQAnswer}>→ {sq.reponse}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+
               <TouchableOpacity
                 onPress={() => setShownCorrections((prev) => {
                   const next = new Set(prev);
@@ -604,16 +691,49 @@ export default function GenerateScreen() {
                 style={s.corrToggle}
               >
                 <Ionicons name={shown ? 'eye-off-outline' : 'eye-outline'} size={17} color={DK.cyan} />
-                <Text style={s.corrToggleText}>{shown ? 'Masquer la correction' : 'Voir la correction'}</Text>
+                <Text style={s.corrToggleText}>{shown ? 'Masquer les réponses' : 'Voir les réponses (parent)'}</Text>
               </TouchableOpacity>
-              {shown && (
-                <View style={s.corrBox}>
-                  <Text style={s.corrText}>{qu.correction}</Text>
-                </View>
-              )}
             </LinearGradient>
           );
         })}
+
+        {/* total en direct + fin de contrôle */}
+        <View style={s.examTotalCard}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
+            <Text style={s.examTotalLabel}>TOTAL</Text>
+            <Text style={s.examTotalNote}>{totalOk}/{totalMax}  ·  <Text style={{ color: note >= 14 ? DK.green : note >= 10 ? DK.gold : DK.red }}>{note}/20</Text></Text>
+          </View>
+          {!examDone ? (
+            <TouchableOpacity onPress={finishExam} activeOpacity={0.88} style={{ marginTop: 12 }}>
+              <LinearGradient colors={['#1FB8A8', DK.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.finishBtn}>
+                <Ionicons name="checkmark-done" size={18} color="#052620" />
+                <Text style={s.finishBtnText}>Terminer le contrôle</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : (
+            <>
+              {/* synthèse des acquis / points à retravailler */}
+              <View style={s.synthBlock}>
+                <Text style={s.synthLabel}>✅ ACQUIS</Text>
+                <Text style={s.synthText}>{acquis.length > 0 ? acquis.join(' · ') : 'Aucune notion entièrement maîtrisée sur ce contrôle.'}</Text>
+              </View>
+              <View style={s.synthBlock}>
+                <Text style={[s.synthLabel, { color: DK.gold }]}>🔶 À RENFORCER</Text>
+                <Text style={s.synthText}>{aRenforcer.length > 0 ? aRenforcer.join(' · ') : 'Rien à signaler, tout est juste !'}</Text>
+              </View>
+              <Text style={s.synthHint}>
+                Ces points faibles sont enregistrés : les prochains drills de {child.name} cibleront ces notions.
+              </Text>
+              <TouchableOpacity
+                onPress={() => { setSubChecks({}); setExamDone(false); }}
+                style={s.retryRow}
+              >
+                <Ionicons name="refresh" size={15} color={DK.sub} />
+                <Text style={s.retryText}>Recommencer la correction</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </>
     );
   }
@@ -753,6 +873,42 @@ const s = StyleSheet.create({
     borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4,
   },
   pointsText: { fontSize: 12.5, fontWeight: '800', color: DK.red },
+  pointsBadgeFull: { backgroundColor: 'rgba(52,214,150,0.12)', borderColor: 'rgba(52,214,150,0.55)' },
+  pointsBadgePartial: { backgroundColor: 'rgba(245,194,75,0.1)', borderColor: 'rgba(245,194,75,0.55)' },
+  examHint: { fontSize: 12.5, color: DK.sub, fontWeight: '600', marginTop: 10, lineHeight: 18 },
+  subQRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    borderWidth: 1.2, borderColor: 'rgba(148,168,255,0.25)', backgroundColor: 'rgba(10,14,34,0.45)',
+    borderRadius: 14, paddingHorizontal: 12, paddingVertical: 11,
+  },
+  subQRowOn: {
+    borderColor: 'rgba(110,230,150,0.65)', backgroundColor: 'rgba(110,230,150,0.1)',
+  },
+  subQCheck: {
+    width: 22, height: 22, borderRadius: 7, borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  subQCheckOn: { backgroundColor: DK.green, borderColor: DK.green },
+  subQText: { flex: 1, fontSize: 14, fontWeight: '600', color: DK.ink, lineHeight: 20 },
+  subQPoint: { fontSize: 11.5, fontWeight: '800', color: DK.faint },
+  subQAnswer: { fontSize: 12.5, color: DK.cyan, fontWeight: '600', marginTop: 5, marginLeft: 12, lineHeight: 18 },
+  examTotalCard: {
+    borderWidth: 1, borderColor: DK.cardBorder, backgroundColor: 'rgba(19,26,58,0.55)',
+    borderRadius: 22, padding: 16, marginTop: 16,
+  },
+  examTotalLabel: { fontSize: 12, fontWeight: '800', color: DK.sub, letterSpacing: 1.5 },
+  examTotalNote: { fontSize: 22, fontWeight: '900', color: DK.ink, letterSpacing: -0.4 },
+  finishBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderRadius: 999, paddingVertical: 14,
+  },
+  finishBtnText: { color: '#052620', fontSize: 15, fontWeight: '800' },
+  synthBlock: { marginTop: 13 },
+  synthLabel: { fontSize: 11.5, fontWeight: '800', color: DK.green, letterSpacing: 0.8 },
+  synthText: { fontSize: 13.5, color: 'rgba(230,236,255,0.9)', fontWeight: '600', lineHeight: 20, marginTop: 4 },
+  synthHint: { fontSize: 12, color: DK.sub, fontWeight: '600', marginTop: 12, lineHeight: 17, fontStyle: 'italic' },
+  retryRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', marginTop: 13 },
+  retryText: { fontSize: 12.5, fontWeight: '700', color: DK.sub },
   examEnonce: { fontSize: 15.5, fontWeight: '700', color: DK.ink, lineHeight: 23, letterSpacing: -0.2 },
   corrToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
   corrToggleText: { color: DK.cyan, fontWeight: '800', fontSize: 13.5 },

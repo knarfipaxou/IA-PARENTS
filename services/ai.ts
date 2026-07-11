@@ -264,19 +264,37 @@ Exactement 4 options par question. "bonneReponse" est l'index (0-3). ${JSON_ONLY
   return extractJSON<MiniTest>(text);
 }
 
+export interface MockExamSubQ {
+  texte: string; // ex: "a) 3 L = … cL"
+  reponse: string; // réponse attendue (côté parent)
+  notion: string; // notion évaluée, ex: "conversion L → cL"
+}
+export interface MockExamQuestion {
+  enonce: string;
+  points: number; // = nombre de sous-questions (1 point chacune)
+  sousQuestions?: MockExamSubQ[];
+  correction?: string; // ancien format (rétro-compatibilité des contenus déjà enregistrés)
+}
 export interface MockExam {
   titre: string;
   duree_min: number;
-  questions: { enonce: string; points: number; correction: string }[];
+  questions: MockExamQuestion[];
 }
+
+const MOCK_EXAM_FORMAT = `{"titre": "...", "duree_min": 30, "questions": [{"enonce": "consigne générale de la question", "points": 3, "sousQuestions": [{"texte": "a) 3 L = … cL", "reponse": "300 cL (×100)", "notion": "conversion L → cL"}, {"texte": "b) ...", "reponse": "...", "notion": "..."}]}]}
+RÈGLES DE NOTATION IMPÉRATIVES :
+- Chaque question est DÉCOUPÉE en sous-questions a), b), c)… évaluables séparément, 1 point chacune.
+- "points" = nombre exact de sousQuestions de la question.
+- Le total de tous les points fait exactement 20.
+- "notion" est courte et précise (elle sert à classer les erreurs par notion).`;
 
 export async function generateMockExam(lesson: LessonAnalysis, child: Child): Promise<MockExam> {
   const text = await askClaude({
     system: SYSTEM,
     user: `${childCtx(child)}
 Leçon: ${JSON.stringify(lesson)}
-Crée un contrôle blanc (comme un vrai contrôle à l'école) sur cette leçon, avec 5 à 6 questions ouvertes notées sur 20 au total:
-{"titre": "...", "duree_min": 30, "questions": [{"enonce": "...", "points": 4, "correction": "réponse attendue détaillée"}]}
+Crée un contrôle blanc (comme un vrai contrôle à l'école) sur cette leçon, 5 à 6 questions notées sur 20 au total:
+${MOCK_EXAM_FORMAT}
 ${JSON_ONLY}`,
     maxTokens: 4096,
   });
@@ -367,8 +385,8 @@ Crée un test piégeux: 5 questions QCM avec des distracteurs très plausibles c
 Exactement 4 options par question. ${JSON_ONLY}`;
   } else {
     user = `${ctx}
-Crée un contrôle blanc complet (comme un vrai contrôle à l'école) couvrant toutes les leçons, avec 6 à 8 questions ouvertes notées sur 20 au total:
-{"titre": "...", "duree_min": 45, "questions": [{"enonce": "...", "points": 3, "correction": "réponse attendue détaillée"}]}
+Crée un contrôle blanc complet (comme un vrai contrôle à l'école) couvrant toutes les leçons, 6 à 8 questions notées sur 20 au total:
+${MOCK_EXAM_FORMAT}
 ${JSON_ONLY}`;
     maxTokens = 4096;
   }
