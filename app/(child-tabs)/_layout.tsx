@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, useColorScheme } from 'react-native';
+import { View } from 'react-native';
+import { useScheme } from '../../lib/useScheme';
 
 // Barre d'onglets bi-thème (maquettes clair/sombre) : actif teal + soulignement
 const THEMES = {
@@ -21,7 +22,7 @@ function TabIcon({ name, focused, color }: { name: string; focused: boolean; col
 }
 
 export default function ChildTabsLayout() {
-  const scheme = useColorScheme();
+  const scheme = useScheme();
   const T = scheme === 'light' ? THEMES.light : THEMES.dark;
   return (
     <Tabs

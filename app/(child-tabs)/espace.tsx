@@ -1,7 +1,8 @@
 import React from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert, useColorScheme,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert,
 } from 'react-native';
+import { useScheme } from '../../lib/useScheme';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -115,7 +116,7 @@ function AvatarRing({ size, teal, track }: { size: number; teal: string; track: 
 
 export default function EspaceScreen() {
   const router = useRouter();
-  const scheme = useColorScheme();
+  const scheme = useScheme();
   const P = scheme === 'light' ? PALETTES.light : PALETTES.dark;
   const A = scheme === 'light' ? ART.light : ART.dark;
   const { child, setChild, updateChild, gamification } = useChild();
