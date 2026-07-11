@@ -633,6 +633,7 @@ export default function GenerateScreen() {
         totalMax,
         acquis,
         aRenforcer,
+        notionsDetail: Object.entries(notions).map(([notion, v]) => ({ notion, ok: v.ok, total: v.total })),
       });
       playSfx(note >= 14 ? 'success' : 'correct');
       setExamDone(true);
