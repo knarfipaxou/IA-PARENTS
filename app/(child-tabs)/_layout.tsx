@@ -1,38 +1,51 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { View, useColorScheme } from 'react-native';
 
-// Thème sombre néon de l'espace enfant (cf. maquette)
-const DK = {
-  bg: '#0B1023',
-  border: 'rgba(148,168,255,0.16)',
-  active: '#2EE6D6',
-  inactive: '#5D6890',
+// Barre d'onglets bi-thème (maquettes clair/sombre) : actif teal + soulignement
+const THEMES = {
+  dark: { bg: '#0B1023', border: 'rgba(148,168,255,0.16)', active: '#35E4D2', inactive: 'rgba(210,220,255,0.65)' },
+  light: { bg: '#FFFFFF', border: 'rgba(27,37,89,0.08)', active: '#12B886', inactive: '#6B7699' },
 };
 
+function TabIcon({ name, focused, color }: { name: string; focused: boolean; color: string }) {
+  return (
+    <View style={{ alignItems: 'center' }}>
+      <Ionicons name={name as any} size={24} color={color} />
+      <View style={{
+        width: 26, height: 3, borderRadius: 2, marginTop: 4,
+        backgroundColor: focused ? color : 'transparent',
+      }} />
+    </View>
+  );
+}
+
 export default function ChildTabsLayout() {
+  const scheme = useColorScheme();
+  const T = scheme === 'light' ? THEMES.light : THEMES.dark;
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: DK.active,
-        tabBarInactiveTintColor: DK.inactive,
+        tabBarActiveTintColor: T.active,
+        tabBarInactiveTintColor: T.inactive,
         tabBarStyle: {
-          backgroundColor: DK.bg,
-          borderTopColor: DK.border,
+          backgroundColor: T.bg,
+          borderTopColor: T.border,
           borderTopWidth: 1,
-          paddingBottom: 22,
+          paddingBottom: 20,
           paddingTop: 10,
-          height: 80,
+          height: 84,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: -0.1 },
+        tabBarLabelStyle: { fontSize: 11.5, fontWeight: '600', letterSpacing: -0.1 },
       }}
     >
       <Tabs.Screen
         name="espace"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'home' : 'home-outline'} focused={focused} color={color} />
           ),
         }}
       />
@@ -40,8 +53,8 @@ export default function ChildTabsLayout() {
         name="echeances"
         options={{
           title: 'Échéances',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} color={color} />
           ),
         }}
       />
@@ -49,8 +62,8 @@ export default function ChildTabsLayout() {
         name="lecons"
         options={{
           title: 'Leçons',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'book' : 'book-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'book' : 'book-outline'} focused={focused} color={color} />
           ),
         }}
       />
@@ -59,8 +72,8 @@ export default function ChildTabsLayout() {
         name="profil"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon name={focused ? 'person' : 'person-outline'} focused={focused} color={color} />
           ),
         }}
       />

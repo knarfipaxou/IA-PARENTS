@@ -41,6 +41,7 @@ export interface MatiereStat {
 interface ChildBaseExtras {
   archived?: boolean;
   archivedAt?: string;
+  photoUri?: string; // photo de profil choisie par l'utilisateur (bibliothèque)
 }
 
 export interface CollegeChild extends ChildBaseExtras {
