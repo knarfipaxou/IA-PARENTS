@@ -1,12 +1,11 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { T } from '../constants/theme';
-import { TopBar } from '../components/ui/TopBar';
-import { Btn } from '../components/ui/Btn';
+import { DK, DK_ICONS } from '../constants/darkTheme';
 import { useChild } from '../contexts/ChildContext';
 
 const STEPS = ['Rappel de la leçon', 'Reconnaître une fraction', 'Comparer deux fractions', 'Petit défi final'];
@@ -20,73 +19,144 @@ export default function MissionScreen() {
   const missionObj = child?.kind === 'college' ? child.mission?.obj : child?.activity?.obj;
 
   return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <TopBar onBack={() => router.back()} />
+    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
+      <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
+        <StatusBar style="light" />
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+          {/* Nav retour */}
+          <TouchableOpacity onPress={() => router.back()} style={s.backCircle} activeOpacity={0.8}>
+            <Ionicons name="chevron-back" size={20} color="#B9C6FF" />
+          </TouchableOpacity>
 
-        {/* Hero */}
-        <LinearGradient colors={[T.heroFrom, T.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.hero}>
-          <View style={s.heroIcon}>
-            <Ionicons name="flask-outline" size={40} color={T.primary} />
+          {/* En-tête mission */}
+          <View style={s.headRow}>
+            <Image source={DK_ICONS.target} style={s.headIcon} />
+            <View style={{ flex: 1 }}>
+              <Text style={s.headLabel}>MISSION DU JOUR</Text>
+              <Text style={s.headTitle} numberOfLines={2}>{missionTitle}</Text>
+            </View>
+            <View style={s.minChip}>
+              <Ionicons name="time-outline" size={13} color={DK.ink} />
+              <Text style={s.minChipText}>{missionMin ?? 20} min</Text>
+            </View>
           </View>
-          <View style={s.timeBadge}>
-            <Ionicons name="time-outline" size={13} color="#fff" />
-            <Text style={s.timeBadgeText}>{missionMin ?? 12} minutes</Text>
-          </View>
-          <Text style={s.heroTitle}>Mission du jour</Text>
-          <Text style={s.heroSub}>
-            Objectif : <Text style={{ color: '#fff', fontWeight: '700' }}>{missionObj ?? 'Comparer des fractions'}</Text>
-          </Text>
-        </LinearGradient>
 
-        <Text style={s.stepsLabel}>{STEPS.length} ÉTAPES</Text>
-        <View style={s.stepsList}>
-          {STEPS.map((step, i) => (
-            <View key={i} style={s.stepRow}>
-              <View style={s.stepNum}>
-                <Text style={s.stepNumText}>{i + 1}</Text>
+          {/* Étape 1 — active (rappel de cours) */}
+          <LinearGradient
+            colors={['rgba(35,80,110,0.45)', 'rgba(19,26,58,0.65)']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={s.activeCard}
+          >
+            <View style={s.stepHead}>
+              <View style={s.stepNumOn}>
+                <Text style={s.stepNumOnText}>1</Text>
               </View>
-              <Text style={s.stepLabel}>{step}</Text>
+              <Text style={s.stepTitleOn}>{STEPS[0]}</Text>
+              <Text style={s.stepMeta}>5 min</Text>
+            </View>
+            <Text style={s.activeText}>
+              Objectif : <Text style={{ color: DK.ink, fontWeight: '800' }}>{missionObj ?? 'Comparer des fractions'}</Text>
+            </Text>
+            <TouchableOpacity onPress={() => router.push('/mission-rappel' as any)} activeOpacity={0.88}>
+              <LinearGradient colors={['#1FB8A8', '#35E4D2']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.stepCta}>
+                <Text style={s.stepCtaText}>Commencer →</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {/* Étapes suivantes — inactives */}
+          {STEPS.slice(1).map((step, i) => (
+            <View key={step} style={s.dimCard}>
+              <View style={s.stepHead}>
+                <View style={s.stepNumOff}>
+                  <Text style={s.stepNumOffText}>{i + 2}</Text>
+                </View>
+                <Text style={s.stepTitleOff}>{step}</Text>
+              </View>
             </View>
           ))}
-        </View>
 
-        <View style={{ flex: 1, minHeight: 20 }} />
-        <Btn onPress={() => router.push('/mission-rappel' as any)} full icon={<Ionicons name="play" size={17} color="#fff" />}>
-          Commencer
-        </Btn>
-        <View style={{ height: 24 }} />
-      </ScrollView>
-    </SafeAreaView>
+          {/* Résultat / XP */}
+          <View style={s.dimCard}>
+            <View style={s.stepHead}>
+              <View style={s.stepNumOff}>
+                <Text style={s.stepNumOffText}>{STEPS.length + 1}</Text>
+              </View>
+              <Text style={s.stepTitleOff}>Résultat</Text>
+              <View style={s.xpPill}>
+                <Text style={s.xpPillText}>+15 XP à gagner</Text>
+              </View>
+            </View>
+            <Text style={s.dimHint}>Ton score et tes XP s'affichent à la fin de la mission.</Text>
+          </View>
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
-  scroll: { flex: 1 },
-  content: { paddingHorizontal: 18, paddingBottom: 32 },
-  hero: { borderRadius: 28, padding: 26, marginTop: 12, alignItems: 'center', overflow: 'hidden' },
-  heroIcon: {
-    width: 76, height: 76, borderRadius: 24, marginBottom: 16,
-    backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center',
+  safe: { flex: 1 },
+  content: { padding: 18, paddingBottom: 32 },
+
+  backCircle: {
+    width: 36, height: 36, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.12)',
+    borderWidth: 1, borderColor: 'rgba(148,168,255,0.25)', alignItems: 'center', justifyContent: 'center',
+    marginTop: 6,
   },
-  timeBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: T.amber.solid, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 12,
+
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14 },
+  headIcon: {
+    width: 60, height: 60,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 14,
   },
-  timeBadgeText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  heroTitle: { color: '#fff', fontSize: 25, fontWeight: '800', letterSpacing: -0.5, lineHeight: 30, textAlign: 'center' },
-  heroSub: { color: 'rgba(255,255,255,0.74)', fontSize: 15, fontWeight: '500', marginTop: 8, lineHeight: 22, textAlign: 'center' },
-  stepsLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 22, marginBottom: 11, letterSpacing: 0.2 },
-  stepsList: { gap: 10, marginBottom: 24 },
-  stepRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 13,
-    backgroundColor: T.surface, borderRadius: 16, padding: 13, borderWidth: 1, borderColor: T.line,
+  headLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: DK.cyan },
+  headTitle: { fontSize: 21, fontWeight: '800', color: DK.ink, letterSpacing: -0.4, marginTop: 2 },
+  minChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(10,14,34,0.7)', borderWidth: 1, borderColor: 'rgba(148,168,255,0.25)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
   },
-  stepNum: {
-    width: 30, height: 30, borderRadius: 999, flexShrink: 0,
-    backgroundColor: T.primarySoft, alignItems: 'center', justifyContent: 'center',
+  minChipText: { color: DK.ink, fontSize: 11.5, fontWeight: '700' },
+
+  activeCard: {
+    borderWidth: 1.5, borderColor: 'rgba(53,228,210,0.45)', borderRadius: 24,
+    padding: 16, marginTop: 20,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.1, shadowRadius: 24,
   },
-  stepNumText: { fontWeight: '800', fontSize: 14, color: T.primaryDeep },
-  stepLabel: { fontSize: 15, fontWeight: '700', color: T.ink, letterSpacing: -0.2 },
+  stepHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  stepNumOn: {
+    width: 28, height: 28, borderRadius: 999, backgroundColor: DK.cyan,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
+  },
+  stepNumOnText: { color: '#052A26', fontSize: 13, fontWeight: '800' },
+  stepTitleOn: { flex: 1, fontSize: 14.5, fontWeight: '800', color: DK.cyan },
+  stepMeta: { fontSize: 11, fontWeight: '800', color: 'rgba(210,220,255,0.55)' },
+  activeText: { fontSize: 13, lineHeight: 21, marginTop: 10, color: 'rgba(230,236,255,0.9)', fontWeight: '500' },
+  stepCta: {
+    alignItems: 'center', borderRadius: 999, paddingVertical: 12, marginTop: 12,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 5,
+  },
+  stepCtaText: { color: '#052A26', fontSize: 13.5, fontWeight: '800' },
+
+  dimCard: {
+    backgroundColor: 'rgba(19,26,58,0.5)', borderWidth: 1, borderColor: 'rgba(148,168,255,0.18)',
+    borderRadius: 24, padding: 16, marginTop: 12,
+  },
+  stepNumOff: {
+    width: 28, height: 28, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  stepNumOffText: { color: '#B9C6FF', fontSize: 12, fontWeight: '800' },
+  stepTitleOff: { flex: 1, fontSize: 14.5, fontWeight: '800', color: 'rgba(230,236,255,0.85)' },
+  dimHint: { fontSize: 12, color: 'rgba(210,220,255,0.6)', fontWeight: '500', marginTop: 8 },
+
+  xpPill: {
+    borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,194,75,0.45)',
+    backgroundColor: 'rgba(255,194,75,0.1)', paddingHorizontal: 11, paddingVertical: 5,
+  },
+  xpPillText: { fontSize: 11.5, fontWeight: '800', color: '#FFC24B' },
 });

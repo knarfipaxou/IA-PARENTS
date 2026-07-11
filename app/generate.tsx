@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { T, type AccentKey } from '../constants/theme';
-import { Btn, GhostBtn } from '../components/ui/Btn';
-import { Card } from '../components/ui/Card';
-import { Chip } from '../components/ui/Chip';
-import { TopBar } from '../components/ui/TopBar';
+import { DK, DK_ICONS } from '../constants/darkTheme';
 import { playSfx } from '../lib/sfx';
 import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
@@ -30,17 +28,41 @@ import {
   type QcmExercise,
 } from '../services/ai';
 
-const META: Record<string, { title: string; accent: AccentKey }> = {
-  fiche: { title: 'Fiche de révision', accent: 'green' },
-  flashcards: { title: 'Flashcards', accent: 'violet' },
-  exercices: { title: 'Exercices', accent: 'amber' },
-  minitest: { title: 'Mini-test', accent: 'blue' },
-  controle: { title: 'Contrôle blanc', accent: 'coral' },
-  piege: { title: 'Test piégeux', accent: 'amber' },
-  planning: { title: 'Planning J-10 → J-1', accent: 'blue' },
+const META: Record<string, { title: string; accent: string }> = {
+  fiche: { title: 'Fiche de révision', accent: DK.blue },
+  flashcards: { title: 'Flashcards', accent: DK.violet },
+  exercices: { title: 'Exercices', accent: DK.amber },
+  minitest: { title: 'Mini-test', accent: DK.gold },
+  controle: { title: 'Contrôle blanc', accent: DK.red },
+  piege: { title: 'Test piégeux', accent: DK.amber },
+  planning: { title: 'Planning J-10 → J-1', accent: DK.blue },
 };
 
-// ─── QCM block (pattern from mission-exo) ───────────────────────────────────
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+// ─── Boutons sombres réutilisés localement ───────────────────────────────────
+
+function CyanBtn({ label, icon, onPress, style }: { label: string; icon?: React.ReactNode; onPress: () => void; style?: any }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={style}>
+      <LinearGradient colors={['#1FB8A8', DK.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cyanBtn}>
+        {icon}
+        <Text style={s.cyanBtnText}>{label}</Text>
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
+
+function DarkGhostBtn({ label, icon, onPress, style }: { label: string; icon?: React.ReactNode; onPress: () => void; style?: any }) {
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[s.ghostBtn, style]}>
+      {icon}
+      <Text style={s.ghostBtnText}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Bloc QCM (feedback vert / rouge néon — wireframe 3b) ────────────────────
 
 function QcmBlock({ exo, index, onAnswered }: { exo: QcmExercise; index: number; onAnswered?: (right: boolean) => void }) {
   const [pick, setPick] = useState<number | null>(null);
@@ -48,64 +70,113 @@ function QcmBlock({ exo, index, onAnswered }: { exo: QcmExercise; index: number;
   const isRight = pick === exo.bonneReponse;
 
   return (
-    <Card pad={16} style={{ marginBottom: 13 }}>
-      <View style={q.chipRow}>
+    <View style={q.card}>
+      <LinearGradient
+        colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={q.questionCard}
+      >
         <View style={q.questionChip}>
           <Text style={q.questionChipText}>Question {index + 1} · QCM</Text>
         </View>
-      </View>
-      <Text style={q.title}>{exo.question}</Text>
+        <Text style={q.title}>{exo.question}</Text>
+      </LinearGradient>
       <View style={q.optsList}>
         {exo.options.map((opt, oi) => {
           const sel = pick === oi;
           const isCorrect = checked && oi === exo.bonneReponse;
           const isWrong = checked && sel && oi !== exo.bonneReponse;
-          const bgColor = isCorrect ? T.primarySoft : isWrong ? T.coral.soft : T.surface;
-          const bdColor = isCorrect ? T.primary : isWrong ? T.coral.solid : T.line;
           return (
             <TouchableOpacity
               key={oi}
               disabled={checked}
               onPress={() => { setPick(oi); playSfx(oi === exo.bonneReponse ? 'correct' : 'wrong'); onAnswered?.(oi === exo.bonneReponse); }}
-              style={[q.optRow, { backgroundColor: bgColor, borderColor: bdColor }]}
+              style={[q.optRow, isCorrect && q.optRowRight, isWrong && q.optRowWrong]}
               activeOpacity={0.88}
             >
-              <Text style={q.optLabel}>{opt}</Text>
-              {isCorrect && <Ionicons name="checkmark-circle" size={22} color={T.primaryDeep} />}
-              {isWrong && <Ionicons name="close-circle" size={22} color={T.coral.fg} />}
+              {isCorrect ? (
+                <View style={[q.optBadge, { backgroundColor: DK.green, borderWidth: 0 }]}>
+                  <Ionicons name="checkmark" size={15} color="#062A14" />
+                </View>
+              ) : isWrong ? (
+                <View style={[q.optBadge, { backgroundColor: DK.red, borderWidth: 0 }]}>
+                  <Ionicons name="close" size={15} color="#fff" />
+                </View>
+              ) : (
+                <View style={q.optBadge}>
+                  <Text style={q.optBadgeText}>{LETTERS[oi] ?? '?'}</Text>
+                </View>
+              )}
+              <Text style={[q.optLabel, isCorrect && { color: '#9FF0BE', fontWeight: '800' }, isWrong && { color: '#FFB3A8', fontWeight: '800' }]}>
+                {opt}
+              </Text>
             </TouchableOpacity>
           );
         })}
       </View>
       {checked && (
-        <View style={[q.feedback, { backgroundColor: isRight ? T.primarySoft : T.amber.soft }]}>
-          <Ionicons name={isRight ? 'checkmark-circle' : 'bulb-outline'} size={20} color={isRight ? T.primaryDeep : T.amber.fg} style={{ flexShrink: 0 }} />
+        <View style={[q.feedback, isRight ? q.feedbackRight : q.feedbackWrong]}>
+          <Ionicons
+            name={isRight ? 'checkmark-circle' : 'bulb-outline'}
+            size={20}
+            color={isRight ? DK.green : DK.red}
+            style={{ flexShrink: 0 }}
+          />
           <View style={{ flex: 1 }}>
-            <Text style={[q.feedbackTitle, { color: isRight ? T.primaryDeep : T.amber.fg }]}>
-              {isRight ? "Bravo, c'est exact !" : 'Presque !'}
+            <Text style={[q.feedbackTitle, { color: isRight ? DK.green : DK.red }]}>
+              {isRight ? "Bonne réponse !" : 'Presque !'}
             </Text>
             <Text style={q.feedbackSub}>{exo.explication}</Text>
           </View>
         </View>
       )}
-    </Card>
+    </View>
   );
 }
 
 const q = StyleSheet.create({
-  chipRow: { marginBottom: 8 },
-  questionChip: { alignSelf: 'flex-start', backgroundColor: T.amber.soft, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
-  questionChipText: { fontSize: 12.5, fontWeight: '700', color: T.amber.fg },
-  title: { fontSize: 17, fontWeight: '800', color: T.ink, letterSpacing: -0.3, lineHeight: 24 },
-  optsList: { gap: 9, marginTop: 13 },
-  optRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 15, padding: 13, borderWidth: 2 },
-  optLabel: { flex: 1, fontSize: 14.5, fontWeight: '700', color: T.ink, letterSpacing: -0.2 },
-  feedback: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderRadius: 15, padding: 13, marginTop: 13 },
+  card: { marginBottom: 15 },
+  questionCard: {
+    borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 24, padding: 18,
+  },
+  questionChip: {
+    alignSelf: 'flex-start', backgroundColor: 'rgba(53,228,210,0.09)',
+    borderWidth: 1, borderColor: 'rgba(53,228,210,0.45)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginBottom: 10,
+  },
+  questionChipText: { fontSize: 12, fontWeight: '800', color: DK.cyan },
+  title: { fontSize: 16, fontWeight: '800', color: DK.ink, letterSpacing: -0.2, lineHeight: 23 },
+  optsList: { gap: 9, marginTop: 12 },
+  optRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 11,
+    borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16,
+    borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.25)', backgroundColor: 'rgba(19,26,58,0.5)',
+  },
+  optRowRight: {
+    borderColor: 'rgba(110,230,150,0.7)', backgroundColor: 'rgba(110,230,150,0.12)',
+    shadowColor: DK.green, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 14,
+  },
+  optRowWrong: {
+    borderColor: 'rgba(255,107,90,0.7)', backgroundColor: 'rgba(255,107,90,0.1)',
+    shadowColor: DK.red, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 14,
+  },
+  optBadge: {
+    width: 26, height: 26, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.35)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  optBadgeText: { fontSize: 12, fontWeight: '800', color: '#B9C6FF' },
+  optLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: DK.ink, letterSpacing: -0.2 },
+  feedback: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    borderRadius: 18, padding: 13, marginTop: 12, borderWidth: 1,
+  },
+  feedbackRight: { backgroundColor: 'rgba(110,230,150,0.1)', borderColor: 'rgba(110,230,150,0.45)' },
+  feedbackWrong: { backgroundColor: 'rgba(255,107,90,0.08)', borderColor: 'rgba(255,107,90,0.45)' },
   feedbackTitle: { fontWeight: '800', fontSize: 14.5 },
-  feedbackSub: { fontSize: 13, color: T.ink, fontWeight: '500', marginTop: 3, lineHeight: 19 },
+  feedbackSub: { fontSize: 12.5, color: 'rgba(230,236,255,0.9)', fontWeight: '500', marginTop: 3, lineHeight: 19 },
 });
 
-// ─── Main screen ────────────────────────────────────────────────────────────
+// ─── Écran principal ─────────────────────────────────────────────────────────
 
 const LESSON_FIELD: Record<string, keyof SavedLesson> = {
   fiche: 'fiche',
@@ -124,14 +195,14 @@ export default function GenerateScreen() {
   const meta = META[kind] ?? META.fiche;
   const { child, lessons, updateLesson, updateEcheance, addXP } = useChild();
 
-  // ── échéance (contrôle global) mode ──
+  // ── mode échéance (contrôle global) ──
   const echeance = echeanceId ? child?.echeances?.find((e) => e.id === echeanceId) : undefined;
   const linkedLessons = echeance ? lessons.filter((l) => (echeance.lessonIds ?? []).includes(l.id)) : [];
   const echeanceMode = !!echeanceId;
   const dateKnown = !echeance || /\d{1,2}\/\d{1,2}\/\d{4}/.test(echeance.date) || echeance.days > 0;
   const echeanceBlocked = echeanceMode && (!echeance || linkedLessons.length === 0 || (kind === 'planning' && !dateKnown));
 
-  // ── lesson mode ──
+  // ── mode leçon ──
   const savedLesson: SavedLesson | undefined = echeanceMode
     ? undefined
     : lessonId
@@ -224,73 +295,109 @@ export default function GenerateScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generate]);
 
-  if (echeanceMode && echeanceBlocked) {
-    return (
+  const screenShell = (children: React.ReactNode) => (
+    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
       <SafeAreaView style={s.safe}>
-        <TopBar onBack={() => router.back()} />
+        <StatusBar style="light" />
+        {children}
+      </SafeAreaView>
+    </LinearGradient>
+  );
+
+  const navRow = (subtitle?: string) => (
+    <View style={s.navRow}>
+      <TouchableOpacity onPress={() => router.back()} style={s.backCircle} activeOpacity={0.8}>
+        <Ionicons name="chevron-back" size={19} color="#B9C6FF" />
+      </TouchableOpacity>
+      <View style={{ flex: 1 }}>
+        <Text style={s.title}>{meta.title}</Text>
+        {!!subtitle && <Text style={s.sub} numberOfLines={2}>{subtitle}</Text>}
+      </View>
+      <View style={s.iaPill}>
+        <Ionicons name="sparkles" size={13} color={DK.cyan} />
+        <Text style={s.iaPillText}>IA</Text>
+      </View>
+    </View>
+  );
+
+  if (echeanceMode && echeanceBlocked) {
+    return screenShell(
+      <View style={{ flex: 1, padding: 18 }}>
+        {navRow()}
         <View style={s.center}>
-          <Ionicons name="warning-outline" size={42} color={T.amber.fg} />
+          <Image source={DK_ICONS.warning} style={{ width: 56, height: 56 }} />
           <Text style={s.centerText}>
             {kind === 'planning' && linkedLessons.length > 0
               ? "Impossible de générer un planning fiable sans une date connue. Modifiez l'échéance pour préciser la date."
               : 'Impossible de générer un planning fiable sans les leçons concernées.'}
           </Text>
           {echeance && (
-            <Btn onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)} icon={<Ionicons name="link-outline" size={19} color="#fff" />}>
-              Rattacher une leçon
-            </Btn>
+            <CyanBtn
+              label="Rattacher une leçon"
+              icon={<Ionicons name="link-outline" size={19} color="#052A26" />}
+              onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)}
+              style={{ alignSelf: 'stretch' }}
+            />
           )}
-          <GhostBtn onPress={() => router.push('/scan' as any)} icon={<Ionicons name="scan-outline" size={18} color={T.ink} />}>
-            Scanner une leçon
-          </GhostBtn>
+          <DarkGhostBtn
+            label="Scanner une leçon"
+            icon={<Ionicons name="scan-outline" size={18} color="#DDE4FF" />}
+            onPress={() => router.push('/scan' as any)}
+            style={{ alignSelf: 'stretch' }}
+          />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!child || (!echeanceMode && !lesson)) {
-    return (
-      <SafeAreaView style={s.safe}>
-        <TopBar onBack={() => router.back()} />
+    return screenShell(
+      <View style={{ flex: 1, padding: 18 }}>
+        {navRow()}
         <View style={s.center}>
-          <Ionicons name="scan-outline" size={42} color={T.faint} />
+          <Ionicons name="scan-outline" size={42} color={DK.faint} />
           <Text style={s.centerText}>Scannez une leçon avant de générer du contenu.</Text>
-          <GhostBtn onPress={() => router.back()}>Retour</GhostBtn>
+          <DarkGhostBtn label="Retour" onPress={() => router.back()} style={{ alignSelf: 'stretch' }} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (loading) {
-    return (
-      <SafeAreaView style={s.safe}>
-        <TopBar onBack={() => router.back()} />
+    return screenShell(
+      <View style={{ flex: 1, padding: 18 }}>
+        {navRow()}
         <View style={s.center}>
-          <View style={[s.loadingIcon, { backgroundColor: T[meta.accent].soft }]}>
-            <Ionicons name="sparkles" size={30} color={T[meta.accent].fg} />
+          <View style={[s.loadingIcon, { shadowColor: meta.accent }]}>
+            <Ionicons name="sparkles" size={30} color={meta.accent} />
           </View>
-          <ActivityIndicator color={T[meta.accent].solid} />
+          <ActivityIndicator color={meta.accent} />
           <Text style={s.loadingTitle}>L'IA prépare…</Text>
           <Text style={s.centerText}>{meta.title} pour {child.name}, adapté au niveau {child.classe}.</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (error) {
-    return (
-      <SafeAreaView style={s.safe}>
-        <TopBar onBack={() => router.back()} />
+    return screenShell(
+      <View style={{ flex: 1, padding: 18 }}>
+        {navRow()}
         <View style={s.center}>
-          <Ionicons name="cloud-offline-outline" size={42} color={T.coral.fg} />
+          <Ionicons name="cloud-offline-outline" size={42} color={DK.red} />
           <Text style={s.centerText}>{error}</Text>
-          <Btn onPress={generate} icon={<Ionicons name="refresh" size={19} color="#fff" />}>Réessayer</Btn>
+          <CyanBtn
+            label="Réessayer"
+            icon={<Ionicons name="refresh" size={19} color="#052A26" />}
+            onPress={generate}
+            style={{ alignSelf: 'stretch' }}
+          />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
-  // ── content renderers ──
+  // ── rendus des contenus ──
 
   let body: React.ReactNode = null;
 
@@ -300,17 +407,26 @@ export default function GenerateScreen() {
       <>
         <Text style={s.contentTitle}>{fiche.titre}</Text>
         {(fiche.sections ?? []).map((sec, i) => (
-          <Card key={i} pad={16} style={{ marginTop: 13 }}>
-            <Text style={s.sectionTitle}>{sec.titre}</Text>
-            <Text style={s.sectionText}>{sec.contenu}</Text>
+          <LinearGradient
+            key={i}
+            colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={s.ficheCard}
+          >
+            <Text style={s.ficheLabel}>{i + 1} · {sec.titre.toUpperCase()}</Text>
+            <Text style={s.ficheText}>{sec.contenu}</Text>
             {sec.points_cles?.length > 0 && (
-              <View style={s.chipsWrap}>
+              <View style={s.pointsBox}>
+                <Text style={s.pointsLabel}>★ POINTS CLÉS</Text>
                 {sec.points_cles.map((p, pi) => (
-                  <Chip key={pi} accentKey={meta.accent}>{p}</Chip>
+                  <View key={pi} style={s.pointRow}>
+                    <Text style={s.pointBullet}>•</Text>
+                    <Text style={s.pointText}>{p}</Text>
+                  </View>
                 ))}
               </View>
             )}
-          </Card>
+          </LinearGradient>
         ))}
       </>
     );
@@ -322,33 +438,50 @@ export default function GenerateScreen() {
     const card = cards[cardIndex];
     body = card ? (
       <>
-        <Text style={s.counter}>{cardIndex + 1}/{cards.length}</Text>
-        <TouchableOpacity activeOpacity={0.9} onPress={() => { setFlipped((f) => !f); if (child && !flipped) addXP(child.id, 2, 'flashcard_flip'); }} style={[s.flashcard, flipped && s.flashcardBack]}>
-          <Text style={s.flashLabel}>{flipped ? 'RÉPONSE' : 'QUESTION'}</Text>
-          <Text style={[s.flashText, flipped && { color: '#fff' }]}>{flipped ? card.verso : card.recto}</Text>
-          <View style={s.flipHint}>
-            <Ionicons name="sync-outline" size={15} color={flipped ? 'rgba(255,255,255,0.7)' : T.faint} />
-            <Text style={[s.flipHintText, flipped && { color: 'rgba(255,255,255,0.7)' }]}>Touchez pour retourner</Text>
-          </View>
+        <Text style={s.counter}>Carte {cardIndex + 1} / {cards.length}</Text>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => { setFlipped((f) => !f); if (child && !flipped) addXP(child.id, 2, 'flashcard_flip'); }}
+        >
+          <LinearGradient
+            colors={flipped ? ['rgba(20,110,95,0.55)', 'rgba(14,40,50,0.8)'] : ['rgba(85,50,130,0.5)', 'rgba(25,20,60,0.75)']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={[s.flashcard, flipped ? s.flashcardBack : null]}
+          >
+            <Text style={[s.flashLabel, { color: flipped ? DK.cyan : '#C9A0FF' }]}>{flipped ? 'RÉPONSE' : 'QUESTION'}</Text>
+            <Text style={s.flashText}>{flipped ? card.verso : card.recto}</Text>
+            <View style={s.flipHint}>
+              <Ionicons name="sync-outline" size={15} color="rgba(220,210,255,0.6)" />
+              <Text style={s.flipHintText}>Touche la carte pour la retourner</Text>
+            </View>
+          </LinearGradient>
         </TouchableOpacity>
-        <View style={s.navRow}>
-          <GhostBtn
+        {/* points de progression */}
+        <View style={s.dotsRow}>
+          {cards.map((_, di) => (
+            <View
+              key={di}
+              style={[
+                s.dot,
+                di < cardIndex && { backgroundColor: DK.cyan },
+                di === cardIndex && s.dotActive,
+              ]}
+            />
+          ))}
+        </View>
+        <View style={s.navBtnRow}>
+          <DarkGhostBtn
+            label="Précédente"
+            icon={<Ionicons name="arrow-back" size={18} color="#DDE4FF" />}
             onPress={() => { if (cardIndex > 0) { setCardIndex(cardIndex - 1); setFlipped(false); } }}
-            icon={<Ionicons name="arrow-back" size={18} color={T.ink} />}
             style={{ flex: 1 }}
-          >
-            Précédente
-          </GhostBtn>
-          <Btn
+          />
+          <CyanBtn
+            label="Suivante"
+            icon={<Ionicons name="arrow-forward" size={18} color="#052A26" />}
             onPress={() => { if (cardIndex < cards.length - 1) { setCardIndex(cardIndex + 1); setFlipped(false); } }}
-            disabled={cardIndex >= cards.length - 1}
-            size="md"
-            icon={<Ionicons name="arrow-forward" size={18} color="#fff" />}
-            iconRight
             style={{ flex: 1 }}
-          >
-            Suivante
-          </Btn>
+          />
         </View>
       </>
     ) : null;
@@ -370,28 +503,37 @@ export default function GenerateScreen() {
     const total = mt.exercices?.length ?? 0;
     const done = answers.length >= total && total > 0;
     const score = answers.filter(Boolean).length;
+    const pct = total > 0 ? (score / total) * 100 : 0;
     body = (
       <>
         {(mt.exercices ?? []).map((exo, i) => (
           <QcmBlock key={i} exo={exo} index={i} onAnswered={(right) => { setAnswers((prev) => [...prev, right]); if (child) addXP(child.id, right ? 5 : 1, right ? 'qcm_correct' : 'qcm_wrong'); }} />
         ))}
         {done && (
-          <Card pad={18} style={{ marginTop: 4 }}>
-            <View style={s.scoreRow}>
-              <View style={[s.scoreBadge, { backgroundColor: score === total ? T.green.soft : T.amber.soft }]}>
-                <Text style={[s.scoreText, { color: score === total ? T.green.fg : T.amber.fg }]}>{score}/{total}</Text>
-              </View>
-              <Text style={s.scoreLabel}>
-                {score === total ? 'Excellent travail !' : score >= total / 2 ? 'Bien joué, continuez !' : 'Courage, on révise et on recommence !'}
-              </Text>
+          <LinearGradient
+            colors={['rgba(90,70,20,0.35)', 'rgba(19,26,58,0.65)']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={s.scoreCard}
+          >
+            <Image source={DK_ICONS.trophy} style={s.scoreTrophy} />
+            <Text style={s.scoreBig}>{score} / {total}</Text>
+            <View style={s.scoreTrack}>
+              <LinearGradient
+                colors={[DK.xpFrom, DK.xpMid, DK.xpTo]}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={[s.scoreFill, { width: `${Math.max(4, pct)}%` }]}
+              />
             </View>
+            <Text style={s.scoreLabel}>
+              {score === total ? 'Excellent travail !' : score >= total / 2 ? 'Bien joué, continue !' : 'Courage, on révise et on recommence !'}
+            </Text>
             {!!mt.conseil && (
               <View style={s.conseilBox}>
-                <Ionicons name="bulb-outline" size={18} color={T.primaryDeep} />
+                <Ionicons name="bulb-outline" size={18} color={DK.gold} />
                 <Text style={s.conseilText}>{mt.conseil}</Text>
               </View>
             )}
-          </Card>
+          </LinearGradient>
         )}
       </>
     );
@@ -402,7 +544,7 @@ export default function GenerateScreen() {
     body = (
       <>
         {(plan.jours ?? []).map((j, i) => (
-          <Card key={i} pad={15} style={{ marginTop: 13 }}>
+          <View key={i} style={s.planCard}>
             <View style={s.planHeader}>
               <View style={s.planBadge}>
                 <Text style={s.planBadgeText}>{j.jour}</Text>
@@ -413,12 +555,12 @@ export default function GenerateScreen() {
             </View>
             {(j.taches ?? []).map((t, ti) => (
               <View key={ti} style={s.planTask}>
-                <Ionicons name="ellipse-outline" size={14} color={T.primary} />
+                <Ionicons name="ellipse-outline" size={14} color={DK.cyan} />
                 <Text style={s.planTaskLabel}>{t.label}</Text>
                 <Text style={s.planTaskMin}>{t.min} min</Text>
               </View>
             ))}
-          </Card>
+          </View>
         ))}
       </>
     );
@@ -430,15 +572,24 @@ export default function GenerateScreen() {
       <>
         <Text style={s.contentTitle}>{exam.titre}</Text>
         <View style={s.examMeta}>
-          <Chip accentKey="coral">{`Durée : ${exam.duree_min} min`}</Chip>
-          <Chip accentKey="blue">{`${exam.questions?.length ?? 0} questions`}</Chip>
+          <View style={s.examChip}>
+            <Text style={s.examChipText}>Durée : {exam.duree_min} min</Text>
+          </View>
+          <View style={s.examChip}>
+            <Text style={s.examChipText}>{exam.questions?.length ?? 0} questions</Text>
+          </View>
         </View>
         {(exam.questions ?? []).map((qu, i) => {
           const shown = shownCorrections.has(i);
           return (
-            <Card key={i} pad={16} style={{ marginTop: 13 }}>
+            <LinearGradient
+              key={i}
+              colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={s.examCard}
+            >
               <View style={s.examQHeader}>
-                <Text style={s.examQNum}>Question {i + 1}</Text>
+                <Text style={s.examQNum}>QUESTION {i + 1}</Text>
                 <View style={s.pointsBadge}>
                   <Text style={s.pointsText}>{qu.points} pts</Text>
                 </View>
@@ -452,7 +603,7 @@ export default function GenerateScreen() {
                 })}
                 style={s.corrToggle}
               >
-                <Ionicons name={shown ? 'eye-off-outline' : 'eye-outline'} size={17} color={T.primary} />
+                <Ionicons name={shown ? 'eye-off-outline' : 'eye-outline'} size={17} color={DK.cyan} />
                 <Text style={s.corrToggleText}>{shown ? 'Masquer la correction' : 'Voir la correction'}</Text>
               </TouchableOpacity>
               {shown && (
@@ -460,94 +611,170 @@ export default function GenerateScreen() {
                   <Text style={s.corrText}>{qu.correction}</Text>
                 </View>
               )}
-            </Card>
+            </LinearGradient>
           );
         })}
       </>
     );
   }
 
-  return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <TopBar onBack={() => router.back()} right={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: T[meta.accent].solid, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 }}>
-            <Ionicons name="sparkles" size={13} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>IA</Text>
-          </View>
-        } />
+  return screenShell(
+    <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+      {navRow(
+        echeanceMode && echeance
+          ? `${echeance.type} de ${echeance.subj} · ${linkedLessons.length} ${linkedLessons.length > 1 ? 'leçons' : 'leçon'} · pour ${child.name}`
+          : `${lesson?.matiere} · ${lesson?.titre} · pour ${child.name}`
+      )}
 
-        <View style={s.header}>
-          <Text style={s.title}>{meta.title}</Text>
-          <Text style={s.sub}>
-            {echeanceMode && echeance
-              ? `${echeance.type} de ${echeance.subj} · ${linkedLessons.length} ${linkedLessons.length > 1 ? 'leçons' : 'leçon'} · pour ${child.name}`
-              : `${lesson?.matiere} · ${lesson?.titre} · pour ${child.name}`}
-          </Text>
-        </View>
+      {body}
 
-        {body}
-
-        <View style={{ marginTop: 20 }}>
-          <GhostBtn full onPress={generate} icon={<Ionicons name="refresh" size={19} color={T.ink} />}>
-            Régénérer
-          </GhostBtn>
-        </View>
-        <View style={{ height: 24 }} />
-      </ScrollView>
-    </SafeAreaView>
+      <DarkGhostBtn
+        label="Régénérer"
+        icon={<Ionicons name="refresh" size={19} color="#DDE4FF" />}
+        onPress={generate}
+        style={{ marginTop: 20 }}
+      />
+      <View style={{ height: 24 }} />
+    </ScrollView>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
+  safe: { flex: 1 },
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 36 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 28 },
-  centerText: { fontSize: 14.5, color: T.sub, fontWeight: '600', textAlign: 'center', lineHeight: 21 },
-  loadingIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  loadingTitle: { fontSize: 19, fontWeight: '800', color: T.ink, letterSpacing: -0.4 },
-  header: { marginTop: 18, marginBottom: 14 },
-  title: { fontSize: 27, fontWeight: '800', color: T.ink, letterSpacing: -0.6 },
-  sub: { fontSize: 14, color: T.sub, marginTop: 6, fontWeight: '500' },
-  contentTitle: { fontSize: 19, fontWeight: '800', color: T.ink, letterSpacing: -0.4, marginTop: 4 },
-  sectionTitle: { fontSize: 16, fontWeight: '800', color: T.ink, letterSpacing: -0.3, marginBottom: 8 },
-  sectionText: { fontSize: 14.5, color: T.sub, lineHeight: 22, fontWeight: '500' },
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 12 },
-  counter: { alignSelf: 'center', fontSize: 14, fontWeight: '800', color: T.sub, marginBottom: 12 },
-  flashcard: {
-    minHeight: 230, borderRadius: 26, padding: 24,
-    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
-    alignItems: 'center', justifyContent: 'center', gap: 14,
-    shadowColor: '#102818', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.07, shadowRadius: 16, elevation: 3,
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 16 },
+  centerText: { fontSize: 14.5, color: DK.sub, fontWeight: '600', textAlign: 'center', lineHeight: 21 },
+  loadingIcon: {
+    width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16,
   },
-  flashcardBack: { backgroundColor: T.violet.solid, borderColor: T.violet.solid },
-  flashLabel: { fontSize: 12, fontWeight: '800', color: T.faint, letterSpacing: 1 },
-  flashText: { fontSize: 19, fontWeight: '800', color: T.ink, textAlign: 'center', letterSpacing: -0.3, lineHeight: 27 },
-  flipHint: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  flipHintText: { fontSize: 12.5, color: T.faint, fontWeight: '600' },
-  navRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  scoreRow: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-  scoreBadge: { borderRadius: 16, paddingVertical: 10, paddingHorizontal: 16 },
-  scoreText: { fontSize: 21, fontWeight: '800' },
-  scoreLabel: { flex: 1, fontSize: 15, fontWeight: '700', color: T.ink, letterSpacing: -0.2 },
-  conseilBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 9, backgroundColor: T.primarySoft, borderRadius: 14, padding: 13, marginTop: 14 },
-  conseilText: { flex: 1, fontSize: 13.5, fontWeight: '600', color: T.primaryDeep, lineHeight: 20 },
+  loadingTitle: { fontSize: 19, fontWeight: '800', color: DK.ink, letterSpacing: -0.4 },
+
+  navRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 18 },
+  backCircle: {
+    width: 36, height: 36, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.12)',
+    borderWidth: 1, borderColor: 'rgba(148,168,255,0.25)', alignItems: 'center', justifyContent: 'center',
+  },
+  title: { fontSize: 19, fontWeight: '800', color: DK.ink, letterSpacing: -0.3 },
+  sub: { fontSize: 12, color: DK.sub, marginTop: 2, fontWeight: '600' },
+  iaPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1, borderColor: 'rgba(53,228,210,0.5)', backgroundColor: 'rgba(53,228,210,0.09)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
+  },
+  iaPillText: { color: DK.cyan, fontSize: 12.5, fontWeight: '800' },
+
+  cyanBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderRadius: 999, paddingVertical: 15, paddingHorizontal: 18,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 24, elevation: 8,
+  },
+  cyanBtnText: { color: '#052A26', fontSize: 15, fontWeight: '800' },
+  ghostBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.35)', borderRadius: 999,
+    paddingVertical: 14, paddingHorizontal: 18,
+  },
+  ghostBtnText: { color: '#DDE4FF', fontSize: 14, fontWeight: '700' },
+
+  contentTitle: { fontSize: 19, fontWeight: '800', color: DK.ink, letterSpacing: -0.4, marginTop: 4 },
+
+  // fiche (wireframe 3a)
+  ficheCard: { borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 22, padding: 16, marginTop: 13 },
+  ficheLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: DK.cyan },
+  ficheText: { fontSize: 13.5, lineHeight: 21, marginTop: 8, color: 'rgba(230,236,255,0.9)', fontWeight: '500' },
+  pointsBox: {
+    marginTop: 12, borderRadius: 16, padding: 13,
+    backgroundColor: 'rgba(245,194,75,0.07)', borderWidth: 1, borderColor: 'rgba(245,194,75,0.4)',
+  },
+  pointsLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: DK.gold, marginBottom: 8 },
+  pointRow: { flexDirection: 'row', gap: 9, marginTop: 5 },
+  pointBullet: { color: DK.gold, fontWeight: '800', fontSize: 13 },
+  pointText: { flex: 1, fontSize: 13, lineHeight: 19, color: 'rgba(235,240,255,0.9)', fontWeight: '500' },
+
+  // flashcards (wireframe 3c)
+  counter: { alignSelf: 'center', fontSize: 14, fontWeight: '800', color: DK.sub, marginBottom: 14 },
+  flashcard: {
+    minHeight: 330, borderRadius: 28, padding: 26,
+    borderWidth: 1.5, borderColor: 'rgba(190,140,255,0.45)',
+    alignItems: 'center', justifyContent: 'center', gap: 16,
+    shadowColor: DK.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 40, elevation: 8,
+  },
+  flashcardBack: { borderColor: 'rgba(53,228,210,0.5)', shadowColor: DK.cyan },
+  flashLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 2 },
+  flashText: { fontSize: 21, fontWeight: '800', color: DK.ink, textAlign: 'center', letterSpacing: -0.3, lineHeight: 30 },
+  flipHint: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 8 },
+  flipHintText: { fontSize: 12, color: 'rgba(220,210,255,0.6)', fontWeight: '600' },
+  dotsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 18 },
+  dot: { width: 6, height: 6, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.3)' },
+  dotActive: { width: 16, borderRadius: 3, backgroundColor: '#C9A0FF' },
+  navBtnRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
+
+  // score mini-test (wireframe 3d)
+  scoreCard: {
+    borderWidth: 1, borderColor: 'rgba(245,194,75,0.45)', borderRadius: 26,
+    padding: 22, marginTop: 6, alignItems: 'center',
+  },
+  scoreTrophy: {
+    width: 64, height: 64,
+    shadowColor: DK.gold, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16,
+  },
+  scoreBig: {
+    fontSize: 44, fontWeight: '800', marginTop: 10, color: DK.gold,
+    textShadowColor: 'rgba(245,194,75,0.4)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 26,
+  },
+  scoreTrack: {
+    alignSelf: 'stretch', height: 9, borderRadius: 5, marginTop: 14,
+    backgroundColor: 'rgba(148,168,255,0.15)', overflow: 'hidden',
+  },
+  scoreFill: { height: '100%', borderRadius: 5 },
+  scoreLabel: { fontSize: 15, fontWeight: '700', color: DK.ink, letterSpacing: -0.2, marginTop: 14, textAlign: 'center' },
+  conseilBox: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 9, alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,194,75,0.1)', borderWidth: 1, borderColor: 'rgba(255,194,75,0.4)',
+    borderRadius: 16, padding: 13, marginTop: 14,
+  },
+  conseilText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#FFE3B0', lineHeight: 20 },
+
+  // contrôle blanc
   examMeta: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  examChip: {
+    borderWidth: 1, borderColor: 'rgba(53,228,210,0.45)', backgroundColor: 'rgba(53,228,210,0.08)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
+  },
+  examChipText: { fontSize: 11.5, fontWeight: '700', color: DK.cyan },
+  examCard: { borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 22, padding: 16, marginTop: 13 },
   examQHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 },
-  examQNum: { fontSize: 13, fontWeight: '800', color: T.sub, letterSpacing: 0.2 },
-  pointsBadge: { backgroundColor: T.coral.soft, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  pointsText: { fontSize: 12.5, fontWeight: '800', color: T.coral.fg },
-  examEnonce: { fontSize: 15.5, fontWeight: '700', color: T.ink, lineHeight: 23, letterSpacing: -0.2 },
+  examQNum: { fontSize: 12, fontWeight: '800', color: DK.sub, letterSpacing: 1 },
+  pointsBadge: {
+    backgroundColor: 'rgba(255,107,90,0.12)', borderWidth: 1, borderColor: 'rgba(255,107,90,0.45)',
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4,
+  },
+  pointsText: { fontSize: 12.5, fontWeight: '800', color: DK.red },
+  examEnonce: { fontSize: 15.5, fontWeight: '700', color: DK.ink, lineHeight: 23, letterSpacing: -0.2 },
   corrToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
-  corrToggleText: { color: T.primary, fontWeight: '800', fontSize: 13.5 },
-  corrBox: { backgroundColor: T.surfaceAlt, borderRadius: 14, padding: 13, marginTop: 10 },
-  corrText: { fontSize: 13.5, color: T.ink, fontWeight: '500', lineHeight: 21 },
+  corrToggleText: { color: DK.cyan, fontWeight: '800', fontSize: 13.5 },
+  corrBox: {
+    backgroundColor: 'rgba(10,14,34,0.6)', borderWidth: 1, borderColor: 'rgba(148,168,255,0.14)',
+    borderRadius: 14, padding: 13, marginTop: 10,
+  },
+  corrText: { fontSize: 13.5, color: 'rgba(230,236,255,0.9)', fontWeight: '500', lineHeight: 21 },
+
+  // planning
+  planCard: {
+    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 20, padding: 15, marginTop: 13,
+  },
   planHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  planBadge: { backgroundColor: T.blue.soft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
-  planBadgeText: { fontSize: 13.5, fontWeight: '800', color: T.blue.fg },
-  planTotal: { fontSize: 12.5, fontWeight: '800', color: T.sub },
+  planBadge: {
+    backgroundColor: 'rgba(90,140,255,0.14)', borderWidth: 1, borderColor: 'rgba(90,140,255,0.45)',
+    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5,
+  },
+  planBadgeText: { fontSize: 13.5, fontWeight: '800', color: '#7CB4FF' },
+  planTotal: { fontSize: 12.5, fontWeight: '800', color: DK.sub },
   planTask: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 6 },
-  planTaskLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: T.ink, lineHeight: 20 },
-  planTaskMin: { fontSize: 12.5, fontWeight: '800', color: T.amber.fg },
+  planTaskLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: DK.ink, lineHeight: 20 },
+  planTaskMin: { fontSize: 12.5, fontWeight: '800', color: DK.amber },
 });

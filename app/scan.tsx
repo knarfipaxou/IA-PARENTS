@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { T } from '../constants/theme';
-import { Btn, GhostBtn } from '../components/ui/Btn';
-import { Card } from '../components/ui/Card';
-import { TopBar } from '../components/ui/TopBar';
+import { DK, DK_ICONS } from '../constants/darkTheme';
 import { useChild } from '../contexts/ChildContext';
 import { pickImage, pickFromLibrary } from '../lib/camera';
 import { analyzeLesson, AiError } from '../services/ai';
@@ -57,80 +55,149 @@ export default function ScanScreen() {
   };
 
   return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <TopBar onBack={() => router.back()} right={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: T.green.solid, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 }}>
-            <Ionicons name="sparkles" size={13} color="#fff" />
-            <Text style={{ color: '#fff', fontSize: 12.5, fontWeight: '700' }}>IA</Text>
-          </View>
-        } />
-
-        <View style={s.header}>
-          <Text style={s.title}>Scanner une leçon</Text>
-          <Text style={s.sub}>Prenez une photo claire de la leçon de votre enfant.</Text>
-        </View>
-
-        <LinearGradient colors={[T.heroFrom, T.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.viewfinder}>
-          <View style={s.viewfinderInner}>
-            {/* paper lines decoration */}
-            <View style={s.paperLines}>
-              {[...Array(7)].map((_, i) => (
-                <View key={i} style={[s.paperLine, { width: i % 3 === 2 ? '55%' : '100%', opacity: 0.1 }]} />
-              ))}
+    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
+      <SafeAreaView style={s.safe}>
+        <StatusBar style="light" />
+        <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+          {/* nav */}
+          <View style={s.navRow}>
+            <TouchableOpacity onPress={() => router.back()} style={s.backCircle} activeOpacity={0.8}>
+              <Ionicons name="chevron-back" size={19} color="#B9C6FF" />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={s.title}>Scanner une leçon</Text>
+              <Text style={s.sub}>Cadrez la page du cahier</Text>
             </View>
-
-            <Ionicons name="scan-outline" size={48} color="rgba(255,255,255,0.8)" />
-            <Text style={s.viewfinderText}>
-              {scanning ? 'Analyse en cours…' : 'Placez la leçon dans le cadre'}
-            </Text>
-
-            {scanning && (
-              <View style={s.scanLine} />
-            )}
+            <View style={s.iaPill}>
+              <Ionicons name="sparkles" size={13} color={DK.cyan} />
+              <Text style={s.iaPillText}>IA</Text>
+            </View>
           </View>
-        </LinearGradient>
 
-        <Card pad={6} style={{ marginTop: 16 }}>
-          {TIPS.map((tip, i) => (
-            <View key={tip} style={[s.tip, i < TIPS.length - 1 && s.tipBorder]}>
-              <View style={s.tipCheck}>
-                <Ionicons name="checkmark" size={15} color={T.primaryDeep} />
+          {/* viseur */}
+          <LinearGradient colors={['#060915', '#0B1128']} style={s.viewfinder}>
+            {/* coins cyan */}
+            <View style={[s.corner, s.cornerTL]} />
+            <View style={[s.corner, s.cornerTR]} />
+            <View style={[s.corner, s.cornerBL]} />
+            <View style={[s.corner, s.cornerBR]} />
+            {/* ligne de scan */}
+            <View style={s.scanLine} />
+            <View style={s.viewfinderCenter}>
+              <Image source={DK_ICONS.scan} style={s.scanIcon} />
+              <Text style={s.viewfinderText}>
+                {scanning ? 'Analyse en cours…' : "Placez la leçon dans le cadre,\nl'IA détecte le texte"}
+              </Text>
+              {scanning && <ActivityIndicator color={DK.cyan} style={{ marginTop: 10 }} />}
+            </View>
+          </LinearGradient>
+
+          {/* conseils */}
+          <View style={s.tipsCard}>
+            {TIPS.map((tip, i) => (
+              <View key={tip} style={[s.tip, i < TIPS.length - 1 && s.tipBorder]}>
+                <View style={s.tipCheck}>
+                  <Ionicons name="checkmark" size={15} color={DK.cyan} />
+                </View>
+                <Text style={s.tipText}>{tip}</Text>
               </View>
-              <Text style={s.tipText}>{tip}</Text>
-            </View>
-          ))}
-        </Card>
+            ))}
+          </View>
 
-        <View style={{ minHeight: 24 }} />
-        <Btn full onPress={() => capture(false)} loading={scanning} icon={!scanning ? <Ionicons name="camera-outline" size={20} color="#fff" /> : undefined}>
-          {scanning ? 'Analyse…' : 'Prendre une photo'}
-        </Btn>
-        <View style={{ marginTop: 10 }}>
-          <GhostBtn full onPress={() => { if (!scanning) capture(true); }} icon={<Ionicons name="images-outline" size={19} color={T.ink} />}>
-            Importer depuis la galerie
-          </GhostBtn>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={{ minHeight: 22 }} />
+
+          {/* bouton principal */}
+          <TouchableOpacity onPress={() => capture(false)} disabled={scanning} activeOpacity={0.88}>
+            <LinearGradient colors={['#1FB8A8', DK.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.primaryBtn}>
+              {scanning
+                ? <ActivityIndicator color="#052A26" />
+                : <Ionicons name="camera-outline" size={20} color="#052A26" />}
+              <Text style={s.primaryBtnText}>{scanning ? 'Analyse…' : 'Prendre une photo'}</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          {/* import galerie */}
+          <TouchableOpacity onPress={() => { if (!scanning) capture(true); }} style={s.ghostBtn} activeOpacity={0.85}>
+            <Ionicons name="images-outline" size={18} color="#DDE4FF" />
+            <Text style={s.ghostBtnText}>Importer depuis la galerie</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
+const CORNER = {
+  position: 'absolute' as const,
+  width: 34,
+  height: 34,
+  borderColor: DK.cyan,
+};
+
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
+  safe: { flex: 1 },
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 36 },
-  header: { marginTop: 18, marginBottom: 20 },
-  title: { fontSize: 27, fontWeight: '800', color: T.ink, letterSpacing: -0.6 },
-  sub: { fontSize: 15, color: T.sub, marginTop: 8, fontWeight: '500' },
-  viewfinder: { borderRadius: 26, padding: 12 },
-  viewfinderInner: { borderRadius: 18, aspectRatio: 4 / 3, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center', gap: 14, position: 'relative' },
-  paperLines: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, padding: 26 },
-  paperLine: { height: 2, backgroundColor: '#fff', borderRadius: 2, marginVertical: 8 },
-  viewfinderText: { color: 'rgba(255,255,255,0.85)', fontWeight: '700', fontSize: 15, letterSpacing: -0.2 },
-  scanLine: { position: 'absolute', left: 0, right: 0, height: 3, backgroundColor: T.primary, shadowColor: T.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 8, top: '50%' },
+
+  navRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 18 },
+  backCircle: {
+    width: 36, height: 36, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.12)',
+    borderWidth: 1, borderColor: 'rgba(148,168,255,0.25)', alignItems: 'center', justifyContent: 'center',
+  },
+  title: { fontSize: 19, fontWeight: '800', color: DK.ink, letterSpacing: -0.3 },
+  sub: { fontSize: 12.5, color: DK.sub, marginTop: 2, fontWeight: '600' },
+  iaPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1, borderColor: 'rgba(53,228,210,0.5)', backgroundColor: 'rgba(53,228,210,0.09)',
+    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
+  },
+  iaPillText: { color: DK.cyan, fontSize: 12.5, fontWeight: '800' },
+
+  viewfinder: {
+    height: 400, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(148,168,255,0.2)',
+    alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+  },
+  corner: { ...CORNER, borderRadius: 2 },
+  cornerTL: { left: 22, top: 22, borderLeftWidth: 3.5, borderTopWidth: 3.5, borderTopLeftRadius: 8 },
+  cornerTR: { right: 22, top: 22, borderRightWidth: 3.5, borderTopWidth: 3.5, borderTopRightRadius: 8 },
+  cornerBL: { left: 22, bottom: 22, borderLeftWidth: 3.5, borderBottomWidth: 3.5, borderBottomLeftRadius: 8 },
+  cornerBR: { right: 22, bottom: 22, borderRightWidth: 3.5, borderBottomWidth: 3.5, borderBottomRightRadius: 8 },
+  scanLine: {
+    position: 'absolute', left: 24, right: 24, top: '52%', height: 2, backgroundColor: DK.cyan,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 16,
+  },
+  viewfinderCenter: { alignItems: 'center' },
+  scanIcon: {
+    width: 64, height: 64, borderRadius: 14, opacity: 0.9,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 14,
+  },
+  viewfinderText: {
+    color: 'rgba(200,212,255,0.55)', fontWeight: '600', fontSize: 12.5,
+    marginTop: 10, maxWidth: 210, textAlign: 'center', lineHeight: 18,
+  },
+
+  tipsCard: {
+    marginTop: 16, backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 20, padding: 6,
+  },
   tip: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
-  tipBorder: { borderBottomWidth: 1, borderBottomColor: T.line },
-  tipCheck: { width: 26, height: 26, borderRadius: 999, backgroundColor: T.primarySoft, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  tipText: { fontSize: 14.5, fontWeight: '600', color: T.ink, letterSpacing: -0.2 },
+  tipBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(148,168,255,0.12)' },
+  tipCheck: {
+    width: 26, height: 26, borderRadius: 999, backgroundColor: 'rgba(53,228,210,0.12)',
+    borderWidth: 1, borderColor: 'rgba(53,228,210,0.4)', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  tipText: { fontSize: 14.5, fontWeight: '600', color: DK.ink, letterSpacing: -0.2 },
+
+  primaryBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+    borderRadius: 999, paddingVertical: 16,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 24, elevation: 8,
+  },
+  primaryBtnText: { color: '#052A26', fontSize: 15.5, fontWeight: '800' },
+  ghostBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+    borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.35)', borderRadius: 999,
+    paddingVertical: 14, marginTop: 10,
+  },
+  ghostBtnText: { color: '#DDE4FF', fontSize: 14, fontWeight: '700' },
 });
