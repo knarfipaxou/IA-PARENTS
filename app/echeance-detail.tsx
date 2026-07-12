@@ -9,6 +9,7 @@ import { DK } from '../constants/darkTheme';
 import { useChild } from '../contexts/ChildContext';
 import { loadExamResults, analyzeExams, type ExamResult } from '../lib/examResults';
 import { loadFlashMastery, masteryPct, type FlashMastery } from '../lib/flashMastery';
+import { progressColor, progressGradient } from '../lib/progressColor';
 
 // icônes néon par matière (banque)
 const SUBJECT_ICONS: { match: RegExp; img: any }[] = [
@@ -34,9 +35,10 @@ function subjectIcon(subj?: string) {
 type PrepMode = 'controle' | 'flashcards' | 'both';
 
 // cercle de statistique (anneau fin + icône, comme la maquette)
-function StatRing({ pct, icon, label, value, valueColor }: {
-  pct: number; icon: string; label: string; value: string; valueColor?: string;
+function StatRing({ pct, icon, label, value, valueColor, evaluated = true }: {
+  pct: number; icon: string; label: string; value: string; valueColor?: string; evaluated?: boolean;
 }) {
+  const c = evaluated ? progressColor(pct) : DK.cyan;
   return (
     <View style={s.statCol}>
       <View style={s.statRing}>
@@ -44,15 +46,15 @@ function StatRing({ pct, icon, label, value, valueColor }: {
         <View style={[
           s.statRingArc,
           {
-            borderColor: DK.cyan,
+            borderColor: c,
             opacity: Math.max(0.25, pct / 100),
             transform: [{ rotate: `${-45 + (pct / 100) * 180}deg` }],
           },
         ]} />
-        <Ionicons name={icon as any} size={24} color={DK.cyan} />
+        <Ionicons name={icon as any} size={24} color={c} />
       </View>
       <Text style={s.statLabel}>{label}</Text>
-      <Text style={[s.statValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
+      <Text style={[s.statValue, { color: valueColor ?? c }]}>{value}</Text>
     </View>
   );
 }
@@ -186,16 +188,19 @@ export default function EcheanceDetail() {
             ) : (
               <>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 14 }}>
-                  <Text style={s.mainPct}>{mainPct}<Text style={s.mainPctSign}> %</Text></Text>
+                  <Text style={[s.mainPct, { color: progressColor(mainPct) }]}>{mainPct}<Text style={s.mainPctSign}> %</Text></Text>
                   <Text style={s.mainLabel}>{mainTitle}</Text>
                 </View>
                 <View style={s.mainTrack}>
                   <LinearGradient
-                    colors={['#2C6BFF', DK.cyan]}
+                    colors={progressGradient(mainPct)}
                     start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                     style={[s.mainFill, { width: `${Math.max(4, mainPct)}%` }]}
                   />
-                  <View style={[s.mainThumb, { left: `${Math.min(96, Math.max(2, mainPct - 2))}%` }]} />
+                  <View style={[s.mainThumb, {
+                    left: `${Math.min(96, Math.max(2, mainPct - 2))}%`,
+                    backgroundColor: progressColor(mainPct), shadowColor: progressColor(mainPct),
+                  }]} />
                 </View>
               </>
             )}
@@ -209,6 +214,7 @@ export default function EcheanceDetail() {
                   icon="clipboard-outline"
                   label="Contrôle blanc"
                   value={lastNote !== null ? `${lastNote} / 20` : 'Non évalué'}
+                  evaluated={lastNote !== null}
                 />
               )}
               {hasControle && hasFlash && <View style={s.statDivider} />}
@@ -218,6 +224,7 @@ export default function EcheanceDetail() {
                   icon="albums-outline"
                   label="Flashcards"
                   value={flashPct !== null ? `${flashPct} % maîtrisé` : 'Non évalué'}
+                  evaluated={flashPct !== null}
                 />
               )}
               {hasControle && deltaPct !== null && deltaPct !== 0 && (

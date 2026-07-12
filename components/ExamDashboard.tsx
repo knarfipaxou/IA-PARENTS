@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { DK } from '../constants/darkTheme';
 import type { ExamAnalysis } from '../lib/examResults';
+import { progressColor, progressGradient } from '../lib/progressColor';
 
 export function noteColor(note: number) {
   return note >= 14 ? DK.green : note >= 10 ? DK.gold : DK.red;
@@ -51,14 +52,14 @@ export function ExamDashboard({ an }: { an: ExamAnalysis }) {
 
         <View style={s.gaugeTrack}>
           <LinearGradient
-            colors={last.note >= 12 ? ['#1FB8A8', DK.green] : last.note >= 8 ? ['#D9930F', DK.gold] : ['#D9452F', DK.red]}
+            colors={progressGradient(an.gaugePct)}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={[s.gaugeFill, { width: `${Math.max(4, an.gaugePct)}%` }]}
           />
         </View>
         <View style={s.gaugeRow}>
           <Text style={s.gaugeText}>{an.gaugePct} % de maîtrise</Text>
-          <Text style={[s.gaugeTier, { color: noteColor(last.note) }]}>{an.gaugeLabel}</Text>
+          <Text style={[s.gaugeTier, { color: progressColor(an.gaugePct) }]}>{an.gaugeLabel}</Text>
         </View>
         {!!an.motivation && <Text style={s.motivation}>{an.motivation}</Text>}
       </LinearGradient>

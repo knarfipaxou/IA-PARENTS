@@ -6,6 +6,7 @@ import { useScheme } from '../../lib/useScheme';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
+import { progressColor, progressGradient } from '../../lib/progressColor';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -310,10 +311,14 @@ export default function EspaceScreen() {
                         <View style={[s.ctrlTrack, {
                           backgroundColor: P.scheme === 'dark' ? 'rgba(255,255,255,0.13)' : 'rgba(27,37,89,0.1)',
                         }]}>
-                          <View style={[s.ctrlFill, { width: `${pct * 100}%`, backgroundColor: P.teal }]} />
+                          <LinearGradient
+                            colors={mastery ? progressGradient(mastery.pct) : [P.teal, P.teal]}
+                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                            style={[s.ctrlFill, { width: `${pct * 100}%` }]}
+                          />
                         </View>
                         <Text
-                          style={[s.ctrlMastery, { color: mastery ? P.teal : P.sub }]}
+                          style={[s.ctrlMastery, { color: mastery ? progressColor(mastery.pct) : P.sub }]}
                           numberOfLines={2}
                         >
                           {mastery
