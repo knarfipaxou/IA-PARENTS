@@ -21,6 +21,8 @@ export interface Echeance {
   noteParent?: string;
   lessonIds?: string[];
   generated?: Record<string, any>;
+  // mode de préparation de l'échéance : contrôle blanc, flashcards ou les deux
+  prepMode?: 'controle' | 'flashcards' | 'both';
 }
 
 export interface HistoryItem {

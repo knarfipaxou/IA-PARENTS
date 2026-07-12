@@ -1,23 +1,61 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { DK, dkIconForSubject } from '../constants/darkTheme';
+import { DK } from '../constants/darkTheme';
 import { useChild } from '../contexts/ChildContext';
-import { formatLessonDate, isControle } from '../lib/matiere';
+import { loadExamResults, analyzeExams, type ExamResult } from '../lib/examResults';
+import { loadFlashMastery, masteryPct, type FlashMastery } from '../lib/flashMastery';
 
-const GLOBAL_ACTIONS: { kind: string; label: string; icon: string; tint: string }[] = [
-  { kind: 'fiche', label: 'Fiche globale', icon: 'document-text-outline', tint: DK.green },
-  { kind: 'flashcards', label: 'Flashcards globales', icon: 'albums-outline', tint: DK.violet },
-  { kind: 'exercices', label: 'Exercices mélangés', icon: 'pencil-outline', tint: DK.amber },
-  { kind: 'minitest', label: 'Mini-test', icon: 'flash-outline', tint: DK.blue },
-  { kind: 'controle', label: 'Contrôle blanc', icon: 'school-outline', tint: DK.red },
-  { kind: 'piege', label: 'Test piégeux', icon: 'warning-outline', tint: DK.amber },
-  { kind: 'planning', label: 'Planning J-10 → J-1', icon: 'calendar-outline', tint: DK.cyan },
+// icônes néon par matière (banque)
+const SUBJECT_ICONS: { match: RegExp; img: any }[] = [
+  { match: /math|calcul|conversion|éval|eval/i, img: require('../assets/subjects/maths.png') },
+  { match: /fran|lettre|dictée|dictee|lecture|conjugaison|grammaire|orthographe/i, img: require('../assets/subjects/francais.png') },
+  { match: /angl|english/i, img: require('../assets/subjects/anglais.png') },
+  { match: /espa|spanish/i, img: require('../assets/subjects/espagnol.png') },
+  { match: /latin|grec/i, img: require('../assets/subjects/latin.png') },
+  { match: /hist|géo|geo/i, img: require('../assets/subjects/histgeo.png') },
+  { match: /svt|bio|vie|terre|science/i, img: require('../assets/subjects/svt.png') },
+  { match: /phys|chim/i, img: require('../assets/subjects/physchim.png') },
+  { match: /techno|informat/i, img: require('../assets/subjects/techno.png') },
+  { match: /art|dessin|plastique/i, img: require('../assets/subjects/arts.png') },
+  { match: /musi/i, img: require('../assets/subjects/musique.png') },
+  { match: /eps|sport/i, img: require('../assets/subjects/eps.png') },
 ];
+const SUBJECT_DEFAULT = require('../assets/subjects/defaut.png');
+function subjectIcon(subj?: string) {
+  const found = SUBJECT_ICONS.find((x) => x.match.test(subj ?? ''));
+  return found ? found.img : SUBJECT_DEFAULT;
+}
+
+type PrepMode = 'controle' | 'flashcards' | 'both';
+
+// cercle de statistique (anneau fin + icône, comme la maquette)
+function StatRing({ pct, icon, label, value, valueColor }: {
+  pct: number; icon: string; label: string; value: string; valueColor?: string;
+}) {
+  return (
+    <View style={s.statCol}>
+      <View style={s.statRing}>
+        <View style={[s.statRingArc, { borderColor: 'rgba(148,168,255,0.2)' }]} />
+        <View style={[
+          s.statRingArc,
+          {
+            borderColor: DK.cyan,
+            opacity: Math.max(0.25, pct / 100),
+            transform: [{ rotate: `${-45 + (pct / 100) * 180}deg` }],
+          },
+        ]} />
+        <Ionicons name={icon as any} size={24} color={DK.cyan} />
+      </View>
+      <Text style={s.statLabel}>{label}</Text>
+      <Text style={[s.statValue, valueColor ? { color: valueColor } : null]}>{value}</Text>
+    </View>
+  );
+}
 
 export default function EcheanceDetail() {
   const router = useRouter();
@@ -28,6 +66,20 @@ export default function EcheanceDetail() {
   const echeance = id
     ? child?.echeances?.find((e) => e.id === id)
     : child?.echeances?.[0];
+
+  const [exams, setExams] = useState<ExamResult[]>([]);
+  const [flash, setFlash] = useState<FlashMastery | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!child || !echeance) return;
+      loadExamResults(child.id).then((all) => {
+        const byEch = all.filter((r) => r.echeanceId === echeance.id);
+        setExams(byEch.length > 0 ? byEch : all.filter((r) => (r.matiere ?? '').toLowerCase() === echeance.subj.toLowerCase()));
+      });
+      loadFlashMastery(`${child.id}:${echeance.id}`).then(setFlash);
+    }, [child?.id, echeance?.id])
+  );
 
   if (!child || !echeance) {
     return (
@@ -46,165 +98,271 @@ export default function EcheanceDetail() {
     );
   }
 
+  const mode: PrepMode = echeance.prepMode ?? 'both';
+  const hasControle = mode !== 'flashcards';
+  const hasFlash = mode !== 'controle';
   const linked = lessons.filter((l) => (echeance.lessonIds ?? []).includes(l.id));
-  const noLesson = linked.length === 0;
 
-  function unlink(lessonId: string) {
+  function setMode(target: 'controle' | 'flashcards', on: boolean) {
     if (!child || !echeance) return;
-    updateEcheance(child.id, echeance.id, {
-      lessonIds: (echeance.lessonIds ?? []).filter((x) => x !== lessonId),
-    });
+    let next: PrepMode;
+    const c = target === 'controle' ? on : mode !== 'flashcards';
+    const f = target === 'flashcards' ? on : mode !== 'controle';
+    if (c && f) next = 'both';
+    else if (c) next = 'controle';
+    else if (f) next = 'flashcards';
+    else return; // au moins une méthode doit rester active
+    updateEcheance(child.id, echeance.id, { prepMode: next });
   }
+
+  const an = analyzeExams(exams);
+  const lastNote = an.last?.note ?? null;
+  const flashPct = masteryPct(flash);
+
+  // pourcentage principal : uniquement le contrôle blanc (sauf mode flashcards seules)
+  const mainPct = hasControle
+    ? (lastNote === null ? null : Math.round((lastNote / 20) * 100))
+    : flashPct;
+  const mainTitle = hasControle ? 'Prêt' : 'maîtrisé';
+  const deltaPct = hasControle && an.delta !== undefined ? Math.round((an.delta / 20) * 100) : null;
+  const cardsToReview = flash ? flash.total - flash.known : null;
+  const objectifNote = lastNote !== null ? Math.min(20, lastNote + 1) : null;
 
   return (
     <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
       <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
         <StatusBar style="light" />
-        <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-          {/* Header */}
+          {/* ── En-tête ── */}
           <View style={s.header}>
             <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.8}>
               <Ionicons name="chevron-back" size={19} color="#B9C6FF" />
             </TouchableOpacity>
-            <Text style={s.headerTitle}>Détail de l'échéance</Text>
+            <Text style={s.headerTitle}>Retour aux échéances</Text>
             <TouchableOpacity
-              style={s.editBtn}
+              style={s.backBtn}
               onPress={() => router.push(`/echeance-edit?id=${echeance.id}` as any)}
               activeOpacity={0.8}
             >
-              <Ionicons name="create-outline" size={18} color={DK.cyan} />
+              <Ionicons name="create-outline" size={17} color={DK.cyan} />
             </TouchableOpacity>
           </View>
 
-          {/* Hero */}
-          <LinearGradient
-            colors={['rgba(60,45,120,0.5)', 'rgba(19,26,58,0.65)']}
-            start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }}
-            style={s.hero}
-          >
-            <Image source={dkIconForSubject(echeance.subj)} style={s.heroIcon} />
-            <Text style={s.heroTitle}>{echeance.titre || `${echeance.type} de ${echeance.subj}`}</Text>
-            <Text style={s.heroSub}>{echeance.type} de {echeance.subj} · {echeance.date}</Text>
-            <View style={s.heroMetaRow}>
-              <View style={s.jPill}>
-                <Text style={s.jPillText}>{echeance.days === 0 ? "Auj." : `J-${echeance.days}`}</Text>
-              </View>
-              <View style={s.metaPill}>
-                <Text style={s.metaPillText}>
-                  {linked.length} {linked.length > 1 ? 'leçons liées' : 'leçon liée'}
+          <View style={s.heroRow}>
+            <Image source={subjectIcon(echeance.subj)} style={s.heroIcon} />
+            <View style={{ flex: 1, marginLeft: 16 }}>
+              <Text style={s.heroTitle}>{echeance.subj}</Text>
+              <Text style={s.heroSub}>{echeance.type} du {echeance.date}</Text>
+            </View>
+          </View>
+          <View style={s.pillRow}>
+            <View style={s.jPill}>
+              <Text style={s.jPillText}>{echeance.days === 0 ? 'Auj.' : `J-${echeance.days}`}</Text>
+            </View>
+            <TouchableOpacity
+              style={s.metaPill}
+              onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={s.metaPillText}>• {linked.length} {linked.length > 1 ? 'leçons liées' : 'leçon liée'}</Text>
+            </TouchableOpacity>
+            <View style={[s.metaPill, echeance.urg && { borderColor: 'rgba(255,107,90,0.5)' }]}>
+              <Text style={[s.metaPillText, echeance.urg && { color: DK.red }]}>Priorité {echeance.urg ? 'haute' : 'normale'}</Text>
+            </View>
+          </View>
+
+          {/* ── Niveau principal ── */}
+          <View style={s.mainCard}>
+            {mainPct === null ? (
+              <>
+                <Text style={s.mainNonEvalue}>Non évalué</Text>
+                <Text style={s.mainHint}>
+                  {hasControle
+                    ? 'Lance un premier contrôle blanc pour mesurer le niveau de préparation.'
+                    : 'Fais une première session de flashcards pour mesurer la maîtrise.'}
                 </Text>
+              </>
+            ) : (
+              <>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 14 }}>
+                  <Text style={s.mainPct}>{mainPct}<Text style={s.mainPctSign}> %</Text></Text>
+                  <Text style={s.mainLabel}>{mainTitle}</Text>
+                </View>
+                <View style={s.mainTrack}>
+                  <LinearGradient
+                    colors={['#2C6BFF', DK.cyan]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={[s.mainFill, { width: `${Math.max(4, mainPct)}%` }]}
+                  />
+                  <View style={[s.mainThumb, { left: `${Math.min(96, Math.max(2, mainPct - 2))}%` }]} />
+                </View>
+              </>
+            )}
+            {!hasControle && <Text style={s.mainSubtitle}>Maîtrise de la leçon</Text>}
+
+            {/* résultats des méthodes sélectionnées */}
+            <View style={s.statsRow}>
+              {hasControle && (
+                <StatRing
+                  pct={lastNote !== null ? (lastNote / 20) * 100 : 0}
+                  icon="clipboard-outline"
+                  label="Contrôle blanc"
+                  value={lastNote !== null ? `${lastNote} / 20` : 'Non évalué'}
+                />
+              )}
+              {hasControle && hasFlash && <View style={s.statDivider} />}
+              {hasFlash && (
+                <StatRing
+                  pct={flashPct ?? 0}
+                  icon="albums-outline"
+                  label="Flashcards"
+                  value={flashPct !== null ? `${flashPct} % maîtrisé` : 'Non évalué'}
+                />
+              )}
+              {hasControle && deltaPct !== null && deltaPct !== 0 && (
+                <>
+                  <View style={s.statDivider} />
+                  <StatRing
+                    pct={Math.min(100, Math.abs(deltaPct))}
+                    icon="trending-up-outline"
+                    label="Progression"
+                    value={`${deltaPct > 0 ? '+' : ''}${deltaPct} %`}
+                    valueColor={deltaPct > 0 ? DK.cyan : DK.red}
+                  />
+                </>
+              )}
+            </View>
+          </View>
+
+          {/* ── Analyse rapide ── */}
+          {hasControle && an.last && (
+            <View style={s.analyseCard}>
+              <Text style={s.analyseTitle}>Analyse rapide</Text>
+              <View style={s.analyseCols}>
+                <View style={{ flex: 1 }}>
+                  <View style={s.analyseHead}>
+                    <Ionicons name="checkmark-circle-outline" size={17} color={DK.green} />
+                    <Text style={[s.analyseHeadText, { color: DK.green }]}>Points solides</Text>
+                  </View>
+                  {(an.last.acquis.length > 0 ? an.last.acquis.slice(0, 3) : ['—']).map((a) => (
+                    <Text key={a} style={s.analyseItem}>•  {a}</Text>
+                  ))}
+                </View>
+                <View style={s.analyseDivider} />
+                <View style={{ flex: 1 }}>
+                  <View style={s.analyseHead}>
+                    <Ionicons name="warning-outline" size={17} color={DK.gold} />
+                    <Text style={[s.analyseHeadText, { color: DK.gold }]}>À renforcer</Text>
+                  </View>
+                  {(an.priorities.length > 0
+                    ? an.priorities.slice(0, 3).map((p) => p.notion)
+                    : an.last.aRenforcer.slice(0, 3).length > 0 ? an.last.aRenforcer.slice(0, 3) : ['—']
+                  ).map((a) => (
+                    <Text key={a} style={s.analyseItem}>•  {a}</Text>
+                  ))}
+                </View>
               </View>
-              <View style={[s.metaPill, echeance.urg && s.metaPillUrg]}>
-                <Text style={[s.metaPillText, echeance.urg && { color: DK.red }]}>
-                  Priorité {echeance.urg ? 'haute' : 'normale'}
-                </Text>
-              </View>
-            </View>
-          </LinearGradient>
-
-          {/* Consigne / note */}
-          {!!echeance.consigne && (
-            <View style={s.block}>
-              <Text style={s.blockLabel}>CONSIGNE DU PROFESSEUR</Text>
-              <Text style={s.blockText}>{echeance.consigne}</Text>
-            </View>
-          )}
-          {!!echeance.noteParent && (
-            <View style={s.block}>
-              <Text style={s.blockLabel}>NOTE DU PARENT</Text>
-              <Text style={s.blockText}>{echeance.noteParent}</Text>
+              {an.priorities.length > 0 && (
+                <View style={s.freqBox}>
+                  <View style={s.analyseHead}>
+                    <Ionicons name="close-circle-outline" size={17} color={DK.red} />
+                    <Text style={[s.analyseHeadText, { color: DK.red }]}>Erreur fréquente</Text>
+                  </View>
+                  <Text style={s.freqText}>{an.priorities[0].notion} — {an.priorities[0].detail}</Text>
+                </View>
+              )}
             </View>
           )}
 
-          {/* Leçons rattachées */}
-          <Text style={s.sectionLabel}>LEÇONS LIÉES</Text>
-          {noLesson ? (
-            <View style={s.warnBox}>
-              <Ionicons name="warning" size={19} color={DK.red} />
-              <Text style={s.warnText}>Aucune leçon rattachée. Rattachez les leçons concernées pour générer des révisions fiables.</Text>
-            </View>
-          ) : (
-            <View style={{ gap: 10, marginBottom: 10 }}>
-              {linked.map((l) => (
-                <LinearGradient
-                  key={l.id}
-                  colors={['rgba(20,50,90,0.5)', 'rgba(19,26,58,0.65)']}
-                  start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }}
-                  style={s.lessonRow}
-                >
-                  <TouchableOpacity
-                    style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}
-                    onPress={() => router.push(`/lesson-detail?id=${l.id}` as any)}
-                    activeOpacity={0.85}
-                  >
-                    <Image source={dkIconForSubject(l.matiere)} style={s.lessonIcon} />
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={s.lessonTitle} numberOfLines={2}>{l.titre}</Text>
-                      <Text style={s.lessonSub}>{l.matiere} · {formatLessonDate(l.createdAt)}</Text>
-                    </View>
-                    <View style={s.lessonChevron}>
-                      <Ionicons name="chevron-forward" size={14} color={DK.cyan} />
-                    </View>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => unlink(l.id)} style={s.unlinkBtn} activeOpacity={0.8}>
-                    <Ionicons name="close" size={15} color={DK.red} />
-                  </TouchableOpacity>
-                </LinearGradient>
-              ))}
-            </View>
-          )}
-          <TouchableOpacity
-            onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)}
-            style={s.linkBtn}
-            activeOpacity={0.85}
-          >
-            <Text style={s.linkBtnText}>+ Rattacher une leçon</Text>
-          </TouchableOpacity>
-
-          {/* Génération globale */}
-          {linked.length > 0 && (
-            <>
-              <Text style={s.sectionLabel}>RÉVISIONS POUR CE CONTRÔLE</Text>
-              <View style={s.grid}>
-                {GLOBAL_ACTIONS.map((a) => {
-                  const done = !!echeance.generated?.[a.kind];
-                  return (
-                    <TouchableOpacity
-                      key={a.kind}
-                      onPress={() => router.push(`/generate?kind=${a.kind}&echeanceId=${echeance.id}` as any)}
-                      style={s.tile}
-                      activeOpacity={0.88}
-                    >
-                      <View style={[s.tileIconWrap, { borderColor: a.tint, shadowColor: a.tint }]}>
-                        <Ionicons name={a.icon as any} size={19} color={a.tint} />
-                      </View>
-                      <Text style={s.tileTitle}>{a.label}</Text>
-                      {done && (
-                        <View style={s.doneBadge}>
-                          <Text style={s.doneBadgeText}>✓ généré</Text>
-                        </View>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </>
-          )}
-
-          <View style={{ height: 18 }} />
-          {isControle(echeance.type) && noLesson && (
-            <TouchableOpacity onPress={() => router.push('/scan' as any)} activeOpacity={0.88}>
+          {/* ── Actions ── */}
+          {hasFlash && (
+            <TouchableOpacity
+              onPress={() => router.push(`/generate?kind=flashcards&echeanceId=${echeance.id}` as any)}
+              activeOpacity={0.88}
+            >
               <LinearGradient
-                colors={['#1FB8A8', DK.cyan]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={s.ctaBtn}
+                colors={['rgba(120,80,230,0.35)', 'rgba(40,30,90,0.45)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.8 }}
+                style={[s.ctaRow, { borderColor: 'rgba(150,110,255,0.5)' }]}
               >
-                <Ionicons name="scan-outline" size={19} color="#052A26" />
-                <Text style={s.ctaBtnText}>Scanner une leçon</Text>
+                <View style={[s.ctaIcon, { backgroundColor: 'rgba(150,110,255,0.2)' }]}>
+                  <Ionicons name="albums" size={26} color="#C9A0FF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.ctaTitle}>Continuer les flashcards</Text>
+                  <Text style={s.ctaSub}>
+                    {cardsToReview !== null && cardsToReview > 0
+                      ? `${cardsToReview} carte${cardsToReview > 1 ? 's' : ''} à revoir  •  ~ ${Math.max(1, Math.ceil(cardsToReview / 3))} min`
+                      : 'Mémoriser les notions essentielles'}
+                  </Text>
+                </View>
+                <View style={[s.ctaChevron, { backgroundColor: '#3D7BFF' }]}>
+                  <Ionicons name="chevron-forward" size={18} color="#fff" />
+                </View>
               </LinearGradient>
             </TouchableOpacity>
           )}
+          {hasControle && (
+            <TouchableOpacity
+              onPress={() => router.push(`/generate?kind=controle&echeanceId=${echeance.id}` as any)}
+              activeOpacity={0.88}
+            >
+              <LinearGradient
+                colors={['rgba(40,90,220,0.35)', 'rgba(15,30,80,0.45)']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0.8 }}
+                style={[s.ctaRow, { borderColor: 'rgba(90,140,255,0.55)' }]}
+              >
+                <View style={[s.ctaIcon, { backgroundColor: 'rgba(90,140,255,0.2)' }]}>
+                  <Ionicons name="clipboard" size={26} color="#7CB4FF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.ctaTitle}>Lancer un contrôle blanc</Text>
+                  <Text style={s.ctaSub}>
+                    {objectifNote !== null ? `Objectif : atteindre ${objectifNote}/20` : 'Première évaluation notée sur 20'}
+                  </Text>
+                </View>
+                <View style={[s.ctaChevron, { backgroundColor: '#3D7BFF' }]}>
+                  <Ionicons name="chevron-forward" size={18} color="#fff" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+          {linked.length === 0 && (
+            <TouchableOpacity
+              onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)}
+              style={s.warnBox}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="warning" size={18} color={DK.red} />
+              <Text style={s.warnText}>Aucune leçon rattachée : rattachez une leçon pour générer flashcards et contrôle blanc.</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* ── Mode de préparation ── */}
+          <Text style={s.sectionLabel}>MODE DE PRÉPARATION</Text>
+          {([
+            { key: 'controle' as const, on: hasControle, icon: 'clipboard-outline', title: 'Contrôle blanc', sub: 'Évaluer le niveau avec une note sur 20' },
+            { key: 'flashcards' as const, on: hasFlash, icon: 'albums-outline', title: 'Flashcards', sub: 'Mémoriser les notions essentielles' },
+          ]).map((opt) => (
+            <TouchableOpacity
+              key={opt.key}
+              onPress={() => setMode(opt.key, !opt.on)}
+              style={[s.modeRow, opt.on ? s.modeRowOn : s.modeRowOff]}
+              activeOpacity={0.85}
+            >
+              <View style={[s.modeCheck, opt.on && s.modeCheckOn]}>
+                {opt.on && <Ionicons name="checkmark" size={15} color="#052A26" />}
+              </View>
+              <Ionicons name={opt.icon as any} size={21} color={opt.on ? DK.cyan : DK.faint} />
+              <View style={{ flex: 1 }}>
+                <Text style={[s.modeTitle, !opt.on && { color: DK.faint }]}>{opt.title}</Text>
+                <Text style={[s.modeSub, !opt.on && { color: DK.faint }]}>{opt.sub}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+          <Text style={s.modeHint}>Au moins une méthode reste toujours active. Le pourcentage principal est basé sur le contrôle blanc dès qu'il est activé.</Text>
+
           <View style={{ height: 24 }} />
         </ScrollView>
       </SafeAreaView>
@@ -214,7 +372,6 @@ export default function EcheanceDetail() {
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
   centerBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
   centerText: { fontSize: 15, color: DK.sub, fontWeight: '600', textAlign: 'center' },
@@ -224,107 +381,111 @@ const s = StyleSheet.create({
   },
   ghostBtnText: { color: '#DDE4FF', fontSize: 14, fontWeight: '700' },
 
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, marginBottom: 6 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 10, marginBottom: 16 },
   backBtn: {
-    width: 36, height: 36, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.12)',
+    width: 40, height: 40, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.12)',
     borderWidth: 1, borderColor: 'rgba(148,168,255,0.25)', alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { flex: 1, fontSize: 19, fontWeight: '800', color: DK.ink, letterSpacing: -0.3 },
-  editBtn: {
-    width: 36, height: 36, borderRadius: 999, backgroundColor: DK.card,
-    borderWidth: 1, borderColor: DK.cardBorder, alignItems: 'center', justifyContent: 'center',
-  },
+  headerTitle: { flex: 1, fontSize: 16.5, fontWeight: '700', color: DK.ink, letterSpacing: -0.2 },
 
-  hero: {
-    alignItems: 'center', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(139,124,246,0.35)',
-    paddingVertical: 22, paddingHorizontal: 18, marginTop: 14, marginBottom: 8,
-  },
-  heroIcon: {
-    width: 64, height: 64,
-    shadowColor: DK.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 14,
-  },
-  heroTitle: { color: DK.ink, fontSize: 22, fontWeight: '800', letterSpacing: -0.4, marginTop: 12, textAlign: 'center' },
-  heroSub: { color: DK.sub, fontSize: 13, fontWeight: '600', marginTop: 3, textAlign: 'center' },
-  heroMetaRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 12 },
+  heroRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 13 },
+  heroIcon: { width: 86, height: 92, borderRadius: 22 },
+  heroTitle: { color: DK.ink, fontSize: 34, fontWeight: '900', letterSpacing: -0.8 },
+  heroSub: { color: DK.sub, fontSize: 15, fontWeight: '600', marginTop: 3 },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginBottom: 16 },
   jPill: {
-    borderWidth: 1, borderColor: 'rgba(53,228,210,0.5)', backgroundColor: 'rgba(53,228,210,0.1)',
-    borderRadius: 14, paddingHorizontal: 16, paddingVertical: 9,
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 9,
+    borderWidth: 1.2, borderColor: 'rgba(53,228,210,0.5)', backgroundColor: 'rgba(53,228,210,0.08)',
+    borderRadius: 14, paddingHorizontal: 15, paddingVertical: 9,
   },
-  jPillText: { color: DK.cyan, fontWeight: '800', fontSize: 15 },
+  jPillText: { color: DK.cyan, fontWeight: '800', fontSize: 13.5 },
   metaPill: {
-    borderWidth: 1, borderColor: DK.cardBorder, backgroundColor: 'rgba(10,14,34,0.4)',
+    borderWidth: 1, borderColor: DK.cardBorder, backgroundColor: 'rgba(19,26,58,0.55)',
     borderRadius: 14, paddingHorizontal: 13, paddingVertical: 9, justifyContent: 'center',
   },
-  metaPillUrg: { borderColor: 'rgba(255,107,90,0.5)', backgroundColor: 'rgba(255,107,90,0.1)' },
   metaPillText: { color: DK.sub, fontWeight: '700', fontSize: 12.5 },
 
-  block: {
-    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
-    borderRadius: 20, padding: 15, marginTop: 12,
+  mainCard: {
+    backgroundColor: 'rgba(19,26,58,0.55)', borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 26, padding: 20, marginBottom: 14,
   },
-  blockLabel: { fontSize: 11.5, fontWeight: '800', color: DK.faint, letterSpacing: 1.5, marginBottom: 6 },
-  blockText: { fontSize: 14, fontWeight: '600', color: DK.ink, lineHeight: 21 },
+  mainPct: { color: DK.cyan, fontSize: 74, fontWeight: '900', letterSpacing: -2 },
+  mainPctSign: { fontSize: 38, fontWeight: '800' },
+  mainLabel: { color: DK.ink, fontSize: 24, fontWeight: '700' },
+  mainSubtitle: { color: DK.sub, fontSize: 13, fontWeight: '700', marginTop: 6 },
+  mainNonEvalue: { color: DK.sub, fontSize: 34, fontWeight: '900', letterSpacing: -0.6 },
+  mainHint: { color: DK.faint, fontSize: 13, fontWeight: '600', marginTop: 8, lineHeight: 19 },
+  mainTrack: {
+    height: 12, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.15)',
+    marginTop: 10, overflow: 'visible',
+  },
+  mainFill: { height: '100%', borderRadius: 999 },
+  mainThumb: {
+    position: 'absolute', top: -4, width: 20, height: 20, borderRadius: 999,
+    backgroundColor: DK.cyan,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10, elevation: 6,
+  },
 
-  sectionLabel: {
-    fontSize: 12, fontWeight: '800', color: 'rgba(200,210,255,0.55)',
-    letterSpacing: 2, marginTop: 22, marginBottom: 10,
+  statsRow: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 24 },
+  statCol: { flex: 1, alignItems: 'center' },
+  statDivider: { width: 1, alignSelf: 'stretch', backgroundColor: 'rgba(148,168,255,0.15)', marginHorizontal: 4 },
+  statRing: {
+    width: 72, height: 72, borderRadius: 999, alignItems: 'center', justifyContent: 'center',
   },
+  statRingArc: {
+    position: 'absolute', width: 72, height: 72, borderRadius: 999, borderWidth: 3.5,
+  },
+  statLabel: { color: DK.ink, fontSize: 13.5, fontWeight: '700', marginTop: 9, textAlign: 'center' },
+  statValue: { color: DK.cyan, fontSize: 15, fontWeight: '900', marginTop: 3, textAlign: 'center' },
+
+  analyseCard: {
+    backgroundColor: 'rgba(19,26,58,0.55)', borderWidth: 1, borderColor: DK.cardBorder,
+    borderRadius: 24, padding: 17, marginBottom: 14,
+  },
+  analyseTitle: { color: DK.ink, fontSize: 18, fontWeight: '800', letterSpacing: -0.3, marginBottom: 13 },
+  analyseCols: { flexDirection: 'row', gap: 12 },
+  analyseDivider: { width: 1, backgroundColor: 'rgba(148,168,255,0.15)' },
+  analyseHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  analyseHeadText: { fontSize: 13.5, fontWeight: '800' },
+  analyseItem: { color: 'rgba(230,236,255,0.85)', fontSize: 12.5, fontWeight: '600', lineHeight: 21 },
+  freqBox: { marginTop: 13, paddingTop: 13, borderTopWidth: 1, borderTopColor: 'rgba(148,168,255,0.12)' },
+  freqText: { color: 'rgba(230,236,255,0.85)', fontSize: 12.5, fontWeight: '600', lineHeight: 19 },
+
+  ctaRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 13,
+    borderWidth: 1.2, borderRadius: 22, padding: 15, marginBottom: 12,
+  },
+  ctaIcon: {
+    width: 52, height: 52, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+  },
+  ctaTitle: { color: DK.ink, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  ctaSub: { color: DK.sub, fontSize: 13, fontWeight: '600', marginTop: 3 },
+  ctaChevron: {
+    width: 42, height: 42, borderRadius: 999, alignItems: 'center', justifyContent: 'center',
+  },
+
   warnBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 10,
     backgroundColor: 'rgba(255,107,90,0.1)', borderWidth: 1, borderColor: 'rgba(255,107,90,0.4)',
-    borderRadius: 20, padding: 14, marginBottom: 10,
+    borderRadius: 18, padding: 13, marginBottom: 12,
   },
-  warnText: { flex: 1, fontSize: 13, fontWeight: '700', color: DK.red, lineHeight: 19 },
-  lessonRow: {
-    flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 20, padding: 13,
-  },
-  lessonIcon: {
-    width: 46, height: 46,
-    shadowColor: DK.blue, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 10,
-  },
-  lessonTitle: { fontSize: 14, fontWeight: '800', color: DK.ink, lineHeight: 18 },
-  lessonSub: { fontSize: 12, color: DK.sub, fontWeight: '600', marginTop: 2 },
-  lessonChevron: {
-    width: 26, height: 26, borderRadius: 999, backgroundColor: 'rgba(53,228,210,0.12)',
-    borderWidth: 1, borderColor: 'rgba(53,228,210,0.45)',
-    alignItems: 'center', justifyContent: 'center', marginLeft: 8,
-  },
-  unlinkBtn: {
-    width: 28, height: 28, borderRadius: 999, backgroundColor: 'rgba(255,107,90,0.12)',
-    borderWidth: 1, borderColor: 'rgba(255,107,90,0.4)',
-    alignItems: 'center', justifyContent: 'center', marginLeft: 8,
-  },
-  linkBtn: {
-    borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.35)', borderStyle: 'dashed',
-    borderRadius: 20, paddingVertical: 15, alignItems: 'center',
-  },
-  linkBtnText: { color: '#B9C6FF', fontSize: 13, fontWeight: '700' },
+  warnText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: DK.red, lineHeight: 18 },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
-  tile: {
-    width: '47.5%',
-    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
-    borderRadius: 20, padding: 13,
+  sectionLabel: {
+    fontSize: 12, fontWeight: '800', color: 'rgba(200,210,255,0.55)',
+    letterSpacing: 2, marginTop: 14, marginBottom: 10,
   },
-  tileIconWrap: {
-    width: 38, height: 38, borderRadius: 13, borderWidth: 1,
-    backgroundColor: 'rgba(10,14,34,0.45)', alignItems: 'center', justifyContent: 'center',
-    marginBottom: 9, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 8,
+  modeRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderWidth: 1.5, borderRadius: 20, padding: 15, marginBottom: 10,
   },
-  tileTitle: { fontWeight: '800', fontSize: 13.5, color: DK.ink, letterSpacing: -0.3 },
-  doneBadge: {
-    alignSelf: 'flex-start', backgroundColor: 'rgba(52,214,150,0.14)',
-    borderWidth: 1, borderColor: 'rgba(52,214,150,0.5)',
-    borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginTop: 7,
+  modeRowOn: { borderColor: 'rgba(53,228,210,0.55)', backgroundColor: 'rgba(53,228,210,0.06)' },
+  modeRowOff: { borderColor: DK.cardBorder, backgroundColor: 'rgba(19,26,58,0.4)' },
+  modeCheck: {
+    width: 24, height: 24, borderRadius: 8, borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.4)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  doneBadgeText: { fontSize: 11, fontWeight: '800', color: DK.green },
-
-  ctaBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderRadius: 999, paddingVertical: 15,
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 18,
-  },
-  ctaBtnText: { color: '#052A26', fontSize: 15, fontWeight: '800' },
+  modeCheckOn: { backgroundColor: DK.cyan, borderColor: DK.cyan },
+  modeTitle: { color: DK.ink, fontSize: 15.5, fontWeight: '800' },
+  modeSub: { color: DK.sub, fontSize: 12.5, fontWeight: '600', marginTop: 2 },
+  modeHint: { color: DK.faint, fontSize: 11.5, fontWeight: '600', lineHeight: 17, marginTop: 2 },
 });

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { DK, DK_ICONS } from '../constants/darkTheme';
 import { playSfx } from '../lib/sfx';
 import { saveExamResult, loadExamResults, filterForLesson, analyzeExams, type ExamResult } from '../lib/examResults';
+import { saveFlashMastery } from '../lib/flashMastery';
 import { ExamDashboard } from '../components/ExamDashboard';
 import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
@@ -239,6 +240,8 @@ export default function GenerateScreen() {
   // flashcards state
   const [cardIndex, setCardIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [cardKnown, setCardKnown] = useState<Record<number, boolean>>({});
+  const [flashDone, setFlashDone] = useState(false);
   // mini-test scoring
   const [answers, setAnswers] = useState<boolean[]>([]);
   // controle corrections
@@ -264,6 +267,8 @@ export default function GenerateScreen() {
     setContent(null);
     setCardIndex(0);
     setFlipped(false);
+    setCardKnown({});
+    setFlashDone(false);
     setAnswers([]);
     setShownCorrections(new Set());
     setSubChecks({});
@@ -457,7 +462,45 @@ export default function GenerateScreen() {
     const fc = content as Flashcards;
     const cards = fc.cards ?? [];
     const card = cards[cardIndex];
-    body = card ? (
+    const knownCount = Object.values(cardKnown).filter(Boolean).length;
+    const answeredCount = Object.keys(cardKnown).length;
+
+    function answerCard(known: boolean) {
+      if (!child) return;
+      playSfx(known ? 'correct' : 'wrong');
+      const next = { ...cardKnown, [cardIndex]: known };
+      setCardKnown(next);
+      if (cardIndex < cards.length - 1) {
+        setCardIndex(cardIndex + 1);
+        setFlipped(false);
+      } else {
+        // fin de session : mémoriser la maîtrise pour l'échéance/leçon
+        const nKnown = Object.values(next).filter(Boolean).length;
+        const entryKey = `${child.id}:${echeanceMode ? echeance?.id : savedLesson?.id}`;
+        saveFlashMastery(entryKey, { known: nKnown, total: cards.length, date: new Date().toISOString() });
+        playSfx(nKnown / cards.length >= 0.8 ? 'success' : 'correct');
+        setFlashDone(true);
+      }
+    }
+
+    if (flashDone) {
+      const pct = cards.length > 0 ? Math.round((knownCount / cards.length) * 100) : 0;
+      body = (
+        <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+          <Text style={{ fontSize: 52 }}>{pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📚'}</Text>
+          <Text style={{ color: DK.ink, fontSize: 24, fontWeight: '900', marginTop: 10 }}>Session terminée !</Text>
+          <Text style={{ color: DK.cyan, fontSize: 34, fontWeight: '900', marginTop: 12 }}>{pct} % maîtrisé</Text>
+          <Text style={{ color: DK.sub, fontSize: 14, fontWeight: '600', marginTop: 6 }}>
+            {knownCount} carte{knownCount > 1 ? 's' : ''} sue{knownCount > 1 ? 's' : ''} sur {cards.length}
+          </Text>
+          <CyanBtn
+            label="Recommencer les cartes à revoir"
+            onPress={() => { setCardKnown({}); setCardIndex(0); setFlipped(false); setFlashDone(false); }}
+            style={{ marginTop: 24, alignSelf: 'stretch' }}
+          />
+        </View>
+      );
+    } else body = card ? (
       <>
         <Text style={s.counter}>Carte {cardIndex + 1} / {cards.length}</Text>
         <TouchableOpacity
@@ -490,20 +533,34 @@ export default function GenerateScreen() {
             />
           ))}
         </View>
-        <View style={s.navBtnRow}>
-          <DarkGhostBtn
-            label="Précédente"
-            icon={<Ionicons name="arrow-back" size={18} color="#DDE4FF" />}
-            onPress={() => { if (cardIndex > 0) { setCardIndex(cardIndex - 1); setFlipped(false); } }}
-            style={{ flex: 1 }}
-          />
-          <CyanBtn
-            label="Suivante"
-            icon={<Ionicons name="arrow-forward" size={18} color="#052A26" />}
-            onPress={() => { if (cardIndex < cards.length - 1) { setCardIndex(cardIndex + 1); setFlipped(false); } }}
-            style={{ flex: 1 }}
-          />
-        </View>
+        {flipped ? (
+          /* évaluation de la carte : alimente la maîtrise des flashcards */
+          <View style={s.navBtnRow}>
+            <TouchableOpacity onPress={() => answerCard(false)} activeOpacity={0.85} style={[s.flashAnswerBtn, s.flashAnswerBtnKo]}>
+              <Ionicons name="close" size={18} color="#FF9C8A" />
+              <Text style={[s.flashAnswerText, { color: '#FF9C8A' }]}>À revoir</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => answerCard(true)} activeOpacity={0.85} style={[s.flashAnswerBtn, s.flashAnswerBtnOk]}>
+              <Ionicons name="checkmark" size={18} color="#9FF0BE" />
+              <Text style={[s.flashAnswerText, { color: '#9FF0BE' }]}>Je savais</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={s.navBtnRow}>
+            <DarkGhostBtn
+              label="Précédente"
+              icon={<Ionicons name="arrow-back" size={18} color="#DDE4FF" />}
+              onPress={() => { if (cardIndex > 0) { setCardIndex(cardIndex - 1); setFlipped(false); } }}
+              style={{ flex: 1 }}
+            />
+            <CyanBtn
+              label="Suivante"
+              icon={<Ionicons name="arrow-forward" size={18} color="#052A26" />}
+              onPress={() => { if (cardIndex < cards.length - 1) { setCardIndex(cardIndex + 1); setFlipped(false); } }}
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}
       </>
     ) : null;
   }
@@ -911,6 +968,13 @@ const s = StyleSheet.create({
   pointsBadgeFull: { backgroundColor: 'rgba(52,214,150,0.12)', borderColor: 'rgba(52,214,150,0.55)' },
   pointsBadgePartial: { backgroundColor: 'rgba(245,194,75,0.1)', borderColor: 'rgba(245,194,75,0.55)' },
   examHint: { fontSize: 12.5, color: DK.sub, fontWeight: '600', marginTop: 10, lineHeight: 18 },
+  flashAnswerBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderWidth: 1.5, borderRadius: 999, paddingVertical: 14,
+  },
+  flashAnswerBtnKo: { borderColor: 'rgba(255,107,90,0.6)', backgroundColor: 'rgba(255,107,90,0.08)' },
+  flashAnswerBtnOk: { borderColor: 'rgba(110,230,150,0.6)', backgroundColor: 'rgba(110,230,150,0.08)' },
+  flashAnswerText: { fontSize: 15, fontWeight: '800' },
   subQRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     borderWidth: 1.2, borderColor: 'rgba(148,168,255,0.25)', backgroundColor: 'rgba(10,14,34,0.45)',
