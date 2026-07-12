@@ -1,14 +1,19 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
+import { ViewStyle } from 'react-native';
 import Animated, {
-  Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, cancelAnimation,
+  Easing, interpolateColor, useAnimatedStyle, useSharedValue,
+  withRepeat, withSequence, withTiming, cancelAnimation,
 } from 'react-native-reanimated';
 
 /**
  * Enveloppe une carte en état d'alerte rouge : bordure/halo rouge lumineux,
  * fond teinté (bordeaux en sombre, rosé en clair) et micro-oscillation
- * horizontale très discrète type « vibreur d'alerte ». Sobre dans les deux
- * thèmes. `active=false` → rendu neutre passé via `neutralStyle`.
+ * horizontale très discrète type « vibreur d'alerte ». Dès que l'alerte
+ * retombe (active=false), la carte redevient strictement neutre.
+ *
+ * Toujours un seul et même Animated.View : toutes les propriétés (fond,
+ * bordure, ombre) sont pilotées par l'animation, ce qui évite tout reliquat
+ * visuel de bordure/halo rouge quand l'état repasse à normal.
  */
 export function AlertPulse({
   active, scheme, neutralStyle, borderRadius = 22, children,
@@ -19,10 +24,17 @@ export function AlertPulse({
   borderRadius?: number;
   children: React.ReactNode;
 }) {
+  const on = useSharedValue(active ? 1 : 0);
   const glow = useSharedValue(0);
   const shake = useSharedValue(0);
 
+  const neutralBg = (neutralStyle.backgroundColor as string) ?? 'transparent';
+  const neutralBorder = (neutralStyle.borderColor as string) ?? 'transparent';
+  const alertBg = scheme === 'dark' ? '#46121888' : '#FDECEC';
+  const alertBorder = '#FF3B3B';
+
   useEffect(() => {
+    on.value = withTiming(active ? 1 : 0, { duration: 220 });
     if (active) {
       glow.value = withRepeat(
         withSequence(
@@ -30,7 +42,6 @@ export function AlertPulse({
           withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.sin) }),
         ), -1,
       );
-      // micro-oscillation : brève salve toutes les ~3,4 s, très faible amplitude
       shake.value = withRepeat(
         withSequence(
           withTiming(-1.4, { duration: 55 }), withTiming(1.4, { duration: 55 }),
@@ -41,35 +52,25 @@ export function AlertPulse({
       );
     } else {
       cancelAnimation(glow); cancelAnimation(shake);
-      glow.value = 0; shake.value = 0;
+      glow.value = withTiming(0, { duration: 200 });
+      shake.value = withTiming(0, { duration: 120 });
     }
     return () => { cancelAnimation(glow); cancelAnimation(shake); };
   }, [active]);
 
   const anim = useAnimatedStyle(() => ({
     transform: [{ translateX: shake.value }],
-    shadowOpacity: active ? 0.35 + glow.value * 0.4 : 0,
-    shadowRadius: active ? 12 + glow.value * 10 : 0,
-    borderColor: active
-      ? `rgba(255,${60 + glow.value * 40},${60 + glow.value * 40},${0.75 + glow.value * 0.25})`
-      : (neutralStyle.borderColor as string) ?? 'transparent',
+    backgroundColor: interpolateColor(on.value, [0, 1], [neutralBg, alertBg]),
+    borderColor: interpolateColor(on.value, [0, 1], [neutralBorder, alertBorder]),
+    shadowColor: '#FF3B3B',
+    shadowOpacity: on.value * (0.35 + glow.value * 0.4),
+    shadowRadius: on.value * (12 + glow.value * 10),
   }));
-
-  if (!active) {
-    return <Animated.View style={[neutralStyle, { borderRadius }]}>{children}</Animated.View>;
-  }
 
   return (
     <Animated.View
       style={[
-        {
-          borderRadius,
-          borderWidth: 1.5,
-          backgroundColor: scheme === 'dark' ? 'rgba(70,18,24,0.55)' : '#FDECEC',
-          shadowColor: '#FF3B3B',
-          shadowOffset: { width: 0, height: 0 },
-          elevation: 6,
-        },
+        { borderRadius, borderWidth: 1.5, shadowOffset: { width: 0, height: 0 }, elevation: active ? 6 : 0 },
         anim,
       ]}
     >
@@ -77,5 +78,3 @@ export function AlertPulse({
     </Animated.View>
   );
 }
-
-export const alertPulseStyles = StyleSheet.create({});

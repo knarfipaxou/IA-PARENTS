@@ -36,14 +36,40 @@ export default function EcheancesScreen() {
       <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
         <StatusBar style={scheme === 'light' ? 'dark' : 'light'} />
         <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-          <Text style={[s.title, scheme === 'light' && { color: '#1B2559' }]}>Échéances</Text>
-          <Text style={[s.sub, scheme === 'light' && { color: '#6B7699' }]}>
-            {child ? 'Tous tes contrôles et devoirs à venir' : 'Aucun enfant sélectionné'}
-          </Text>
+          <View style={s.titleRowTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.title, scheme === 'light' && { color: '#1B2559' }]}>Échéances</Text>
+              <Text style={[s.sub, scheme === 'light' && { color: '#6B7699' }]}>
+                {child ? 'Tous tes contrôles et devoirs à venir' : 'Aucun enfant sélectionné'}
+              </Text>
+            </View>
+            {child && (
+              <TouchableOpacity
+                onPress={() => router.push('/manual-deadline' as any)}
+                style={[s.addBtn, scheme === 'light' && { backgroundColor: '#12B886' }]}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="add" size={26} color={scheme === 'light' ? '#fff' : '#052A26'} />
+              </TouchableOpacity>
+            )}
+          </View>
           {child && (
             <Text style={[s.count, scheme === 'light' && { color: '#6B7699' }]}>
               {echeances.length} {echeances.length > 1 ? 'évaluations à venir' : 'évaluation à venir'} pour {child.name}
             </Text>
+          )}
+
+          {child && (
+            <View style={s.addRowWrap}>
+              <TouchableOpacity onPress={() => router.push('/manual-deadline' as any)} style={s.addRow} activeOpacity={0.85}>
+                <Ionicons name="create-outline" size={18} color={DK.cyan} />
+                <Text style={s.addRowText}>Ajouter manuellement</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push('/scan-agenda' as any)} style={s.addRow} activeOpacity={0.85}>
+                <Ionicons name="camera-outline" size={18} color={DK.cyan} />
+                <Text style={s.addRowText}>Scanner l'agenda</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           <View style={s.list}>
@@ -134,9 +160,22 @@ const s = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 32 },
-  title: { fontSize: 26, fontWeight: '900', color: DK.ink, letterSpacing: -0.6, marginTop: 6 },
+  titleRowTop: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 },
+  title: { fontSize: 26, fontWeight: '900', color: DK.ink, letterSpacing: -0.6 },
   sub: { fontSize: 14, color: DK.sub, fontWeight: '600', marginTop: 4 },
   count: { fontSize: 13, color: DK.faint, fontWeight: '600', marginTop: 6, marginBottom: 4 },
+  addBtn: {
+    width: 48, height: 48, borderRadius: 999, backgroundColor: DK.cyan,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 5,
+  },
+  addRowWrap: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  addRow: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    borderWidth: 1.5, borderColor: 'rgba(53,228,210,0.4)', borderStyle: 'dashed',
+    borderRadius: 16, paddingVertical: 13,
+  },
+  addRowText: { color: DK.cyan, fontSize: 13.5, fontWeight: '800' },
   list: { gap: 12, marginTop: 12 },
   row: { flexDirection: 'row', alignItems: 'center', padding: 13 },
   rowIcon: { width: 56, height: 60, borderRadius: 16 },
