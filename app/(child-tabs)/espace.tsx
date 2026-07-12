@@ -18,7 +18,6 @@ import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Breathe } from '../../components/anim/Breathe';
 import { useChild } from '../../contexts/ChildContext';
-import { isControle } from '../../lib/matiere';
 import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS } from '../../lib/gamification';
 import { DK_ICONS } from '../../constants/darkTheme';
 
@@ -132,7 +131,8 @@ export default function EspaceScreen() {
   const P = scheme === 'light' ? PALETTES.light : PALETTES.dark;
   const A = scheme === 'light' ? ART.light : ART.dark;
   const { child, setChild, updateChild, gamification } = useChild();
-  const controles = (child?.echeances ?? []).filter((e) => isControle(e.type));
+  // toutes les échéances à venir (toutes matières et tous types d'évaluation)
+  const controles = child?.echeances ?? [];
 
   // maîtrise par matière (dernière note de contrôle blanc)
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
@@ -187,6 +187,7 @@ export default function EspaceScreen() {
     ? (child.mission?.notion ?? child.mission?.obj ?? 'Découverte')
     : (child.activity?.label ?? 'Découverte');
   const missionMin = (isCollege ? child.mission?.min : child.activity?.min) ?? 20;
+  // 3 échéances les plus proches, classées par date (comme la page Échéances)
   const prochainControles = [...controles].sort((a, b) => a.days - b.days).slice(0, 3);
 
   // 3 cartes verticales côte à côte (maquette) — « Préparer un contrôle » retiré
