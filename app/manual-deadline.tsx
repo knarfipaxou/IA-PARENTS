@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Image } from 'react-native';
+import { SUBJECTS } from '../lib/subjectIcons';
+import { useScheme } from '../lib/useScheme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +31,7 @@ const PRIOS: { label: string; accent: AccentKey }[] = [
 export default function ManualDeadline() {
   const router = useRouter();
   const { child, addEcheance } = useChild();
+  const scheme = useScheme();
   const [form, setForm] = useState<FormState>({ matiere: '', type: 'Contrôle', date: '', notions: '', priorite: 'Moyenne' });
 
   function set(k: keyof FormState, v: string) {
@@ -41,7 +44,7 @@ export default function ManualDeadline() {
       return;
     }
     if (!form.matiere.trim()) {
-      Alert.alert('Matière manquante', 'Indiquez la matière concernée.');
+      Alert.alert('Matière manquante', "Touchez l'icône de la matière concernée.");
       return;
     }
     const accents: AccentKey[] = ['green', 'violet', 'coral', 'blue', 'amber'];
@@ -77,18 +80,29 @@ export default function ManualDeadline() {
         <Text style={s.sub}>Ajout manuel pour {child ? child.name : "l'enfant"}.</Text>
 
         <Card pad={18} style={{ marginTop: 14, gap: 18 }}>
-          {/* Matiere */}
+          {/* Matière : sélection par icône (plus de saisie manuelle) */}
           <View>
             <Text style={s.fieldLabel}>Matière</Text>
-            <View style={s.inputRow}>
-              <Ionicons name="calculator-outline" size={19} color={T.faint} style={{ marginRight: 10 }} />
-              <TextInput
-                style={s.input}
-                value={form.matiere}
-                onChangeText={(v) => set('matiere', v)}
-                placeholder="Mathématiques"
-                placeholderTextColor={T.faint}
-              />
+            <View style={s.subjectGrid}>
+              {SUBJECTS.map((sub) => {
+                const on = form.matiere === sub.label;
+                return (
+                  <TouchableOpacity
+                    key={sub.key}
+                    onPress={() => set('matiere', sub.label)}
+                    style={[s.subjectTile, on && s.subjectTileOn]}
+                    activeOpacity={0.85}
+                  >
+                    <Image source={scheme === 'light' ? sub.light : sub.dark} style={s.subjectImg} />
+                    <Text style={[s.subjectLabel, on && s.subjectLabelOn]} numberOfLines={1}>{sub.label}</Text>
+                    {on && (
+                      <View style={s.subjectCheck}>
+                        <Ionicons name="checkmark" size={12} color="#fff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
@@ -199,4 +213,20 @@ const s = StyleSheet.create({
     backgroundColor: T.surfaceAlt, borderWidth: 1.5, borderColor: 'transparent',
   },
   prioText: { fontWeight: '700', fontSize: 14, color: T.sub },
+  subjectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  subjectTile: {
+    width: '22.5%', alignItems: 'center', borderRadius: 16, paddingVertical: 8, paddingHorizontal: 3,
+    borderWidth: 1.5, borderColor: T.line, backgroundColor: T.surfaceAlt,
+  },
+  subjectTileOn: {
+    borderColor: '#12B886', backgroundColor: 'rgba(18,184,134,0.08)',
+    shadowColor: '#12B886', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 3,
+  },
+  subjectImg: { width: 52, height: 52, borderRadius: 12 },
+  subjectLabel: { fontSize: 10, fontWeight: '700', color: T.sub, marginTop: 5 },
+  subjectLabelOn: { color: '#0A8A64' },
+  subjectCheck: {
+    position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 999,
+    backgroundColor: '#12B886', alignItems: 'center', justifyContent: 'center',
+  },
 });

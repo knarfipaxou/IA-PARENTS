@@ -11,26 +11,7 @@ import { loadExamResults, analyzeExams, type ExamResult } from '../lib/examResul
 import { loadFlashMastery, masteryPct, type FlashMastery } from '../lib/flashMastery';
 import { progressColor, progressGradient } from '../lib/progressColor';
 
-// icônes néon par matière (banque)
-const SUBJECT_ICONS: { match: RegExp; img: any }[] = [
-  { match: /math|calcul|conversion|éval|eval/i, img: require('../assets/subjects/maths.png') },
-  { match: /fran|lettre|dictée|dictee|lecture|conjugaison|grammaire|orthographe/i, img: require('../assets/subjects/francais.png') },
-  { match: /angl|english/i, img: require('../assets/subjects/anglais.png') },
-  { match: /espa|spanish/i, img: require('../assets/subjects/espagnol.png') },
-  { match: /latin|grec/i, img: require('../assets/subjects/latin.png') },
-  { match: /hist|géo|geo/i, img: require('../assets/subjects/histgeo.png') },
-  { match: /svt|bio|vie|terre|science/i, img: require('../assets/subjects/svt.png') },
-  { match: /phys|chim/i, img: require('../assets/subjects/physchim.png') },
-  { match: /techno|informat/i, img: require('../assets/subjects/techno.png') },
-  { match: /art|dessin|plastique/i, img: require('../assets/subjects/arts.png') },
-  { match: /musi/i, img: require('../assets/subjects/musique.png') },
-  { match: /eps|sport/i, img: require('../assets/subjects/eps.png') },
-];
-const SUBJECT_DEFAULT = require('../assets/subjects/defaut.png');
-function subjectIcon(subj?: string) {
-  const found = SUBJECT_ICONS.find((x) => x.match.test(subj ?? ''));
-  return found ? found.img : SUBJECT_DEFAULT;
-}
+import { subjectIcon } from '../lib/subjectIcons';
 
 type PrepMode = 'controle' | 'flashcards' | 'both';
 
@@ -152,7 +133,7 @@ export default function EcheanceDetail() {
           </View>
 
           <View style={s.heroRow}>
-            <Image source={subjectIcon(echeance.subj)} style={s.heroIcon} />
+            <Image source={subjectIcon(echeance.subj, 'dark')} style={s.heroIcon} />
             <View style={{ flex: 1, marginLeft: 16 }}>
               <Text style={s.heroTitle}>{echeance.subj}</Text>
               <Text style={s.heroSub}>{echeance.type} du {echeance.date}</Text>

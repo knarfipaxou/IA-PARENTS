@@ -7,6 +7,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
 import { progressColor, progressGradient } from '../../lib/progressColor';
+import { subjectIcon } from '../../lib/subjectIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -41,26 +42,6 @@ const ART = {
 };
 const AVATAR_DEFAULT = require('../../assets/home/avatar.png');
 
-// icônes minimalistes par matière (banque d'images)
-const SUBJECT_ICONS: { match: RegExp; img: any }[] = [
-  { match: /math|calcul|conversion|éval|eval/i, img: require('../../assets/subjects/maths.png') },
-  { match: /fran|lettre|dictée|dictee|lecture|conjugaison|grammaire|orthographe/i, img: require('../../assets/subjects/francais.png') },
-  { match: /angl|english/i, img: require('../../assets/subjects/anglais.png') },
-  { match: /espa|spanish/i, img: require('../../assets/subjects/espagnol.png') },
-  { match: /latin|grec/i, img: require('../../assets/subjects/latin.png') },
-  { match: /hist|géo|geo/i, img: require('../../assets/subjects/histgeo.png') },
-  { match: /svt|bio|vie|terre|science/i, img: require('../../assets/subjects/svt.png') },
-  { match: /phys|chim/i, img: require('../../assets/subjects/physchim.png') },
-  { match: /techno|informat/i, img: require('../../assets/subjects/techno.png') },
-  { match: /art|dessin|plastique/i, img: require('../../assets/subjects/arts.png') },
-  { match: /musi/i, img: require('../../assets/subjects/musique.png') },
-  { match: /eps|sport/i, img: require('../../assets/subjects/eps.png') },
-];
-const SUBJECT_DEFAULT = require('../../assets/subjects/defaut.png');
-function subjectIcon(subj?: string) {
-  const found = SUBJECT_ICONS.find((x) => x.match.test(subj ?? ''));
-  return found ? found.img : SUBJECT_DEFAULT;
-}
 // couleur du badge J-x selon l'urgence uniquement
 function urgencyColor(days: number) {
   if (days <= 3) return '#F5C24B';
@@ -302,7 +283,7 @@ export default function EspaceScreen() {
                       }]}
                       activeOpacity={0.85}
                     >
-                      <Image source={subjectIcon(e.subj)} style={s.ctrlIconTile} />
+                      <Image source={subjectIcon(e.subj, P.scheme)} style={s.ctrlIconTile} />
                       <View style={{ flex: 1, marginLeft: 14 }}>
                         <Text style={[s.ctrlTitle, { color: P.ink }]} numberOfLines={1}>{e.type} de {e.subj}</Text>
                         <Text style={[s.ctrlSub, { color: P.sub }]}>
