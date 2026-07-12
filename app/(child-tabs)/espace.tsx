@@ -8,6 +8,7 @@ import { useCallback, useState } from 'react';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
 import { progressColor, progressGradient } from '../../lib/progressColor';
 import { subjectIcon } from '../../lib/subjectIcons';
+import { AlertPulse } from '../../components/AlertPulse';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -268,48 +269,54 @@ export default function EspaceScreen() {
               </View>
               <View style={{ gap: 12, marginBottom: 22 }}>
                 {prochainControles.map((e) => {
-                  // jauge de maîtrise (dernier contrôle blanc de la matière), toujours turquoise
+                  // jauge de maîtrise (dernier contrôle blanc de la matière)
                   const mastery = masteryFor(e.subj);
                   const pct = mastery ? Math.max(0.04, mastery.pct / 100) : 0.08;
                   const urg = urgencyColor(e.days);
                   const nLessons = (e.lessonIds ?? []).length;
+                  // état d'alerte : non évalué OU maîtrise < 80 %
+                  const alert = !mastery || mastery.pct < 80;
+                  const neutral = {
+                    borderWidth: 1.2, borderColor: P.cardBorder,
+                    backgroundColor: P.scheme === 'dark' ? 'rgba(20,27,51,0.75)' : '#FFFFFF',
+                  };
                   return (
                     <TouchableOpacity
                       key={e.id}
                       onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
-                      style={[s.ctrlRow, {
-                        backgroundColor: P.scheme === 'dark' ? 'rgba(20,27,51,0.75)' : '#FFFFFF',
-                        borderColor: P.cardBorder,
-                      }]}
                       activeOpacity={0.85}
                     >
-                      <Image source={subjectIcon(e.subj, P.scheme)} style={s.ctrlIconTile} />
-                      <View style={{ flex: 1, marginLeft: 14 }}>
-                        <Text style={[s.ctrlTitle, { color: P.ink }]} numberOfLines={1}>{e.type} de {e.subj}</Text>
-                        <Text style={[s.ctrlSub, { color: P.sub }]}>
-                          {e.date}  •  {nLessons} {nLessons > 1 ? 'leçons liées' : 'leçon liée'}
-                        </Text>
-                        <View style={[s.ctrlTrack, {
-                          backgroundColor: P.scheme === 'dark' ? 'rgba(255,255,255,0.13)' : 'rgba(27,37,89,0.1)',
-                        }]}>
-                          <LinearGradient
-                            colors={mastery ? progressGradient(mastery.pct) : [P.teal, P.teal]}
-                            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                            style={[s.ctrlFill, { width: `${pct * 100}%` }]}
-                          />
+                      <AlertPulse active={alert} scheme={P.scheme} neutralStyle={neutral}>
+                        <View style={s.ctrlRow}>
+                          <Image source={subjectIcon(e.subj, P.scheme)} style={s.ctrlIconTile} />
+                          <View style={{ flex: 1, marginLeft: 14 }}>
+                            <Text style={[s.ctrlTitle, { color: P.ink }]} numberOfLines={1}>{e.type} de {e.subj}</Text>
+                            <Text style={[s.ctrlSub, { color: P.sub }]}>
+                              {e.date}  •  {nLessons} {nLessons > 1 ? 'leçons liées' : 'leçon liée'}
+                            </Text>
+                            <View style={[s.ctrlTrack, {
+                              backgroundColor: P.scheme === 'dark' ? 'rgba(255,255,255,0.13)' : 'rgba(27,37,89,0.1)',
+                            }]}>
+                              <LinearGradient
+                                colors={mastery ? progressGradient(mastery.pct) : [P.teal, P.teal]}
+                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                                style={[s.ctrlFill, { width: `${pct * 100}%` }]}
+                              />
+                            </View>
+                            <Text
+                              style={[s.ctrlMastery, { color: mastery ? progressColor(mastery.pct) : (P.scheme === 'dark' ? '#FF8A80' : '#D6353A') }]}
+                              numberOfLines={2}
+                            >
+                              {mastery
+                                ? `${mastery.pct} % de maîtrise • dernier contrôle blanc ${mastery.note}/20`
+                                : 'À préparer — pas encore de contrôle blanc noté'}
+                            </Text>
+                          </View>
+                          <View style={[s.jPill, { borderColor: urg }]}>
+                            <Text style={[s.jPillText, { color: urg }]}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
+                          </View>
                         </View>
-                        <Text
-                          style={[s.ctrlMastery, { color: mastery ? progressColor(mastery.pct) : P.sub }]}
-                          numberOfLines={2}
-                        >
-                          {mastery
-                            ? `${mastery.pct} % de maîtrise • dernier contrôle blanc ${mastery.note}/20`
-                            : 'Pas encore de contrôle blanc noté'}
-                        </Text>
-                      </View>
-                      <View style={[s.jPill, { borderColor: urg }]}>
-                        <Text style={[s.jPillText, { color: urg }]}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
-                      </View>
+                      </AlertPulse>
                     </TouchableOpacity>
                   );
                 })}
@@ -440,8 +447,7 @@ const s = StyleSheet.create({
 
   ctrlRow: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.2, borderRadius: 22, padding: 14,
-    minHeight: 122,
+    padding: 14, minHeight: 122,
   },
   ctrlIconTile: { width: 72, height: 78, borderRadius: 18 },
   ctrlTitle: { fontSize: 16.5, fontWeight: '800', letterSpacing: -0.3 },

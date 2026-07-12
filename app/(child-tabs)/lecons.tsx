@@ -6,13 +6,16 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { DK, DK_ICONS, dkIconForSubject } from '../../constants/darkTheme';
+import { DK, DK_ICONS } from '../../constants/darkTheme';
 import { useChild } from '../../contexts/ChildContext';
 import { formatLessonDate } from '../../lib/matiere';
+import { useScheme } from '../../lib/useScheme';
+import { subjectIcon } from '../../lib/subjectIcons';
 
 export default function LeconsTab() {
   const router = useRouter();
   const { child, lessons } = useChild();
+  const scheme = useScheme();
   const list = child ? lessons.filter((l) => l.childId === child.id) : [];
 
   return (
@@ -42,7 +45,7 @@ export default function LeconsTab() {
                     style={s.row}
                     activeOpacity={0.85}
                   >
-                    <Image source={dkIconForSubject(l.matiere)} style={{ width: 46, height: 46 }} />
+                    <Image source={subjectIcon(l.matiere, scheme)} style={{ width: 54, height: 58, borderRadius: 13 }} />
                     <View style={{ flex: 1, marginLeft: 12 }}>
                       <Text style={s.rowMatiere}>{l.matiere}</Text>
                       <Text style={s.rowTitre} numberOfLines={2}>{l.titre}</Text>

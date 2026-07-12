@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Image } from 'react-native';
 import { SUBJECTS } from '../lib/subjectIcons';
 import { useScheme } from '../lib/useScheme';
+import { CalendarModal } from '../components/CalendarModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +33,7 @@ export default function ManualDeadline() {
   const router = useRouter();
   const { child, addEcheance } = useChild();
   const scheme = useScheme();
+  const [calOpen, setCalOpen] = useState(false);
   const [form, setForm] = useState<FormState>({ matiere: '', type: 'Contrôle', date: '', notions: '', priorite: 'Moyenne' });
 
   function set(k: keyof FormState, v: string) {
@@ -125,19 +127,16 @@ export default function ManualDeadline() {
             </View>
           </View>
 
-          {/* Date */}
+          {/* Date : sélection via calendrier (aucune saisie clavier) */}
           <View>
             <Text style={s.fieldLabel}>Date</Text>
-            <View style={s.inputRow}>
+            <TouchableOpacity style={s.inputRow} onPress={() => setCalOpen(true)} activeOpacity={0.8}>
               <Ionicons name="calendar-outline" size={19} color={T.faint} style={{ marginRight: 10 }} />
-              <TextInput
-                style={s.input}
-                value={form.date}
-                onChangeText={(v) => set('date', v)}
-                placeholder="18/06/2026"
-                placeholderTextColor={T.faint}
-              />
-            </View>
+              <Text style={[s.input, !form.date && { color: T.faint }]}>
+                {form.date || 'Choisir une date'}
+              </Text>
+              <Ionicons name="chevron-forward" size={17} color={T.faint} />
+            </TouchableOpacity>
           </View>
 
           {/* Notions */}
@@ -181,6 +180,12 @@ export default function ManualDeadline() {
         </Btn>
         <View style={{ height: 24 }} />
       </ScrollView>
+      <CalendarModal
+        visible={calOpen}
+        initial={form.date}
+        onClose={() => setCalOpen(false)}
+        onConfirm={(d) => set('date', d)}
+      />
     </SafeAreaView>
   );
 }
