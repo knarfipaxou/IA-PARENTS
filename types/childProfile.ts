@@ -1,3 +1,89 @@
+import type { AccentKey } from '../constants/theme';
+
+// ─── Modèle enfant / échéances (source de vérité unique) ────────────────────
+// Anciennement dans data/mock.ts, mélangé aux données de démo — déplacé ici
+// pour que data/mock.ts ne contienne plus que des données, pas le modèle.
+
+export type EcheanceStatus = 'confirme' | 'incertain' | 'erreur' | 'flou';
+
+export interface Echeance {
+  id: string;
+  subj: string;
+  type: string;
+  date: string;
+  days: number;
+  status: EcheanceStatus;
+  accent: AccentKey;
+  icon: string;
+  urg?: boolean;
+  // extended (Milestone 2/3) — optional for backward compat with stored data
+  titre?: string;
+  consigne?: string;
+  noteParent?: string;
+  lessonIds?: string[];
+  generated?: Record<string, any>;
+  // mode de préparation de l'échéance : contrôle blanc, flashcards ou les deux
+  prepMode?: 'controle' | 'flashcards' | 'both';
+}
+
+export interface HistoryItem {
+  subj: string;
+  type: string;
+  score: string;
+  date: string;
+  accent: AccentKey;
+}
+
+export interface MatiereStat {
+  s: string;
+  v: number;
+  a: AccentKey;
+  icon: string;
+}
+
+interface ChildBaseExtras {
+  archived?: boolean;
+  archivedAt?: string;
+  photoUri?: string; // photo de profil choisie par l'utilisateur (bibliothèque)
+}
+
+export interface CollegeChild extends ChildBaseExtras {
+  id: string;
+  kind: 'college';
+  name: string;
+  classe: string;
+  age: number;
+  accent: AccentKey;
+  progress: number;
+  next: { subj: string; type: string; days: number; accent: AccentKey };
+  mission: { subj: string; min: number; obj: string; notion: string };
+  matieres: MatiereStat[];
+  forts: string[];
+  faibles: string[];
+  echeances: Echeance[];
+  history: HistoryItem[];
+}
+
+export interface MaternelleChild extends ChildBaseExtras {
+  id: string;
+  kind: 'maternelle';
+  name: string;
+  classe: string;
+  age: number;
+  accent: AccentKey;
+  progress: number;
+  activity: { label: string; min: number; obj: string };
+  matieres: MatiereStat[];
+  forts: string[];
+  faibles: string[];
+  echeances: Echeance[];
+  history: HistoryItem[];
+}
+
+export type Child = CollegeChild | MaternelleChild;
+
+// ─── Profil pédagogique ──────────────────────────────────────────────────────
+
 export type SchoolLevel = 'fragile' | 'moyen' | 'bon' | 'avance' | 'tres_avance';
 export type LearningObjective = 'consolidation' | 'bon_niveau' | 'excellence' | 'concours';
 export type DrillDuration = 10 | 20 | 30 | 40 | 'custom';
