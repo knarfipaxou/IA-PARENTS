@@ -11,6 +11,7 @@ import { isControle } from '../../lib/matiere';
 import { useScheme } from '../../lib/useScheme';
 import { subjectIcon } from '../../lib/subjectIcons';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
+import { masteryForSubject, isDeadlineAtRisk } from '../../lib/deadlines';
 import { AlertPulse } from '../../components/AlertPulse';
 
 export default function EcheancesScreen() {
@@ -26,10 +27,7 @@ export default function EcheancesScreen() {
     }, [child?.id])
   );
   // maîtrise (dernier contrôle blanc) par matière → % ; null = non évalué
-  function masteryPctFor(subj: string): number | null {
-    const r = exams.find((x) => (x.matiere ?? '').toLowerCase() === subj.toLowerCase());
-    return r ? Math.round((r.note / 20) * 100) : null;
-  }
+  const masteryPctFor = (subj: string) => masteryForSubject(exams, subj)?.pct ?? null;
 
   return (
     <LinearGradient colors={scheme === 'light' ? ['#F3F5FA', '#EEF1F8'] : [DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
@@ -78,7 +76,7 @@ export default function EcheancesScreen() {
               const noLesson = isControle(it.type) && nb === 0;
               const pct = masteryPctFor(it.subj);
               // état d'alerte : non évalué OU maîtrise < 80 %
-              const alert = pct === null || pct < 80;
+              const alert = isDeadlineAtRisk(pct === null ? null : { pct });
               const neutral = {
                 borderWidth: 1, borderColor: DK.cardBorder,
                 backgroundColor: scheme === 'light' ? '#FFFFFF' : 'rgba(47,60,112,0.4)',

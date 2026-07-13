@@ -8,12 +8,13 @@ import { useCallback, useState } from 'react';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
 import { progressColor, progressGradient } from '../../lib/progressColor';
 import { subjectIcon } from '../../lib/subjectIcons';
+import { nextDeadlines, masteryForSubject, isDeadlineAtRisk } from '../../lib/deadlines';
 import { AlertPulse } from '../../components/AlertPulse';
+import { AvatarRing } from '../../components/AvatarRing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle } from 'react-native-svg';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Breathe } from '../../components/anim/Breathe';
@@ -108,23 +109,6 @@ const STARS = [
   { top: 130, left: '44%', s: 2 }, { top: 104, left: '9%', s: 3 }, { top: 170, left: '91%', s: 2 },
 ] as const;
 
-// anneau décoratif autour de l'avatar (arc teal + points, comme la maquette)
-function AvatarRing({ size, teal, track }: { size: number; teal: string; track: string }) {
-  const r = size / 2 - 3;
-  const c = size / 2;
-  const circ = 2 * Math.PI * r;
-  return (
-    <Svg width={size} height={size} style={{ position: 'absolute' }}>
-      <Circle cx={c} cy={c} r={r} fill="none" stroke={track} strokeWidth={2.5} />
-      <Circle
-        cx={c} cy={c} r={r} fill="none" stroke={teal} strokeWidth={5} strokeLinecap="round"
-        strokeDasharray={`${circ * 0.3} ${circ}`} transform={`rotate(-125 ${c} ${c})`}
-      />
-      <Circle cx={c * 0.18} cy={c * 1.62} r={5} fill={teal} />
-    </Svg>
-  );
-}
-
 export default function EspaceScreen() {
   const router = useRouter();
   const scheme = useScheme();
@@ -141,11 +125,7 @@ export default function EspaceScreen() {
       if (child) loadExamResults(child.id).then(setExamResults);
     }, [child?.id])
   );
-  function masteryFor(subj?: string): { pct: number; note: number } | null {
-    const m = (subj ?? '').toLowerCase();
-    const r = examResults.find((x) => (x.matiere ?? '').toLowerCase() === m);
-    return r ? { pct: Math.round((r.note / 20) * 100), note: r.note } : null;
-  }
+  const masteryFor = (subj?: string) => masteryForSubject(examResults, subj);
 
   async function changePhoto() {
     if (!child) return;
@@ -188,7 +168,7 @@ export default function EspaceScreen() {
     : (child.activity?.label ?? 'Découverte');
   const missionMin = (isCollege ? child.mission?.min : child.activity?.min) ?? 20;
   // 3 échéances les plus proches, classées par date (comme la page Échéances)
-  const prochainControles = [...controles].sort((a, b) => a.days - b.days).slice(0, 3);
+  const prochainControles = nextDeadlines(controles, 3);
 
   // 3 cartes verticales côte à côte (maquette) — « Préparer un contrôle » retiré
   const TILES = [
@@ -276,7 +256,7 @@ export default function EspaceScreen() {
                   const urg = urgencyColor(e.days);
                   const nLessons = (e.lessonIds ?? []).length;
                   // état d'alerte : non évalué OU maîtrise < 80 %
-                  const alert = !mastery || mastery.pct < 80;
+                  const alert = isDeadlineAtRisk(mastery);
                   const neutral = {
                     borderWidth: 1.2, borderColor: P.cardBorder,
                     backgroundColor: P.scheme === 'dark' ? 'rgba(20,27,51,0.75)' : '#FFFFFF',
