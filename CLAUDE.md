@@ -11,6 +11,9 @@ cahiers de leurs enfants en contenus de révision personnalisés par IA.
 - IA : `services/ai.ts` (appels Claude), prompts par enfant via `lib/systemPrompt.ts`
 - Textes UI en français, ton chaleureux
 - `npx tsc --noEmit` doit passer à zéro erreur avant tout commit
+- `npm test` (Jest) doit rester vert avant tout commit — tests de la logique
+  pure dans `__tests__/` (progressColor, examResults, flashMastery, adaptation,
+  gamification). Ajoute un test quand tu ajoutes/répares une règle métier.
 
 ## Contraintes produit non négociables
 - Toutes les actions scolaires vivent DANS l'espace enfant, jamais sur l'accueil parent
