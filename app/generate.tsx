@@ -6,10 +6,14 @@ import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { DK, DK_ICONS } from '../constants/darkTheme';
-import { playSfx } from '../lib/sfx';
-import { saveExamResult, loadExamResults, filterForLesson, analyzeExams, type ExamResult } from '../lib/examResults';
-import { saveFlashMastery } from '../lib/flashMastery';
-import { ExamDashboard } from '../components/ExamDashboard';
+import { saveExamResult, loadExamResults, filterForLesson, type ExamResult } from '../lib/examResults';
+import { CyanBtn, DarkGhostBtn } from '../components/generate/Buttons';
+import { FicheView } from '../components/generate/FicheView';
+import { FlashcardsView } from '../components/generate/FlashcardsView';
+import { ExercicesView } from '../components/generate/ExercicesView';
+import { MiniTestView } from '../components/generate/MiniTestView';
+import { PlanningView } from '../components/generate/PlanningView';
+import { ControleBlancView } from '../components/generate/ControleBlancView';
 import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
 import {
   AiError,
@@ -28,7 +32,6 @@ import {
   type Exercises,
   type MiniTest,
   type MockExam,
-  type QcmExercise,
 } from '../services/ai';
 
 const META: Record<string, { title: string; accent: string }> = {
@@ -41,146 +44,6 @@ const META: Record<string, { title: string; accent: string }> = {
   planning: { title: 'Planning J-10 → J-1', accent: DK.blue },
 };
 
-const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
-
-// ─── Boutons sombres réutilisés localement ───────────────────────────────────
-
-function CyanBtn({ label, icon, onPress, style }: { label: string; icon?: React.ReactNode; onPress: () => void; style?: any }) {
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={style}>
-      <LinearGradient colors={['#1FB8A8', DK.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cyanBtn}>
-        {icon}
-        <Text style={s.cyanBtnText}>{label}</Text>
-      </LinearGradient>
-    </TouchableOpacity>
-  );
-}
-
-function DarkGhostBtn({ label, icon, onPress, style }: { label: string; icon?: React.ReactNode; onPress: () => void; style?: any }) {
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={[s.ghostBtn, style]}>
-      {icon}
-      <Text style={s.ghostBtnText}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-// ─── Bloc QCM (feedback vert / rouge néon — wireframe 3b) ────────────────────
-
-function QcmBlock({ exo, index, onAnswered }: { exo: QcmExercise; index: number; onAnswered?: (right: boolean) => void }) {
-  const [pick, setPick] = useState<number | null>(null);
-  const checked = pick !== null;
-  const isRight = pick === exo.bonneReponse;
-
-  return (
-    <View style={q.card}>
-      <LinearGradient
-        colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
-        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-        style={q.questionCard}
-      >
-        <View style={q.questionChip}>
-          <Text style={q.questionChipText}>Question {index + 1} · QCM</Text>
-        </View>
-        <Text style={q.title}>{exo.question}</Text>
-      </LinearGradient>
-      <View style={q.optsList}>
-        {exo.options.map((opt, oi) => {
-          const sel = pick === oi;
-          const isCorrect = checked && oi === exo.bonneReponse;
-          const isWrong = checked && sel && oi !== exo.bonneReponse;
-          return (
-            <TouchableOpacity
-              key={oi}
-              disabled={checked}
-              onPress={() => { setPick(oi); playSfx(oi === exo.bonneReponse ? 'correct' : 'wrong'); onAnswered?.(oi === exo.bonneReponse); }}
-              style={[q.optRow, isCorrect && q.optRowRight, isWrong && q.optRowWrong]}
-              activeOpacity={0.88}
-            >
-              {isCorrect ? (
-                <View style={[q.optBadge, { backgroundColor: DK.green, borderWidth: 0 }]}>
-                  <Ionicons name="checkmark" size={15} color="#062A14" />
-                </View>
-              ) : isWrong ? (
-                <View style={[q.optBadge, { backgroundColor: DK.red, borderWidth: 0 }]}>
-                  <Ionicons name="close" size={15} color="#fff" />
-                </View>
-              ) : (
-                <View style={q.optBadge}>
-                  <Text style={q.optBadgeText}>{LETTERS[oi] ?? '?'}</Text>
-                </View>
-              )}
-              <Text style={[q.optLabel, isCorrect && { color: '#9FF0BE', fontWeight: '800' }, isWrong && { color: '#FFB3A8', fontWeight: '800' }]}>
-                {opt}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-      {checked && (
-        <View style={[q.feedback, isRight ? q.feedbackRight : q.feedbackWrong]}>
-          <Ionicons
-            name={isRight ? 'checkmark-circle' : 'bulb-outline'}
-            size={20}
-            color={isRight ? DK.green : DK.red}
-            style={{ flexShrink: 0 }}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={[q.feedbackTitle, { color: isRight ? DK.green : DK.red }]}>
-              {isRight ? "Bonne réponse !" : 'Presque !'}
-            </Text>
-            <Text style={q.feedbackSub}>{exo.explication}</Text>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-}
-
-const q = StyleSheet.create({
-  card: { marginBottom: 15 },
-  questionCard: {
-    borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 24, padding: 18,
-  },
-  questionChip: {
-    alignSelf: 'flex-start', backgroundColor: 'rgba(53,228,210,0.09)',
-    borderWidth: 1, borderColor: 'rgba(53,228,210,0.45)',
-    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginBottom: 10,
-  },
-  questionChipText: { fontSize: 12, fontWeight: '800', color: DK.cyan },
-  title: { fontSize: 16, fontWeight: '800', color: DK.ink, letterSpacing: -0.2, lineHeight: 23 },
-  optsList: { gap: 9, marginTop: 12 },
-  optRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 11,
-    borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16,
-    borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.25)', backgroundColor: 'rgba(19,26,58,0.5)',
-  },
-  optRowRight: {
-    borderColor: 'rgba(110,230,150,0.7)', backgroundColor: 'rgba(110,230,150,0.12)',
-    shadowColor: DK.green, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 14,
-  },
-  optRowWrong: {
-    borderColor: 'rgba(255,107,90,0.7)', backgroundColor: 'rgba(255,107,90,0.1)',
-    shadowColor: DK.red, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.25, shadowRadius: 14,
-  },
-  optBadge: {
-    width: 26, height: 26, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.35)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  optBadgeText: { fontSize: 12, fontWeight: '800', color: '#B9C6FF' },
-  optLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: DK.ink, letterSpacing: -0.2 },
-  feedback: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    borderRadius: 18, padding: 13, marginTop: 12, borderWidth: 1,
-  },
-  feedbackRight: { backgroundColor: 'rgba(110,230,150,0.1)', borderColor: 'rgba(110,230,150,0.45)' },
-  feedbackWrong: { backgroundColor: 'rgba(255,107,90,0.08)', borderColor: 'rgba(255,107,90,0.45)' },
-  feedbackTitle: { fontWeight: '800', fontSize: 14.5 },
-  feedbackSub: { fontSize: 12.5, color: 'rgba(230,236,255,0.9)', fontWeight: '500', marginTop: 3, lineHeight: 19 },
-});
-
-// ─── Écran principal ─────────────────────────────────────────────────────────
-
 const LESSON_FIELD: Record<string, keyof SavedLesson> = {
   fiche: 'fiche',
   flashcards: 'flashcards',
@@ -189,6 +52,12 @@ const LESSON_FIELD: Record<string, keyof SavedLesson> = {
   controle: 'controleBlanc',
 };
 
+/**
+ * Écran d'orchestration : résout la source (leçon ou échéance), génère ou
+ * relit le contenu IA en cache, gère les XP, puis délègue le RENDU à un
+ * composant dédié par type de contenu (components/generate/*View). La
+ * logique de notation du contrôle blanc vit dans lib/examScoring.ts (testée).
+ */
 export default function GenerateScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ kind?: string; lessonId?: string; echeanceId?: string }>();
@@ -237,27 +106,16 @@ export default function GenerateScreen() {
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState<any>(cached ?? null);
 
-  // flashcards state
-  const [cardIndex, setCardIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [cardKnown, setCardKnown] = useState<Record<number, boolean>>({});
-  const [flashDone, setFlashDone] = useState(false);
-  // mini-test scoring
-  const [answers, setAnswers] = useState<boolean[]>([]);
-  // controle corrections
-  const [shownCorrections, setShownCorrections] = useState<Set<number>>(new Set());
-  // controle blanc : notation par sous-question (clé "qi-si" → juste)
-  const [subChecks, setSubChecks] = useState<Record<string, boolean>>({});
-  const [examDone, setExamDone] = useState(false);
   // tableau de bord de progression (résultats des contrôles de CETTE leçon/matière)
   const [examHistory, setExamHistory] = useState<ExamResult[]>([]);
-  useEffect(() => {
+  const reloadExamHistory = useCallback(() => {
     if (kind === 'controle' && child) {
       loadExamResults(child.id).then((all) =>
         setExamHistory(filterForLesson(all, savedLesson?.id ?? undefined, echeanceMode ? echeance?.subj : lesson?.matiere)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, child?.id, savedLesson?.id, examDone]);
+  }, [kind, child?.id, savedLesson?.id]);
+  useEffect(reloadExamHistory, [reloadExamHistory]);
 
   const generate = useCallback(async () => {
     if (!child) return;
@@ -265,14 +123,6 @@ export default function GenerateScreen() {
     setLoading(true);
     setError(null);
     setContent(null);
-    setCardIndex(0);
-    setFlipped(false);
-    setCardKnown({});
-    setFlashDone(false);
-    setAnswers([]);
-    setShownCorrections(new Set());
-    setSubChecks({});
-    setExamDone(false);
     try {
       let result: any;
       if (echeanceMode && echeance) {
@@ -423,410 +273,84 @@ export default function GenerateScreen() {
     );
   }
 
-  // ── rendus des contenus ──
+  // ── dispatch du rendu selon le type de contenu ──
 
   let body: React.ReactNode = null;
 
   if (kind === 'fiche' && content) {
-    const fiche = content as RevisionSheet;
-    body = (
-      <>
-        <Text style={s.contentTitle}>{fiche.titre}</Text>
-        {(fiche.sections ?? []).map((sec, i) => (
-          <LinearGradient
-            key={i}
-            colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={s.ficheCard}
-          >
-            <Text style={s.ficheLabel}>{i + 1} · {sec.titre.toUpperCase()}</Text>
-            <Text style={s.ficheText}>{sec.contenu}</Text>
-            {sec.points_cles?.length > 0 && (
-              <View style={s.pointsBox}>
-                <Text style={s.pointsLabel}>★ POINTS CLÉS</Text>
-                {sec.points_cles.map((p, pi) => (
-                  <View key={pi} style={s.pointRow}>
-                    <Text style={s.pointBullet}>•</Text>
-                    <Text style={s.pointText}>{p}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-          </LinearGradient>
-        ))}
-      </>
-    );
+    body = <FicheView fiche={content as RevisionSheet} />;
   }
 
   if (kind === 'flashcards' && content) {
-    const fc = content as Flashcards;
-    const cards = fc.cards ?? [];
-    const card = cards[cardIndex];
-    const knownCount = Object.values(cardKnown).filter(Boolean).length;
-    const answeredCount = Object.keys(cardKnown).length;
-
-    function answerCard(known: boolean) {
-      if (!child) return;
-      playSfx(known ? 'correct' : 'wrong');
-      const next = { ...cardKnown, [cardIndex]: known };
-      setCardKnown(next);
-      if (cardIndex < cards.length - 1) {
-        setCardIndex(cardIndex + 1);
-        setFlipped(false);
-      } else {
-        // fin de session : mémoriser la maîtrise pour l'échéance/leçon
-        const nKnown = Object.values(next).filter(Boolean).length;
-        const entryKey = `${child.id}:${echeanceMode ? echeance?.id : savedLesson?.id}`;
-        saveFlashMastery(entryKey, { known: nKnown, total: cards.length, date: new Date().toISOString() });
-        playSfx(nKnown / cards.length >= 0.8 ? 'success' : 'correct');
-        setFlashDone(true);
-      }
-    }
-
-    if (flashDone) {
-      const pct = cards.length > 0 ? Math.round((knownCount / cards.length) * 100) : 0;
-      body = (
-        <View style={{ alignItems: 'center', paddingVertical: 30 }}>
-          <Text style={{ fontSize: 52 }}>{pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📚'}</Text>
-          <Text style={{ color: DK.ink, fontSize: 24, fontWeight: '900', marginTop: 10 }}>Session terminée !</Text>
-          <Text style={{ color: DK.cyan, fontSize: 34, fontWeight: '900', marginTop: 12 }}>{pct} % maîtrisé</Text>
-          <Text style={{ color: DK.sub, fontSize: 14, fontWeight: '600', marginTop: 6 }}>
-            {knownCount} carte{knownCount > 1 ? 's' : ''} sue{knownCount > 1 ? 's' : ''} sur {cards.length}
-          </Text>
-          <CyanBtn
-            label="Recommencer les cartes à revoir"
-            onPress={() => { setCardKnown({}); setCardIndex(0); setFlipped(false); setFlashDone(false); }}
-            style={{ marginTop: 24, alignSelf: 'stretch' }}
-          />
-        </View>
-      );
-    } else body = card ? (
-      <>
-        <Text style={s.counter}>Carte {cardIndex + 1} / {cards.length}</Text>
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => { setFlipped((f) => !f); if (child && !flipped) addXP(child.id, 2, 'flashcard_flip'); }}
-        >
-          <LinearGradient
-            colors={flipped ? ['rgba(20,110,95,0.55)', 'rgba(14,40,50,0.8)'] : ['rgba(85,50,130,0.5)', 'rgba(25,20,60,0.75)']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={[s.flashcard, flipped ? s.flashcardBack : null]}
-          >
-            <Text style={[s.flashLabel, { color: flipped ? DK.cyan : '#C9A0FF' }]}>{flipped ? 'RÉPONSE' : 'QUESTION'}</Text>
-            <Text style={s.flashText}>{flipped ? card.verso : card.recto}</Text>
-            <View style={s.flipHint}>
-              <Ionicons name="sync-outline" size={15} color="rgba(220,210,255,0.6)" />
-              <Text style={s.flipHintText}>Touche la carte pour la retourner</Text>
-            </View>
-          </LinearGradient>
-        </TouchableOpacity>
-        {/* points de progression */}
-        <View style={s.dotsRow}>
-          {cards.map((_, di) => (
-            <View
-              key={di}
-              style={[
-                s.dot,
-                di < cardIndex && { backgroundColor: DK.cyan },
-                di === cardIndex && s.dotActive,
-              ]}
-            />
-          ))}
-        </View>
-        {flipped ? (
-          /* évaluation de la carte : alimente la maîtrise des flashcards */
-          <View style={s.navBtnRow}>
-            <TouchableOpacity onPress={() => answerCard(false)} activeOpacity={0.85} style={[s.flashAnswerBtn, s.flashAnswerBtnKo]}>
-              <Ionicons name="close" size={18} color="#FF9C8A" />
-              <Text style={[s.flashAnswerText, { color: '#FF9C8A' }]}>À revoir</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => answerCard(true)} activeOpacity={0.85} style={[s.flashAnswerBtn, s.flashAnswerBtnOk]}>
-              <Ionicons name="checkmark" size={18} color="#9FF0BE" />
-              <Text style={[s.flashAnswerText, { color: '#9FF0BE' }]}>Je savais</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={s.navBtnRow}>
-            <DarkGhostBtn
-              label="Précédente"
-              icon={<Ionicons name="arrow-back" size={18} color="#DDE4FF" />}
-              onPress={() => { if (cardIndex > 0) { setCardIndex(cardIndex - 1); setFlipped(false); } }}
-              style={{ flex: 1 }}
-            />
-            <CyanBtn
-              label="Suivante"
-              icon={<Ionicons name="arrow-forward" size={18} color="#052A26" />}
-              onPress={() => { if (cardIndex < cards.length - 1) { setCardIndex(cardIndex + 1); setFlipped(false); } }}
-              style={{ flex: 1 }}
-            />
-          </View>
-        )}
-      </>
-    ) : null;
-  }
-
-  if ((kind === 'exercices' || kind === 'piege') && content) {
-    const ex = content as Exercises;
+    const masteryKey = `${child.id}:${echeanceMode ? echeance?.id : savedLesson?.id}`;
     body = (
-      <>
-        {(ex.exercices ?? []).map((exo, i) => (
-          <QcmBlock key={i} exo={exo} index={i} />
-        ))}
-      </>
+      <FlashcardsView
+        fc={content as Flashcards}
+        masteryKey={masteryKey}
+        onFlip={() => addXP(child.id, 2, 'flashcard_flip')}
+      />
     );
   }
 
+  if ((kind === 'exercices' || kind === 'piege') && content) {
+    body = <ExercicesView exercises={content as Exercises} />;
+  }
+
   if (kind === 'minitest' && content) {
-    const mt = content as MiniTest;
-    const total = mt.exercices?.length ?? 0;
-    const done = answers.length >= total && total > 0;
-    const score = answers.filter(Boolean).length;
-    const pct = total > 0 ? (score / total) * 100 : 0;
     body = (
-      <>
-        {(mt.exercices ?? []).map((exo, i) => (
-          <QcmBlock key={i} exo={exo} index={i} onAnswered={(right) => { setAnswers((prev) => [...prev, right]); if (child) addXP(child.id, right ? 5 : 1, right ? 'qcm_correct' : 'qcm_wrong'); }} />
-        ))}
-        {done && (
-          <LinearGradient
-            colors={['rgba(90,70,20,0.35)', 'rgba(19,26,58,0.65)']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={s.scoreCard}
-          >
-            <Image source={DK_ICONS.trophy} style={s.scoreTrophy} />
-            <Text style={s.scoreBig}>{score} / {total}</Text>
-            <View style={s.scoreTrack}>
-              <LinearGradient
-                colors={[DK.xpFrom, DK.xpMid, DK.xpTo]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={[s.scoreFill, { width: `${Math.max(4, pct)}%` }]}
-              />
-            </View>
-            <Text style={s.scoreLabel}>
-              {score === total ? 'Excellent travail !' : score >= total / 2 ? 'Bien joué, continue !' : 'Courage, on révise et on recommence !'}
-            </Text>
-            {!!mt.conseil && (
-              <View style={s.conseilBox}>
-                <Ionicons name="bulb-outline" size={18} color={DK.gold} />
-                <Text style={s.conseilText}>{mt.conseil}</Text>
-              </View>
-            )}
-          </LinearGradient>
-        )}
-      </>
+      <MiniTestView
+        mt={content as MiniTest}
+        onAnswered={(right, reason) => addXP(child.id, right ? 5 : 1, reason)}
+      />
     );
   }
 
   if (kind === 'planning' && content) {
-    const plan = content as Planning;
-    body = (
-      <>
-        {(plan.jours ?? []).map((j, i) => (
-          <View key={i} style={s.planCard}>
-            <View style={s.planHeader}>
-              <View style={s.planBadge}>
-                <Text style={s.planBadgeText}>{j.jour}</Text>
-              </View>
-              <Text style={s.planTotal}>
-                {(j.taches ?? []).reduce((acc, t) => acc + (t.min || 0), 0)} min
-              </Text>
-            </View>
-            {(j.taches ?? []).map((t, ti) => (
-              <View key={ti} style={s.planTask}>
-                <Ionicons name="ellipse-outline" size={14} color={DK.cyan} />
-                <Text style={s.planTaskLabel}>{t.label}</Text>
-                <Text style={s.planTaskMin}>{t.min} min</Text>
-              </View>
-            ))}
-          </View>
-        ))}
-      </>
-    );
+    body = <PlanningView plan={content as Planning} />;
   }
 
   if (kind === 'controle' && content) {
-    const exam = content as MockExam;
-    // normalisation : ancien format (correction seule) → une sous-question unique
-    const questions = (exam.questions ?? []).map((qu) => ({
-      ...qu,
-      sousQuestions: (qu.sousQuestions && qu.sousQuestions.length > 0)
-        ? qu.sousQuestions
-        : [{ texte: qu.enonce, reponse: qu.correction ?? '', notion: echeanceMode ? (echeance?.subj ?? 'général') : (lesson?.matiere ?? 'général') }],
-    }));
-    const totalMax = questions.reduce((acc, qu) => acc + qu.sousQuestions.length, 0);
-    const totalOk = questions.reduce((acc, qu, qi) =>
-      acc + qu.sousQuestions.filter((_, si) => subChecks[`${qi}-${si}`]).length, 0);
-    const note = totalMax > 0 ? Math.round((totalOk / totalMax) * 20) : 0;
-
-    // classement des erreurs / acquis par notion
-    const notions: Record<string, { ok: number; total: number }> = {};
-    questions.forEach((qu, qi) => qu.sousQuestions.forEach((sq, si) => {
-      const n = sq.notion || 'général';
-      notions[n] = notions[n] ?? { ok: 0, total: 0 };
-      notions[n].total += 1;
-      if (subChecks[`${qi}-${si}`]) notions[n].ok += 1;
-    }));
-    const acquis = Object.entries(notions).filter(([, v]) => v.ok === v.total && v.total > 0).map(([n]) => n);
-    const aRenforcer = Object.entries(notions).filter(([, v]) => v.ok < v.total).map(([n, v]) => `${n} (${v.ok}/${v.total})`);
-
-    function finishExam() {
-      if (!child) return;
-      const matiere = echeanceMode ? (echeance?.subj ?? 'Contrôle') : (lesson?.matiere ?? 'Contrôle');
-      const now = new Date().toISOString();
-      const today = now.slice(0, 10);
-      const sessionId = `controle-${Date.now()}`;
-      // réinjection dans le moteur d'adaptation : un résultat par sous-question
-      questions.forEach((qu, qi) => qu.sousQuestions.forEach((sq, si) => {
-        addDrillResult({
-          id: `${sessionId}-${qi}-${si}`,
-          sessionId,
-          exerciseId: `${sessionId}-q${qi}${String.fromCharCode(97 + si)}`,
-          childId: child.id,
-          date: today,
-          matiere,
-          competence: sq.notion || 'général',
-          reussite: !!subChecks[`${qi}-${si}`],
-        } as any);
-      }));
-      // mémorisation du résultat pour le tableau de bord des contrôles blancs
-      saveExamResult({
-        id: sessionId,
-        childId: child.id,
-        date: now,
-        titre: exam.titre,
-        matiere,
-        note,
-        totalOk,
-        totalMax,
-        acquis,
-        aRenforcer,
-        notionsDetail: Object.entries(notions).map(([notion, v]) => ({ notion, ok: v.ok, total: v.total })),
-        lessonId: savedLesson?.id,
-        echeanceId: echeance?.id,
-      });
-      playSfx(note >= 14 ? 'success' : 'correct');
-      setExamDone(true);
-    }
-
+    const fallbackNotion = echeanceMode ? (echeance?.subj ?? 'général') : (lesson?.matiere ?? 'général');
+    const matiere = echeanceMode ? (echeance?.subj ?? 'Contrôle') : (lesson?.matiere ?? 'Contrôle');
     body = (
-      <>
-        {/* tableau de bord de progression pour cette leçon/matière */}
-        <ExamDashboard an={analyzeExams(examHistory)} />
-
-        <Text style={s.contentTitle}>{exam.titre}</Text>
-        <View style={s.examMeta}>
-          <View style={s.examChip}>
-            <Text style={s.examChipText}>Durée : {exam.duree_min} min</Text>
-          </View>
-          <View style={s.examChip}>
-            <Text style={s.examChipText}>{questions.length} questions · /{totalMax} pts</Text>
-          </View>
-        </View>
-        <Text style={s.examHint}>Cochez chaque sous-question réussie : le score se met à jour en direct.</Text>
-
-        {questions.map((qu, i) => {
-          const shown = shownCorrections.has(i);
-          const nSub = qu.sousQuestions.length;
-          const nOk = qu.sousQuestions.filter((_, si) => subChecks[`${i}-${si}`]).length;
-          return (
-            <LinearGradient
-              key={i}
-              colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={s.examCard}
-            >
-              <View style={s.examQHeader}>
-                <Text style={s.examQNum}>QUESTION {i + 1}</Text>
-                <View style={[s.pointsBadge, nOk === nSub && s.pointsBadgeFull, nOk > 0 && nOk < nSub && s.pointsBadgePartial]}>
-                  <Text style={[s.pointsText, nOk === nSub && { color: DK.green }, nOk > 0 && nOk < nSub && { color: DK.gold }]}>
-                    {nOk}/{nSub} pts
-                  </Text>
-                </View>
-              </View>
-              <Text style={s.examEnonce}>{qu.enonce}</Text>
-
-              {/* sous-questions cochables */}
-              <View style={{ gap: 8, marginTop: 12 }}>
-                {qu.sousQuestions.map((sq, si) => {
-                  const key = `${i}-${si}`;
-                  const on = !!subChecks[key];
-                  return (
-                    <View key={si}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          playSfx(on ? 'wrong' : 'correct');
-                          setSubChecks((prev) => ({ ...prev, [key]: !on }));
-                        }}
-                        style={[s.subQRow, on && s.subQRowOn]}
-                        activeOpacity={0.8}
-                      >
-                        <View style={[s.subQCheck, on && s.subQCheckOn]}>
-                          {on && <Ionicons name="checkmark" size={14} color="#062A14" />}
-                        </View>
-                        <Text style={[s.subQText, on && { color: '#9FF0BE' }]}>{sq.texte}</Text>
-                        <Text style={s.subQPoint}>{on ? '1 pt' : '0 pt'}</Text>
-                      </TouchableOpacity>
-                      {shown && !!sq.reponse && (
-                        <Text style={s.subQAnswer}>→ {sq.reponse}</Text>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-
-              <TouchableOpacity
-                onPress={() => setShownCorrections((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(i)) next.delete(i); else next.add(i);
-                  return next;
-                })}
-                style={s.corrToggle}
-              >
-                <Ionicons name={shown ? 'eye-off-outline' : 'eye-outline'} size={17} color={DK.cyan} />
-                <Text style={s.corrToggleText}>{shown ? 'Masquer les réponses' : 'Voir les réponses (parent)'}</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-          );
-        })}
-
-        {/* total en direct + fin de contrôle */}
-        <View style={s.examTotalCard}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <Text style={s.examTotalLabel}>TOTAL</Text>
-            <Text style={s.examTotalNote}>{totalOk}/{totalMax}  ·  <Text style={{ color: note >= 14 ? DK.green : note >= 10 ? DK.gold : DK.red }}>{note}/20</Text></Text>
-          </View>
-          {!examDone ? (
-            <TouchableOpacity onPress={finishExam} activeOpacity={0.88} style={{ marginTop: 12 }}>
-              <LinearGradient colors={['#1FB8A8', DK.cyan]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.finishBtn}>
-                <Ionicons name="checkmark-done" size={18} color="#052620" />
-                <Text style={s.finishBtnText}>Terminer le contrôle</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          ) : (
-            <>
-              {/* synthèse des acquis / points à retravailler */}
-              <View style={s.synthBlock}>
-                <Text style={s.synthLabel}>✅ ACQUIS</Text>
-                <Text style={s.synthText}>{acquis.length > 0 ? acquis.join(' · ') : 'Aucune notion entièrement maîtrisée sur ce contrôle.'}</Text>
-              </View>
-              <View style={s.synthBlock}>
-                <Text style={[s.synthLabel, { color: DK.gold }]}>🔶 À RENFORCER</Text>
-                <Text style={s.synthText}>{aRenforcer.length > 0 ? aRenforcer.join(' · ') : 'Rien à signaler, tout est juste !'}</Text>
-              </View>
-              <Text style={s.synthHint}>
-                Ces points faibles sont enregistrés : les prochains drills de {child.name} cibleront ces notions.
-              </Text>
-              <TouchableOpacity
-                onPress={() => { setSubChecks({}); setExamDone(false); }}
-                style={s.retryRow}
-              >
-                <Ionicons name="refresh" size={15} color={DK.sub} />
-                <Text style={s.retryText}>Recommencer la correction</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </>
+      <ControleBlancView
+        exam={content as MockExam}
+        examHistory={examHistory}
+        fallbackNotion={fallbackNotion}
+        onFinish={(questions, score, subChecks) => {
+          const now = new Date().toISOString();
+          const sessionId = `controle-${Date.now()}`;
+          // réinjection dans le moteur d'adaptation : un résultat par sous-question
+          questions.forEach((qu, qi) => qu.sousQuestions.forEach((sq, si) => {
+            addDrillResult({
+              id: `${sessionId}-${qi}-${si}`,
+              sessionId,
+              exerciseId: `${sessionId}-q${qi}${String.fromCharCode(97 + si)}`,
+              childId: child.id,
+              date: now.slice(0, 10),
+              matiere,
+              competence: sq.notion || 'général',
+              reussite: !!subChecks[`${qi}-${si}`],
+            } as any);
+          }));
+          saveExamResult({
+            id: sessionId,
+            childId: child.id,
+            date: now,
+            titre: (content as MockExam).titre,
+            matiere,
+            note: score.note,
+            totalOk: score.totalOk,
+            totalMax: score.totalMax,
+            acquis: score.acquis,
+            aRenforcer: score.aRenforcer,
+            notionsDetail: Object.entries(score.notions).map(([notion, v]) => ({ notion, ok: v.ok, total: v.total })),
+            lessonId: savedLesson?.id,
+            echeanceId: echeance?.id,
+          });
+          reloadExamHistory();
+        }}
+      />
     );
   }
 
@@ -863,7 +387,6 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16,
   },
   loadingTitle: { fontSize: 19, fontWeight: '800', color: DK.ink, letterSpacing: -0.4 },
-
   navRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 18 },
   backCircle: {
     width: 36, height: 36, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.12)',
@@ -877,159 +400,4 @@ const s = StyleSheet.create({
     borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
   },
   iaPillText: { color: DK.cyan, fontSize: 12.5, fontWeight: '800' },
-
-  cyanBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderRadius: 999, paddingVertical: 15, paddingHorizontal: 18,
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 24, elevation: 8,
-  },
-  cyanBtnText: { color: '#052A26', fontSize: 15, fontWeight: '800' },
-  ghostBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.35)', borderRadius: 999,
-    paddingVertical: 14, paddingHorizontal: 18,
-  },
-  ghostBtnText: { color: '#DDE4FF', fontSize: 14, fontWeight: '700' },
-
-  contentTitle: { fontSize: 19, fontWeight: '800', color: DK.ink, letterSpacing: -0.4, marginTop: 4 },
-
-  // fiche (wireframe 3a)
-  ficheCard: { borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 22, padding: 16, marginTop: 13 },
-  ficheLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: DK.cyan },
-  ficheText: { fontSize: 13.5, lineHeight: 21, marginTop: 8, color: 'rgba(230,236,255,0.9)', fontWeight: '500' },
-  pointsBox: {
-    marginTop: 12, borderRadius: 16, padding: 13,
-    backgroundColor: 'rgba(245,194,75,0.07)', borderWidth: 1, borderColor: 'rgba(245,194,75,0.4)',
-  },
-  pointsLabel: { fontSize: 12, fontWeight: '800', letterSpacing: 1, color: DK.gold, marginBottom: 8 },
-  pointRow: { flexDirection: 'row', gap: 9, marginTop: 5 },
-  pointBullet: { color: DK.gold, fontWeight: '800', fontSize: 13 },
-  pointText: { flex: 1, fontSize: 13, lineHeight: 19, color: 'rgba(235,240,255,0.9)', fontWeight: '500' },
-
-  // flashcards (wireframe 3c)
-  counter: { alignSelf: 'center', fontSize: 14, fontWeight: '800', color: DK.sub, marginBottom: 14 },
-  flashcard: {
-    minHeight: 330, borderRadius: 28, padding: 26,
-    borderWidth: 1.5, borderColor: 'rgba(190,140,255,0.45)',
-    alignItems: 'center', justifyContent: 'center', gap: 16,
-    shadowColor: DK.violet, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 40, elevation: 8,
-  },
-  flashcardBack: { borderColor: 'rgba(53,228,210,0.5)', shadowColor: DK.cyan },
-  flashLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 2 },
-  flashText: { fontSize: 21, fontWeight: '800', color: DK.ink, textAlign: 'center', letterSpacing: -0.3, lineHeight: 30 },
-  flipHint: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 8 },
-  flipHintText: { fontSize: 12, color: 'rgba(220,210,255,0.6)', fontWeight: '600' },
-  dotsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 18 },
-  dot: { width: 6, height: 6, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.3)' },
-  dotActive: { width: 16, borderRadius: 3, backgroundColor: '#C9A0FF' },
-  navBtnRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
-
-  // score mini-test (wireframe 3d)
-  scoreCard: {
-    borderWidth: 1, borderColor: 'rgba(245,194,75,0.45)', borderRadius: 26,
-    padding: 22, marginTop: 6, alignItems: 'center',
-  },
-  scoreTrophy: {
-    width: 64, height: 64,
-    shadowColor: DK.gold, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 16,
-  },
-  scoreBig: {
-    fontSize: 44, fontWeight: '800', marginTop: 10, color: DK.gold,
-    textShadowColor: 'rgba(245,194,75,0.4)', textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 26,
-  },
-  scoreTrack: {
-    alignSelf: 'stretch', height: 9, borderRadius: 5, marginTop: 14,
-    backgroundColor: 'rgba(148,168,255,0.15)', overflow: 'hidden',
-  },
-  scoreFill: { height: '100%', borderRadius: 5 },
-  scoreLabel: { fontSize: 15, fontWeight: '700', color: DK.ink, letterSpacing: -0.2, marginTop: 14, textAlign: 'center' },
-  conseilBox: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 9, alignSelf: 'stretch',
-    backgroundColor: 'rgba(255,194,75,0.1)', borderWidth: 1, borderColor: 'rgba(255,194,75,0.4)',
-    borderRadius: 16, padding: 13, marginTop: 14,
-  },
-  conseilText: { flex: 1, fontSize: 13, fontWeight: '600', color: '#FFE3B0', lineHeight: 20 },
-
-  // contrôle blanc
-  examMeta: { flexDirection: 'row', gap: 8, marginTop: 12 },
-  examChip: {
-    borderWidth: 1, borderColor: 'rgba(53,228,210,0.45)', backgroundColor: 'rgba(53,228,210,0.08)',
-    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
-  },
-  examChipText: { fontSize: 11.5, fontWeight: '700', color: DK.cyan },
-  examCard: { borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 22, padding: 16, marginTop: 13 },
-  examQHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 },
-  examQNum: { fontSize: 12, fontWeight: '800', color: DK.sub, letterSpacing: 1 },
-  pointsBadge: {
-    backgroundColor: 'rgba(255,107,90,0.12)', borderWidth: 1, borderColor: 'rgba(255,107,90,0.45)',
-    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4,
-  },
-  pointsText: { fontSize: 12.5, fontWeight: '800', color: DK.red },
-  pointsBadgeFull: { backgroundColor: 'rgba(52,214,150,0.12)', borderColor: 'rgba(52,214,150,0.55)' },
-  pointsBadgePartial: { backgroundColor: 'rgba(245,194,75,0.1)', borderColor: 'rgba(245,194,75,0.55)' },
-  examHint: { fontSize: 12.5, color: DK.sub, fontWeight: '600', marginTop: 10, lineHeight: 18 },
-  flashAnswerBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderWidth: 1.5, borderRadius: 999, paddingVertical: 14,
-  },
-  flashAnswerBtnKo: { borderColor: 'rgba(255,107,90,0.6)', backgroundColor: 'rgba(255,107,90,0.08)' },
-  flashAnswerBtnOk: { borderColor: 'rgba(110,230,150,0.6)', backgroundColor: 'rgba(110,230,150,0.08)' },
-  flashAnswerText: { fontSize: 15, fontWeight: '800' },
-  subQRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    borderWidth: 1.2, borderColor: 'rgba(148,168,255,0.25)', backgroundColor: 'rgba(10,14,34,0.45)',
-    borderRadius: 14, paddingHorizontal: 12, paddingVertical: 11,
-  },
-  subQRowOn: {
-    borderColor: 'rgba(110,230,150,0.65)', backgroundColor: 'rgba(110,230,150,0.1)',
-  },
-  subQCheck: {
-    width: 22, height: 22, borderRadius: 7, borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.4)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  subQCheckOn: { backgroundColor: DK.green, borderColor: DK.green },
-  subQText: { flex: 1, fontSize: 14, fontWeight: '600', color: DK.ink, lineHeight: 20 },
-  subQPoint: { fontSize: 11.5, fontWeight: '800', color: DK.faint },
-  subQAnswer: { fontSize: 12.5, color: DK.cyan, fontWeight: '600', marginTop: 5, marginLeft: 12, lineHeight: 18 },
-  examTotalCard: {
-    borderWidth: 1, borderColor: DK.cardBorder, backgroundColor: 'rgba(19,26,58,0.55)',
-    borderRadius: 22, padding: 16, marginTop: 16,
-  },
-  examTotalLabel: { fontSize: 12, fontWeight: '800', color: DK.sub, letterSpacing: 1.5 },
-  examTotalNote: { fontSize: 22, fontWeight: '900', color: DK.ink, letterSpacing: -0.4 },
-  finishBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderRadius: 999, paddingVertical: 14,
-  },
-  finishBtnText: { color: '#052620', fontSize: 15, fontWeight: '800' },
-  synthBlock: { marginTop: 13 },
-  synthLabel: { fontSize: 11.5, fontWeight: '800', color: DK.green, letterSpacing: 0.8 },
-  synthText: { fontSize: 13.5, color: 'rgba(230,236,255,0.9)', fontWeight: '600', lineHeight: 20, marginTop: 4 },
-  synthHint: { fontSize: 12, color: DK.sub, fontWeight: '600', marginTop: 12, lineHeight: 17, fontStyle: 'italic' },
-  retryRow: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'center', marginTop: 13 },
-  retryText: { fontSize: 12.5, fontWeight: '700', color: DK.sub },
-  examEnonce: { fontSize: 15.5, fontWeight: '700', color: DK.ink, lineHeight: 23, letterSpacing: -0.2 },
-  corrToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
-  corrToggleText: { color: DK.cyan, fontWeight: '800', fontSize: 13.5 },
-  corrBox: {
-    backgroundColor: 'rgba(10,14,34,0.6)', borderWidth: 1, borderColor: 'rgba(148,168,255,0.14)',
-    borderRadius: 14, padding: 13, marginTop: 10,
-  },
-  corrText: { fontSize: 13.5, color: 'rgba(230,236,255,0.9)', fontWeight: '500', lineHeight: 21 },
-
-  // planning
-  planCard: {
-    backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
-    borderRadius: 20, padding: 15, marginTop: 13,
-  },
-  planHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  planBadge: {
-    backgroundColor: 'rgba(90,140,255,0.14)', borderWidth: 1, borderColor: 'rgba(90,140,255,0.45)',
-    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5,
-  },
-  planBadgeText: { fontSize: 13.5, fontWeight: '800', color: '#7CB4FF' },
-  planTotal: { fontSize: 12.5, fontWeight: '800', color: DK.sub },
-  planTask: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 6 },
-  planTaskLabel: { flex: 1, fontSize: 14, fontWeight: '600', color: DK.ink, lineHeight: 20 },
-  planTaskMin: { fontSize: 12.5, fontWeight: '800', color: DK.amber },
 });
