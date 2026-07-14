@@ -3,111 +3,112 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { T } from '../../constants/theme';
-import { Btn } from '../../components/ui/Btn';
-import { Card } from '../../components/ui/Card';
-import { Squircle } from '../../components/ui/Squircle';
+import { DK } from '../../constants/darkTheme';
+import { Starfield } from '../../components/Starfield';
+
+const FEATURES = [
+  { icon: 'scan-outline', label: 'Scanner', desc: 'Numérisez devoirs et contrôles' },
+  { icon: 'trending-up-outline', label: 'Suivre', desc: 'Suivez les résultats et les progrès' },
+  { icon: 'book-outline', label: 'Réviser', desc: 'Des fiches et leçons personnalisées' },
+] as const;
 
 export default function WelcomeScreen() {
   const router = useRouter();
 
-  const features = [
-    { key: 'blue' as const, icon: 'scan-outline', label: 'Scanner', desc: 'la leçon' },
-    { key: 'amber' as const, icon: 'bulb-outline', label: 'Comprendre', desc: 'la méthode' },
-    { key: 'green' as const, icon: 'school-outline', label: 'Réviser', desc: 'ensemble' },
-  ];
-
   return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
+      <SafeAreaView style={s.safe}>
+        <StatusBar style="light" />
+        <Starfield />
+        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-        {/* Hero panel */}
-        <LinearGradient colors={[T.heroFrom, T.heroTo]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.hero}>
-          {/* decoration circle */}
-          <View style={s.heroDeco} />
+          <Text style={s.title}>Prof Parent IA</Text>
+          <Text style={s.tagline}>Scannez, comprenez, accompagnez.</Text>
 
-          {/* illustration placeholder */}
-          <View style={s.heroIllustration}>
-            <LinearGradient colors={['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.04)']} style={s.heroIllustrationInner}>
-              <Ionicons name="document-text-outline" size={56} color="rgba(255,255,255,0.6)" />
-              <View style={s.heroIlluRow}>
-                {['Maths', 'SVT', 'Français'].map((m, i) => (
-                  <View key={i} style={[s.heroIlluChip, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
-                    <Text style={s.heroIlluChipText}>{m}</Text>
+          {/* carte des 3 fonctionnalités */}
+          <View style={s.featureCard}>
+            <Ionicons name="star" size={15} color={DK.cyan} style={s.cardStar} />
+            <View style={s.featureRow}>
+              {FEATURES.map((f) => (
+                <View key={f.label} style={s.featureCol}>
+                  <View style={s.featureIconTile}>
+                    <Ionicons name={f.icon as any} size={30} color={DK.cyan} />
                   </View>
-                ))}
-              </View>
-            </LinearGradient>
-          </View>
-
-          {/* brand */}
-          <View style={s.heroBottom}>
-            <LinearGradient colors={[T.primary, T.primaryDeep]} style={s.brandMark}>
-              <Ionicons name="school" size={22} color="#fff" />
-            </LinearGradient>
-            <View style={{ flex: 1 }}>
-              <Text style={s.brandName}>
-                PROF PARENT <Text style={{ color: T.primary }}>IA</Text>
-              </Text>
-              <Text style={s.brandTagline}>Le parent garde l'humain.</Text>
+                  <Text style={s.featureLabel}>{f.label}</Text>
+                  <Text style={s.featureDesc}>{f.desc}</Text>
+                  <View style={s.featureDot} />
+                </View>
+              ))}
             </View>
           </View>
 
-          <Text style={s.heroBody}>
-            L'IA apporte la méthode.{' '}
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontWeight: '500' }}>
-              Scannez une leçon, vérifiez ce que l'IA a compris, puis révisez avec votre enfant.
-            </Text>
+          <Text style={s.pitch}>
+            Créez votre espace famille et retrouvez{'\n'}les progrès de chaque enfant.
           </Text>
-        </LinearGradient>
 
-        {/* Feature tiles */}
-        <View style={s.tiles}>
-          {features.map(f => (
-            <Card key={f.label} pad={14} style={s.tile}>
-              <Squircle accentKey={f.key} icon={<Ionicons name={f.icon as any} size={22} color={T[f.key].fg} />} size={44} style={{ alignSelf: 'center', marginBottom: 9 }} />
-              <Text style={s.tileLabel}>{f.label}</Text>
-              <Text style={s.tileDesc}>{f.desc}</Text>
-            </Card>
-          ))}
-        </View>
+          <TouchableOpacity onPress={() => router.push('/(onboarding)/family' as any)} activeOpacity={0.88}>
+            <View style={s.primaryBtn}>
+              <Text style={s.primaryBtnText}>Créer un compte</Text>
+            </View>
+          </TouchableOpacity>
 
-        <View style={{ flex: 1, minHeight: 24 }} />
+          <TouchableOpacity
+            onPress={() => router.push('/(onboarding)/login' as any)}
+            style={s.secondaryBtn}
+            activeOpacity={0.85}
+          >
+            <Text style={s.secondaryBtnText}>Se connecter</Text>
+          </TouchableOpacity>
 
-        <Btn full onPress={() => router.push('/(onboarding)/family')} iconRight icon={<Ionicons name="arrow-forward" size={20} color="#fff" />}>
-          Commencer
-        </Btn>
-        <TouchableOpacity style={{ alignItems: 'center', marginTop: 14 }} onPress={() => router.push('/(tabs)')}>
-          <Text style={s.loginLink}>
-            Déjà un compte ?{' '}
-            <Text style={{ color: T.primary, fontWeight: '700' }}>Se connecter</Text>
+          <Text style={s.footer}>
+            Déjà parent utilisateur ?{' '}
+            <Text style={s.footerLink} onPress={() => router.push('/(onboarding)/login' as any)}>Se connecter</Text>
           </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
-  scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 36 },
-  hero: { borderRadius: 30, padding: 22, paddingBottom: 26, overflow: 'hidden', position: 'relative' },
-  heroDeco: { position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(14,157,106,0.16)' },
-  heroIllustration: { borderRadius: 20, overflow: 'hidden', marginBottom: 16 },
-  heroIllustrationInner: { padding: 24, alignItems: 'center', gap: 16, borderRadius: 20 },
-  heroIlluRow: { flexDirection: 'row', gap: 8 },
-  heroIlluChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
-  heroIlluChipText: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '700' },
-  heroBottom: { flexDirection: 'row', alignItems: 'center', gap: 13, marginBottom: 12 },
-  brandMark: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  brandName: { color: '#fff', fontSize: 23, fontWeight: '800', letterSpacing: -0.5, lineHeight: 26 },
-  brandTagline: { color: 'rgba(255,255,255,0.66)', fontSize: 13, fontWeight: '600', marginTop: 4 },
-  heroBody: { color: '#fff', fontSize: 17, fontWeight: '600', lineHeight: 24, letterSpacing: -0.2 },
-  tiles: { flexDirection: 'row', gap: 10, marginTop: 18 },
-  tile: { flex: 1, borderRadius: 20, alignItems: 'center' },
-  tileLabel: { fontWeight: '700', fontSize: 13.5, color: T.ink, letterSpacing: -0.2, textAlign: 'center' },
-  tileDesc: { fontSize: 11.5, color: T.faint, marginTop: 1, textAlign: 'center' },
-  loginLink: { fontSize: 14, color: T.sub, fontWeight: '500' },
+  safe: { flex: 1 },
+  content: { flexGrow: 1, padding: 22, paddingTop: 60, justifyContent: 'center' },
+  title: { color: '#fff', fontSize: 44, fontWeight: '900', letterSpacing: -1.2, textAlign: 'center' },
+  tagline: { color: DK.sub, fontSize: 17, fontWeight: '600', textAlign: 'center', marginTop: 10 },
+
+  featureCard: {
+    marginTop: 34, borderRadius: 28, borderWidth: 1.2, borderColor: 'rgba(53,228,210,0.45)',
+    backgroundColor: 'rgba(148,168,255,0.05)', paddingVertical: 30, paddingHorizontal: 12,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.15, shadowRadius: 22,
+  },
+  cardStar: { position: 'absolute', top: 18, right: 26 },
+  featureRow: { flexDirection: 'row' },
+  featureCol: { flex: 1, alignItems: 'center', paddingHorizontal: 6 },
+  featureIconTile: {
+    width: 78, height: 78, borderRadius: 22,
+    backgroundColor: 'rgba(148,168,255,0.09)', borderWidth: 1, borderColor: DK.cardBorder,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 12,
+  },
+  featureLabel: { color: '#fff', fontSize: 17, fontWeight: '800', marginTop: 14, letterSpacing: -0.3 },
+  featureDesc: { color: DK.sub, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 6, lineHeight: 17 },
+  featureDot: { width: 6, height: 6, borderRadius: 999, backgroundColor: DK.cyan, marginTop: 16 },
+
+  pitch: { color: DK.sub, fontSize: 15.5, fontWeight: '600', textAlign: 'center', marginTop: 30, lineHeight: 23 },
+
+  primaryBtn: {
+    marginTop: 26, borderRadius: 16, paddingVertical: 17, alignItems: 'center', backgroundColor: DK.cyan,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 8,
+  },
+  primaryBtnText: { color: '#062A26', fontSize: 17, fontWeight: '800' },
+  secondaryBtn: {
+    marginTop: 14, borderRadius: 16, paddingVertical: 16, alignItems: 'center',
+    borderWidth: 1.4, borderColor: 'rgba(53,228,210,0.55)',
+  },
+  secondaryBtnText: { color: DK.cyan, fontSize: 16.5, fontWeight: '800' },
+
+  footer: { color: DK.sub, fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 22 },
+  footerLink: { color: DK.cyan, fontWeight: '800' },
 });

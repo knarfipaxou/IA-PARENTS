@@ -1,17 +1,19 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { T } from '../../constants/theme';
+
+// Barre d'onglets parent en sombre, cohérente avec le sélecteur d'enfant.
+const DKTAB = { bg: '#0B1023', border: 'rgba(148,168,255,0.16)', active: '#35E4D2', inactive: 'rgba(210,220,255,0.65)' };
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: T.primary,
-        tabBarInactiveTintColor: T.faint,
+        tabBarActiveTintColor: DKTAB.active,
+        tabBarInactiveTintColor: DKTAB.inactive,
         tabBarStyle: {
-          backgroundColor: T.surface,
-          borderTopColor: T.line,
+          backgroundColor: DKTAB.bg,
+          borderTopColor: DKTAB.border,
           borderTopWidth: 1,
           paddingBottom: 22,
           paddingTop: 10,
