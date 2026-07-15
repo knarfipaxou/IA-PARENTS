@@ -45,7 +45,18 @@ export default function Notifications() {
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView style={s.scroll} contentContainerStyle={s.content}>
-        <Text style={s.title}>Alertes</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              width: 40, height: 40, borderRadius: 999, backgroundColor: T.surface,
+              borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="chevron-back" size={20} color={T.ink} />
+          </TouchableOpacity>
+          <Text style={s.title}>Alertes</Text>
+        </View>
         <Text style={s.sub}>Échéances des 7 prochains jours</Text>
 
         {alerts.length === 0 ? (

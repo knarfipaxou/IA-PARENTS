@@ -10,6 +10,7 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   moduleNameMapper: {
     '@react-native-async-storage/async-storage': '<rootDir>/__tests__/mocks/asyncStorage.ts',
+    'expo-speech': '<rootDir>/__tests__/mocks/expoSpeech.ts',
     '\\.(png|jpg|jpeg|gif|webp|wav)$': '<rootDir>/__tests__/mocks/assetMock.ts',
   },
   transform: {

@@ -4,7 +4,8 @@ import {
 } from 'react-native';
 import { useScheme } from '../../lib/useScheme';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { speakDailyGreeting } from '../../lib/greeting';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
 import { progressColor, progressGradient } from '../../lib/progressColor';
 import { subjectIcon } from '../../lib/subjectIcons';
@@ -126,6 +127,12 @@ export default function EspaceScreen() {
     }, [child?.id])
   );
   const masteryFor = (subj?: string) => masteryForSubject(examResults, subj);
+
+  // voix de bienvenue : « Bonjour {prénom} ! » + prochaine échéance,
+  // une seule fois par jour et par enfant (désactivable dans Réglages)
+  useEffect(() => {
+    if (child) speakDailyGreeting(child);
+  }, [child?.id]);
 
   async function changePhoto() {
     if (!child) return;

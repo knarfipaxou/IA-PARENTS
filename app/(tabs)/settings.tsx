@@ -10,6 +10,7 @@ import { Squircle } from '../../components/ui/Squircle';
 import { Btn } from '../../components/ui/Btn';
 import { getApiKey, setApiKey } from '../../services/ai';
 import { useScheme, setDarkMode } from '../../lib/useScheme';
+import { isVoiceEnabled, setVoiceEnabled } from '../../lib/greeting';
 
 function Row({ icon, label, value, onPress, showArrow = true }: { icon: string; label: string; value?: string; onPress?: () => void; showArrow?: boolean }) {
   return (
@@ -30,6 +31,9 @@ export default function SettingsScreen() {
   const dark = useScheme() === 'dark';
   const setDark = setDarkMode;
   const [notifs, setNotifs] = React.useState(true);
+  const [voice, setVoice] = React.useState(true);
+  React.useEffect(() => { isVoiceEnabled().then(setVoice); }, []);
+  function toggleVoice(on: boolean) { setVoice(on); setVoiceEnabled(on); }
   const [keyInput, setKeyInput] = React.useState('');
   const [keySaved, setKeySaved] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
@@ -50,7 +54,18 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={s.safe}>
       <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <Text style={s.title}>Profil</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              width: 40, height: 40, borderRadius: 999, backgroundColor: T.surface,
+              borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="chevron-back" size={20} color={T.ink} />
+          </TouchableOpacity>
+          <Text style={s.title}>Profil</Text>
+        </View>
 
         {/* Account */}
         <View style={s.profileCard}>
@@ -119,6 +134,12 @@ export default function SettingsScreen() {
             <Ionicons name="notifications-outline" size={20} color={T.sub} style={{ marginRight: 14 }} />
             <Text style={s.rowLabel}>Rappels de révision</Text>
             <Switch value={notifs} onValueChange={setNotifs} trackColor={{ true: T.primary }} />
+          </View>
+          <View style={s.divider} />
+          <View style={s.row}>
+            <Ionicons name="volume-high-outline" size={20} color={T.sub} style={{ marginRight: 14 }} />
+            <Text style={s.rowLabel}>Voix de bienvenue</Text>
+            <Switch value={voice} onValueChange={toggleVoice} trackColor={{ true: T.primary }} />
           </View>
           <View style={s.divider} />
           <Row icon="document-text-outline" label="PDF imprimables" />

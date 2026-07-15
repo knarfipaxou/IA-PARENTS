@@ -11,15 +11,9 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: DKTAB.active,
         tabBarInactiveTintColor: DKTAB.inactive,
-        tabBarStyle: {
-          backgroundColor: DKTAB.bg,
-          borderTopColor: DKTAB.border,
-          borderTopWidth: 1,
-          paddingBottom: 22,
-          paddingTop: 10,
-          height: 80,
-        },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600', letterSpacing: -0.1 },
+        // barre masquée : le sélecteur est plein écran, Réglages/Alertes
+        // s'ouvrent via l'engrenage et la cloche (avec bouton retour)
+        tabBarStyle: { display: 'none' },
       }}
     >
       <Tabs.Screen
