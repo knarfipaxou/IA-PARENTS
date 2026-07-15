@@ -5,7 +5,7 @@ import {
 import { useScheme } from '../../lib/useScheme';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { speakDailyGreeting } from '../../lib/greeting';
+import { speakGreeting } from '../../lib/greeting';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
 import { progressColor, progressGradient } from '../../lib/progressColor';
 import { subjectIcon } from '../../lib/subjectIcons';
@@ -128,11 +128,15 @@ export default function EspaceScreen() {
   );
   const masteryFor = (subj?: string) => masteryForSubject(examResults, subj);
 
-  // voix de bienvenue : « Bonjour {prénom} ! » + prochaine échéance,
-  // une seule fois par jour et par enfant (désactivable dans Réglages)
-  useEffect(() => {
-    if (child) speakDailyGreeting(child);
-  }, [child?.id]);
+  // voix de bienvenue : à CHAQUE arrivée sur l'accueil de l'enfant —
+  // encouragement suivant de sa rotation (1→20 puis reboucle) + prochaine
+  // échéance à venir (désactivable dans Réglages)
+  useFocusEffect(
+    useCallback(() => {
+      if (child) speakGreeting(child);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [child?.id])
+  );
 
   async function changePhoto() {
     if (!child) return;

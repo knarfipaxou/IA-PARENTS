@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { DK } from '../constants/darkTheme';
 import { useChild } from '../contexts/ChildContext';
 import { loadExamResults, analyzeExams, type ExamResult } from '../lib/examResults';
+import { effectiveDays } from '../lib/deadlines';
 import { loadFlashMastery, masteryPct, type FlashMastery } from '../lib/flashMastery';
 import { progressColor, progressGradient } from '../lib/progressColor';
 
@@ -141,7 +142,10 @@ export default function EcheanceDetail() {
           </View>
           <View style={s.pillRow}>
             <View style={s.jPill}>
-              <Text style={s.jPillText}>{echeance.days === 0 ? 'Auj.' : `J-${echeance.days}`}</Text>
+              <Text style={s.jPillText}>{(() => {
+                const d = effectiveDays(echeance);
+                return d <= 0 ? 'Auj.' : `J-${d}`;
+              })()}</Text>
             </View>
             <TouchableOpacity
               style={s.metaPill}

@@ -12,6 +12,7 @@ import { AvatarRing } from '../../components/AvatarRing';
 import { Breathe } from '../../components/anim/Breathe';
 import { useChild } from '../../contexts/ChildContext';
 import { logout } from '../../lib/auth';
+import { upcomingDeadlines } from '../../lib/deadlines';
 import { type Child } from '../../types/childProfile';
 
 const AVATAR_DEFAULT = require('../../assets/home/avatar.png');
@@ -23,7 +24,7 @@ export default function ChildPicker() {
   const children = allChildren.filter((c) => !c.archived);
 
   const urgentCount = children.reduce(
-    (acc, c) => acc + (c.echeances ?? []).filter((e) => e.days <= 7).length, 0);
+    (acc, c) => acc + upcomingDeadlines(c.echeances ?? []).filter((e) => e.days <= 7).length, 0);
 
   function openChild(c: Child) {
     setChild(c);
@@ -65,7 +66,7 @@ export default function ChildPicker() {
           {/* cartes enfants */}
           <View style={{ gap: 16, marginTop: 30 }}>
             {children.map((c, i) => {
-              const proches = (c.echeances ?? []).filter((e) => e.days <= 7).length;
+              const proches = upcomingDeadlines(c.echeances ?? []).filter((e) => e.days <= 7).length;
               return (
                 <Animated.View key={c.id} entering={FadeInDown.delay(i * 90).springify().damping(16)}>
                   <TouchableOpacity onPress={() => openChild(c)} style={s.childCard} activeOpacity={0.88}>

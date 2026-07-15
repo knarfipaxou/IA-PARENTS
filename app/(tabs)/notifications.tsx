@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../../constants/theme';
 import { useChild } from '../../contexts/ChildContext';
+import { upcomingDeadlines } from '../../lib/deadlines';
 import type { Child } from '../../data/mock';
 
 interface AlertItem {
@@ -23,7 +24,7 @@ export default function Notifications() {
 
   const alerts: AlertItem[] = children
     .flatMap((c) =>
-      (c.echeances ?? [])
+      upcomingDeadlines(c.echeances ?? [])
         .filter((e) => e.days <= 7)
         .map((e) => ({
           id: `${c.id}-${e.id}`,

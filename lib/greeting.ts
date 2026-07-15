@@ -1,22 +1,57 @@
 import * as Speech from 'expo-speech';
 import { getJSON, setJSON } from './storage';
+import { upcomingDeadlines } from './deadlines';
 import type { Child } from '../types/childProfile';
 
-// Voix de bienvenue : « Bonjour {prénom} ! » + l'échéance la plus proche.
-// Parle une seule fois par jour et par enfant (première entrée dans son
-// espace), désactivable dans les Réglages (ppia.voiceEnabled).
+// Voix de bienvenue : à CHAQUE arrivée sur l'accueil d'un enfant, une phrase
+// d'encouragement (rotation ordonnée 1→20 puis retour à 1, propre à chaque
+// enfant et persistée), suivie de l'annonce de la prochaine échéance.
+// Désactivable dans les Réglages (ppia.voiceEnabled).
 
-const KEY_GREET_DATES = 'ppia.greetDates';
+const KEY_GREET_INDEX = 'ppia.greetIndex';
 export const KEY_VOICE_ENABLED = 'ppia.voiceEnabled';
 
-/** Construit le message vocal : prénom + contexte de la prochaine échéance. */
-export function buildGreeting(child: Pick<Child, 'name' | 'echeances'>): string {
-  const hello = `Bonjour ${child.name} !`;
-  const next = [...(child.echeances ?? [])].sort((a, b) => a.days - b.days)[0];
-  if (!next) return hello;
+/** Les 20 encouragements, prononcés dans cet ordre exact (rotation cyclique). */
+export const ENCOURAGEMENTS = [
+  "Aujourd'hui est une nouvelle occasion de progresser.",
+  'Chaque minute de travail te rapproche de tes objectifs.',
+  'Tu es capable de grandes choses, continue comme ça.',
+  "Les efforts d'aujourd'hui deviennent les réussites de demain.",
+  "Un petit pas aujourd'hui vaut mieux que rien du tout.",
+  "Fais de ton mieux, c'est tout ce qu'on te demande.",
+  "Chaque erreur est une chance d'apprendre.",
+  'Reste concentré, tu avances dans la bonne direction.',
+  'Les champions progressent un peu chaque jour.',
+  'Tu peux être fier de chaque effort que tu fais.',
+  'Garde confiance, tu progresses plus que tu ne le crois.',
+  "Aujourd'hui est un bon jour pour apprendre quelque chose de nouveau.",
+  'Avec de la régularité, tout devient plus facile.',
+  'Donne le meilleur de toi-même, un exercice après l\'autre.',
+  "Les défis d'aujourd'hui construisent tes réussites de demain.",
+  'Continue, chaque révision compte.',
+  'Tu as déjà parcouru du chemin, poursuis tes efforts.',
+  'Crois en toi et avance avec détermination.',
+  "Le plus important est de ne jamais abandonner.",
+  "Je suis là pour t'aider à réussir ta journée.",
+] as const;
+
+/** Annonce de la prochaine échéance À VENIR (dépassées ignorées) ; '' si aucune. */
+export function buildDeadlinePart(child: Pick<Child, 'echeances'>, now: Date = new Date()): string {
+  const next = upcomingDeadlines(child.echeances ?? [], now)[0];
+  if (!next) return '';
   const type = (next.type || 'contrôle').toLowerCase();
   const quand = next.days <= 0 ? "aujourd'hui" : next.days === 1 ? 'demain' : `dans ${next.days} jours`;
-  return `${hello} Tu as ${/^[aeiouyéè]/.test(type) ? 'une' : 'un'} ${type} de ${next.subj} ${quand}.`;
+  return ` Tu as ${/^[aeiouyéè]/.test(type) ? 'une' : 'un'} ${type} de ${next.subj} ${quand}.`;
+}
+
+/** Message complet pour un index de rotation donné (0-based, modulo 20). */
+export function buildGreeting(
+  child: Pick<Child, 'name' | 'echeances'>,
+  rotationIndex: number,
+  now: Date = new Date(),
+): string {
+  const phrase = ENCOURAGEMENTS[((rotationIndex % ENCOURAGEMENTS.length) + ENCOURAGEMENTS.length) % ENCOURAGEMENTS.length];
+  return `Bonjour ${child.name} ! ${phrase}${buildDeadlinePart(child, now)}`;
 }
 
 export async function isVoiceEnabled(): Promise<boolean> {
@@ -27,16 +62,38 @@ export async function setVoiceEnabled(on: boolean): Promise<void> {
   await setJSON(KEY_VOICE_ENABLED, on);
 }
 
+// voix française la plus naturelle disponible sur l'appareil (qualité
+// « Enhanced » si le système en propose une), détectée une seule fois
+let bestFrVoice: string | undefined | null = null;
+async function pickBestFrenchVoice(): Promise<string | undefined> {
+  if (bestFrVoice !== null) return bestFrVoice ?? undefined;
+  try {
+    const voices = await Speech.getAvailableVoicesAsync();
+    const fr = voices.filter((v) => v.language?.toLowerCase().startsWith('fr'));
+    const enhanced = fr.find((v) => `${v.quality}`.toLowerCase().includes('enhanced'));
+    bestFrVoice = (enhanced ?? fr[0])?.identifier;
+  } catch {
+    bestFrVoice = undefined;
+  }
+  return bestFrVoice ?? undefined;
+}
+
 /**
- * Salue l'enfant à voix haute si c'est sa première entrée du jour et que la
- * voix est activée. Retourne true si la voix a parlé.
+ * Salue l'enfant à voix haute : phrase suivante de SA rotation (persistée),
+ * puis annonce de la prochaine échéance. Retourne true si la voix a parlé.
  */
-export async function speakDailyGreeting(child: Pick<Child, 'id' | 'name' | 'echeances'>): Promise<boolean> {
+export async function speakGreeting(child: Pick<Child, 'id' | 'name' | 'echeances'>): Promise<boolean> {
   if (!(await isVoiceEnabled())) return false;
-  const today = new Date().toISOString().slice(0, 10);
-  const dates = await getJSON<Record<string, string>>(KEY_GREET_DATES, {});
-  if (dates[child.id] === today) return false;
-  await setJSON(KEY_GREET_DATES, { ...dates, [child.id]: today });
-  Speech.speak(buildGreeting(child), { language: 'fr-FR', rate: 0.95 });
+  const indexes = await getJSON<Record<string, number>>(KEY_GREET_INDEX, {});
+  const idx = indexes[child.id] ?? 0;
+  await setJSON(KEY_GREET_INDEX, { ...indexes, [child.id]: (idx + 1) % ENCOURAGEMENTS.length });
+  const voice = await pickBestFrenchVoice();
+  Speech.stop();
+  Speech.speak(buildGreeting(child, idx), {
+    language: 'fr-FR',
+    voice,
+    rate: 0.92,
+    pitch: 1.05,
+  });
   return true;
 }

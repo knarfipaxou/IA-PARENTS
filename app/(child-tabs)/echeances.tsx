@@ -11,14 +11,16 @@ import { isControle } from '../../lib/matiere';
 import { useScheme } from '../../lib/useScheme';
 import { subjectIcon } from '../../lib/subjectIcons';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
-import { masteryForSubject, isDeadlineAtRisk } from '../../lib/deadlines';
+import { masteryForSubject, isDeadlineAtRisk, upcomingDeadlines } from '../../lib/deadlines';
 import { AlertPulse } from '../../components/AlertPulse';
 
 export default function EcheancesScreen() {
   const router = useRouter();
   const { child } = useChild();
   const scheme = useScheme();
-  const echeances = child?.echeances ?? [];
+  // uniquement les échéances à venir (dépassées exclues), jours recalculés,
+  // triées de la plus proche à la plus lointaine
+  const echeances = upcomingDeadlines(child?.echeances ?? []);
 
   const [exams, setExams] = useState<ExamResult[]>([]);
   useFocusEffect(
