@@ -20,6 +20,8 @@ export interface SavedLesson {
   niveau?: string;
   notions: string[];
   resume: string;
+  /** transcription complète de la leçon (source des générations IA) */
+  texte?: string;
   imageBase64?: string;
   fiche?: RevisionSheet;
   flashcards?: Flashcards;

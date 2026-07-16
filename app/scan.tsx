@@ -120,6 +120,7 @@ export default function ScanScreen() {
         niveau: result.niveau,
         notions: result.notions ?? [],
         resume: result.resume,
+        texte: result.texte,
         imageBase64: firstImage && firstImage.length < 1500000 ? firstImage : undefined,
       });
       addXP(child.id, 10, 'lesson_scan');

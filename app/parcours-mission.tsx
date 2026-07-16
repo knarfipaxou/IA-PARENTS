@@ -72,7 +72,12 @@ export default function ParcoursMissionScreen() {
     const startedAt = Date.now();
     try {
       let p = await loadMasteryPath(pathKey);
-      const cached = !force ? p.content?.[missionId] : undefined;
+      // une mission de l'ancien format (sans knowledgeIds, générée sans audit)
+      // est périmée : on la régénère via la chaîne d'agents
+      const cachedRaw = !force ? p.content?.[missionId] : undefined;
+      const cachedStale = cachedRaw
+        && !(cachedRaw.questions ?? []).every((q: any) => (q.knowledgeIds ?? []).length > 0);
+      const cached = cachedStale ? undefined : cachedRaw;
       if (cached && (cached.questions ?? []).length > 0) {
         setPath(p);
         setContent(cached);
@@ -80,10 +85,11 @@ export default function ParcoursMissionScreen() {
         return;
       }
       const eLite = { subj: echeance.subj, type: echeance.type, date: echeance.date, titre: echeance.titre, consigne: echeance.consigne };
-      const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume }));
+      const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume, texte: l.texte }));
 
       // 1. analyse de la leçon (lesson-analyzer) : une seule fois, puis réutilisée
-      let analysis = p.analysis;
+      // (« Régénérer » force aussi une nouvelle analyse, utile après un nouveau scan)
+      let analysis = force ? undefined : p.analysis;
       if (!analysis || (analysis.knowledge ?? []).length === 0) {
         setStateLabel(STATE_LABELS.analyzing_lesson);
         analysis = await runLessonAnalyzer(eLite, lLite, child) as any;

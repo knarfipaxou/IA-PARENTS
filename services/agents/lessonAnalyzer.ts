@@ -20,7 +20,13 @@ export async function runLessonAnalyzer(
   child: Child,
 ): Promise<LessonAnalysis2> {
   const lessonsBlock = lessons
-    .map((l, i) => `Leçon ${i + 1} — ${l.matiere} : ${l.titre}\nNotions relevées: ${l.notions.join(', ')}\nContenu/résumé: ${l.resume}`)
+    .map((l, i) => {
+      const head = `Leçon ${i + 1} — ${l.matiere} : ${l.titre}\nNotions relevées: ${l.notions.join(', ')}`;
+      // transcription complète si disponible (leçons scannées récemment), sinon résumé
+      return l.texte
+        ? `${head}\nCONTENU COMPLET :\n${l.texte.slice(0, 12000)}`
+        : `${head}\nRésumé (transcription complète indisponible — signale-le dans detectedUncertainties) : ${l.resume}`;
+    })
     .join('\n\n');
   const text = await askClaude({
     system: SYSTEM,

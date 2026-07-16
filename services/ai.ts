@@ -160,6 +160,8 @@ export interface LessonAnalysis {
   niveau: string;
   notions: string[];
   resume: string;
+  /** transcription complète et fidèle du contenu de la leçon (source des agents) */
+  texte?: string;
 }
 
 export async function analyzeLesson(imageBase64: string, child: Child): Promise<LessonAnalysis> {
@@ -198,10 +200,11 @@ export async function analyzeLessonSources(sources: LessonSources, child: Child)
 ${intro}
 ${sources.text ? `\n--- CONTENU DE LA LEÇON ---\n${sources.text}\n--- FIN ---\n` : ''}
 Analyse l'ENSEMBLE du contenu (toutes les pages) et renvoie UNE seule synthèse:
-{"matiere": "matière scolaire", "titre": "titre de la leçon", "niveau": "niveau scolaire estimé", "notions": ["notion 1", "notion 2", ...], "resume": "résumé simple en 2-3 phrases compréhensible par un parent"}
+{"matiere": "matière scolaire", "titre": "titre de la leçon", "niveau": "niveau scolaire estimé", "notions": ["notion 1", "notion 2", ...], "resume": "résumé simple en 2-3 phrases compréhensible par un parent", "texte": "transcription COMPLÈTE et fidèle du contenu de la leçon : titres, définitions, dates, listes, encadrés, tableaux (en texte), légendes — dans l'ordre, sans résumer, sans inventer. Signale [illisible] ou [page manquante ?] là où c'est le cas."}
+Le champ "texte" est essentiel : il servira à générer les révisions, il doit contenir TOUT le contenu pédagogique lisible des pages fournies.
 Les "notions" doivent couvrir toutes les pages fournies, sans rien inventer qui n'y figure pas.
 ${JSON_ONLY}`,
-    maxTokens: 3072,
+    maxTokens: 8192,
   });
   return extractJSON<LessonAnalysis>(text);
 }
@@ -385,6 +388,8 @@ export interface LessonLite {
   titre: string;
   notions: string[];
   resume: string;
+  /** transcription complète de la leçon si disponible */
+  texte?: string;
 }
 
 export interface EcheanceLite {
@@ -417,7 +422,11 @@ export type ControlKind = 'fiche' | 'exercices' | 'minitest' | 'controle' | 'pie
 
 function lessonsBlock(lessons: LessonLite[]): string {
   return lessons
-    .map((l, i) => `Leçon ${i + 1} — ${l.matiere} : ${l.titre}\nNotions: ${l.notions.join(', ')}\nRésumé: ${l.resume}`)
+    .map((l, i) => {
+      const base = `Leçon ${i + 1} — ${l.matiere} : ${l.titre}\nNotions: ${l.notions.join(', ')}\nRésumé: ${l.resume}`;
+      // la transcription complète prime sur le résumé quand elle existe
+      return l.texte ? `${base}\nContenu complet de la leçon:\n${l.texte.slice(0, 12000)}` : base;
+    })
     .join('\n\n');
 }
 
