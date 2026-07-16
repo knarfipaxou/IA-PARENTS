@@ -50,6 +50,28 @@ describe('parcours de maîtrise — déblocages', () => {
     expect(lockReason(p, 'defi')).toBeNull();
   });
 
+  it("Compréhension reste verrouillée à 80 % si une connaissance essentielle de mémoire n'est pas maîtrisée", () => {
+    const analysis = {
+      status: 'complete',
+      knowledge: [
+        { knowledgeId: 'DEF-001', type: 'definition', label: 'Poilu', content: '…', importance: 'essential' as const, cognitiveLevel: 'remember' as const },
+        { knowledgeId: 'FCT-001', type: 'date', label: 'Début', content: '…', importance: 'essential' as const, cognitiveLevel: 'remember' as const },
+      ],
+    };
+    const base = { ...pathWith({ memoire: [85] }), analysis };
+    // score OK mais FCT-001 non maîtrisée → verrouillé, raison explicite
+    const p1 = { ...base, knowledge: { 'DEF-001': true, 'FCT-001': false } };
+    expect(isUnlocked(p1, 'comprehension')).toBe(false);
+    expect(lockReason(p1, 'comprehension')).toContain('essentielle');
+    // toutes maîtrisées → débloqué
+    const p2 = { ...base, knowledge: { 'DEF-001': true, 'FCT-001': true } };
+    expect(isUnlocked(p2, 'comprehension')).toBe(true);
+  });
+
+  it('sans carte de connaissances, le déblocage retombe sur le seul score (rétro-compatibilité)', () => {
+    expect(isUnlocked(pathWith({ memoire: [85] }), 'comprehension')).toBe(true);
+  });
+
   it('une mission verrouillée a une raison affichable', () => {
     expect(lockReason(EMPTY_PATH, 'comprehension')).toContain('80');
     expect(lockReason(EMPTY_PATH, 'application')).toContain('75');

@@ -12,11 +12,27 @@ import { progressColor } from '../lib/progressColor';
 import { computeCriteriaScore, questionMastered } from '../lib/masteryScoring';
 import {
   MISSION_ORDER, MISSION_DEFS, loadMasteryPath, saveMasteryPath,
-  recordMissionResult, missionStatus, isUnlocked,
+  recordMissionResult, recordKnowledgeMastery, missionStatus, isUnlocked,
   type MasteryPath, type MissionId,
 } from '../lib/masteryPath';
 import { CriteriaCorrection } from '../components/CriteriaCorrection';
-import { AiError, generateKnowledgeMap, generateMission, type MissionContent } from '../services/ai';
+import { AiError } from '../services/ai';
+import { runLessonAnalyzer, LESSON_ANALYZER_PROMPT_VERSION } from '../services/agents/lessonAnalyzer';
+import { runMissionGenerator, runMissionPatch, MISSION_GENERATOR_PROMPT_VERSION } from '../services/agents/missionGenerator';
+import { runQualityAuditor } from '../services/agents/qualityAuditor';
+import { buildMission, STATE_LABELS, type GenerationState } from '../services/agents/orchestrator';
+import { MISSION_ID_TO_TYPE, type MissionQuestion } from '../services/agents/types';
+import type { CoverageReport } from '../lib/coverage';
+import { appendGenerationLog } from '../lib/generationLog';
+
+interface MissionContent {
+  mission_id: MissionId;
+  titre: string;
+  questions: MissionQuestion[];
+  coverage?: CoverageReport;
+  lessonStatus?: string;
+  auditWarnings?: string[];
+}
 
 /**
  * Écran d'une mission du parcours de maîtrise : contenu généré à la demande
@@ -38,6 +54,7 @@ export default function ParcoursMissionScreen() {
   const [path, setPath] = useState<MasteryPath>({ missions: {} });
   const [content, setContent] = useState<MissionContent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [stateLabel, setStateLabel] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const [comments, setComments] = useState<Record<number, string>>({});
@@ -52,6 +69,7 @@ export default function ParcoursMissionScreen() {
     setError(null);
     setResult(null);
     setChecks({});
+    const startedAt = Date.now();
     try {
       let p = await loadMasteryPath(pathKey);
       const cached = !force ? p.content?.[missionId] : undefined;
@@ -63,13 +81,62 @@ export default function ParcoursMissionScreen() {
       }
       const eLite = { subj: echeance.subj, type: echeance.type, date: echeance.date, titre: echeance.titre, consigne: echeance.consigne };
       const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume }));
-      // carte des connaissances : générée UNE fois puis réutilisée
-      let km = p.knowledgeMap;
-      if (!km || (km.knowledge ?? []).length === 0) {
-        km = await generateKnowledgeMap(eLite, lLite, child);
-        p = { ...p, knowledgeMap: km };
+
+      // 1. analyse de la leçon (lesson-analyzer) : une seule fois, puis réutilisée
+      let analysis = p.analysis;
+      if (!analysis || (analysis.knowledge ?? []).length === 0) {
+        setStateLabel(STATE_LABELS.analyzing_lesson);
+        analysis = await runLessonAnalyzer(eLite, lLite, child) as any;
+        p = { ...p, analysis };
+        await saveMasteryPath(pathKey, p);
+        appendGenerationLog({
+          id: `km-${Date.now()}`, date: new Date().toISOString(), type: 'knowledge-map',
+          childId: child.id, echeanceId: echeance.id, lessonIds: echeance.lessonIds,
+          agent: 'lesson-analyzer', promptVersion: LESSON_ANALYZER_PROMPT_VERSION,
+          durationMs: Date.now() - startedAt,
+        });
       }
-      const mission = await generateMission(missionId, eLite, lLite, km, child);
+
+      // 2-3. génération + audit bloquant + réparation ciblée (orchestrateur en code)
+      const missionType = MISSION_ID_TO_TYPE[missionId];
+      const build = await buildMission(
+        missionType,
+        analysis as any,
+        {
+          generate: (t, scoped) => runMissionGenerator(t, scoped, eLite, child),
+          patch: (t, missing, existing) => runMissionPatch(t, missing, existing, eLite, child),
+          audit: (t, knowledge, questions) => runQualityAuditor(t, knowledge, questions),
+        },
+        (st: GenerationState) => setStateLabel(STATE_LABELS[st]),
+      );
+
+      appendGenerationLog({
+        id: `mission-${missionId}-${Date.now()}`, date: new Date().toISOString(),
+        type: `mission-${missionId}`, childId: child.id, echeanceId: echeance.id,
+        lessonIds: echeance.lessonIds, agent: 'mission-generator',
+        promptVersion: MISSION_GENERATOR_PROMPT_VERSION, attempts: build.attempts,
+        essentialCoverage: build.audit?.essentialCoverage,
+        importantCoverage: build.audit?.importantCoverage,
+        missingKnowledgeIds: build.audit?.missingKnowledgeIds,
+        auditStatus: build.audit?.status, durationMs: Date.now() - startedAt,
+        error: build.error,
+      });
+
+      if (!build.ok) {
+        // règle bloquante : rien n'est publié sans validation de l'audit
+        setLoading(false);
+        setError(`La mission n'a pas passé le contrôle qualité et n'a pas été publiée.\n${build.error ?? ''}\nVous pouvez relancer la génération.`);
+        return;
+      }
+
+      const mission: MissionContent = {
+        mission_id: missionId,
+        titre: def.title,
+        questions: build.questions,
+        coverage: build.coverage,
+        lessonStatus: analysis!.status,
+        auditWarnings: build.audit?.warnings,
+      };
       p = { ...p, content: { ...(p.content ?? {}), [missionId]: mission } };
       await saveMasteryPath(pathKey, p);
       setPath(p);
@@ -92,8 +159,19 @@ export default function ParcoursMissionScreen() {
     if (!child || !echeance || !content || !pathKey) return;
     const score = computeCriteriaScore(content.questions ?? [], checks);
     const now = new Date().toISOString();
-    // enregistrer la tentative dans le parcours
-    const nextPath = recordMissionResult(path, missionId, score.pct, now);
+    // enregistrer la tentative + la maîtrise constatée par connaissance
+    const knowledgeResults: Record<string, boolean> = {};
+    (content.questions ?? []).forEach((qu, qi) => {
+      const ok = questionMastered(qu, qi, checks);
+      (qu.knowledgeIds ?? []).forEach((id) => {
+        // une connaissance ratée dans une question l'emporte sur une réussite ailleurs
+        knowledgeResults[id] = knowledgeResults[id] === false ? false : ok;
+      });
+    });
+    const nextPath = recordKnowledgeMastery(
+      recordMissionResult(path, missionId, score.pct, now),
+      knowledgeResults,
+    );
     setPath(nextPath);
     await saveMasteryPath(pathKey, nextPath);
     // réinjection adaptation : un résultat par question
@@ -158,8 +236,11 @@ export default function ParcoursMissionScreen() {
         {navRow}
         <View style={s.center}>
           <ActivityIndicator color={def.color} />
-          <Text style={s.loadingTitle}>L'IA prépare la mission…</Text>
-          <Text style={s.centerText}>{def.desc}</Text>
+          <Text style={s.loadingTitle}>{stateLabel || 'L\'IA prépare la mission…'}</Text>
+          <Text style={s.centerText}>
+            Analyse de la leçon → création des questions → vérification de la
+            couverture → validation. Rien n'est publié sans validation.
+          </Text>
         </View>
       </View>
     );
@@ -235,8 +316,37 @@ export default function ParcoursMissionScreen() {
         parent corrige en cochant les critères de réussite. ★ = critère indispensable.
       </Text>
 
+      {/* résumé de couverture (parent) */}
+      {content.coverage && (
+        <View style={[s.synthCard, { marginTop: 12 }]}>
+          <Text style={s.synthLabel}>COUVERTURE DE LA LEÇON</Text>
+          <Text style={s.synthText}>
+            {content.coverage.essentialCovered}/{content.coverage.essentialTotal} connaissances essentielles évaluées ({content.coverage.essentialPct} %)
+            {content.coverage.importantTotal > 0 ? `\n${content.coverage.importantCovered}/${content.coverage.importantTotal} connaissances importantes évaluées (${content.coverage.importantPct} %)` : ''}
+            {'\n'}Durée estimée : {content.coverage.estimatedMinutes} min · {content.questions.length} questions
+          </Text>
+          {content.lessonStatus && content.lessonStatus !== 'complete' && content.lessonStatus !== 'probably_complete' && (
+            <Text style={[s.synthText, { color: DK.gold, marginTop: 8 }]}>
+              ⚠️ Leçon détectée comme {content.lessonStatus === 'incomplete' ? 'incomplète' : content.lessonStatus === 'illegible' ? 'partiellement illisible' : 'contradictoire'} :
+              la couverture ne porte que sur le contenu fourni.
+            </Text>
+          )}
+        </View>
+      )}
+
       <CriteriaCorrection
         questions={content.questions ?? []}
+        partHeaders={(() => {
+          const headers: Record<number, string> = {};
+          let last: string | undefined;
+          (content.questions ?? []).forEach((q, i) => {
+            if (q.part && q.part !== last) {
+              headers[i] = `${def.title} — Partie ${q.part}`;
+              last = q.part;
+            }
+          });
+          return headers;
+        })()}
         checks={checks}
         onToggle={(key, on) => setChecks((prev) => ({ ...prev, [key]: on }))}
         comments={comments}

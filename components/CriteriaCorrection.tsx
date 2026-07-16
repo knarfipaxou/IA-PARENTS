@@ -15,13 +15,15 @@ import type { OpenQuestion } from '../services/ai';
  * masquée derrière un bouton « parent » question par question.
  */
 export function CriteriaCorrection({
-  questions, checks, onToggle, comments, onComment,
+  questions, checks, onToggle, comments, onComment, partHeaders,
 }: {
   questions: OpenQuestion[];
   checks: Record<string, boolean>;
   onToggle: (key: string, on: boolean) => void;
   comments: Record<number, string>;
   onComment: (qi: number, text: string) => void;
+  /** titres de sous-parties à afficher avant certaines questions (index → titre) */
+  partHeaders?: Record<number, string>;
 }) {
   const [openCorrections, setOpenCorrections] = useState<Set<number>>(new Set());
 
@@ -33,8 +35,9 @@ export function CriteriaCorrection({
         const maxPts = crits.reduce((a, c) => a + (c.points || 0), 0);
         const okPts = crits.reduce((a, c, ci) => a + (checks[critKey(qi, ci)] ? (c.points || 0) : 0), 0);
         return (
+          <React.Fragment key={qu.question_id ?? qi}>
+          {!!partHeaders?.[qi] && <Text style={s.partHeader}>{partHeaders[qi]}</Text>}
           <LinearGradient
-            key={qu.question_id ?? qi}
             colors={['rgba(47,60,112,0.45)', 'rgba(19,26,58,0.6)']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={s.card}
@@ -131,6 +134,7 @@ export function CriteriaCorrection({
               </View>
             )}
           </LinearGradient>
+          </React.Fragment>
         );
       })}
     </>
@@ -138,6 +142,7 @@ export function CriteriaCorrection({
 }
 
 const s = StyleSheet.create({
+  partHeader: { color: DK.cyan, fontSize: 13, fontWeight: '900', letterSpacing: 0.8, marginTop: 18, textTransform: 'uppercase' },
   card: { borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 22, padding: 16, marginTop: 13 },
   qHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 },
   qNum: { fontSize: 12, fontWeight: '800', color: DK.sub, letterSpacing: 1 },

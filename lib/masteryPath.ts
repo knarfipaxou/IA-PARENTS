@@ -55,8 +55,22 @@ export interface MasteryPath {
   missions: Partial<Record<MissionId, MissionRecord>>;
   /** déblocage exceptionnel accordé par le parent */
   overrides?: Partial<Record<MissionId, boolean>>;
-  /** carte des connaissances générée une seule fois puis réutilisée */
+  /** carte des connaissances générée une seule fois puis réutilisée (ancien format, conservé) */
   knowledgeMap?: any;
+  /** analyse complète de la leçon (lesson-analyzer) : statut + carte des connaissances */
+  analysis?: {
+    status: string;
+    statusDetail?: string;
+    knowledge: {
+      knowledgeId: string; type: string; label: string; content: string;
+      importance: 'essential' | 'important' | 'secondary';
+      cognitiveLevel: 'remember' | 'understand' | 'apply' | 'transfer';
+      sourceExcerpt?: string; sourceSection?: string;
+    }[];
+    detectedUncertainties?: string[];
+  };
+  /** maîtrise par connaissance (knowledgeId → maîtrisée) constatée à la correction */
+  knowledge?: Record<string, boolean>;
   /** contenus de mission générés à la demande, mis en cache */
   content?: Partial<Record<MissionId, any>>;
 }
@@ -74,34 +88,70 @@ export function lastPct(path: MasteryPath, id: MissionId): number | null {
   return attempts.length > 0 ? attempts[attempts.length - 1].pct : null;
 }
 
-/** Règles de déblocage du parcours (Phase 1). */
+const MISSION_LEVEL_FR: Record<MissionId, 'remember' | 'understand' | 'apply' | 'transfer'> = {
+  memoire: 'remember', comprehension: 'understand', application: 'apply', defi: 'transfer',
+};
+
+/**
+ * Connaissances ESSENTIELLES du niveau cognitif d'une mission non encore
+ * maîtrisées. Sans carte des connaissances (analyse pas encore faite), la
+ * règle retombe sur le seul score.
+ */
+export function unmasteredEssentials(path: MasteryPath, id: MissionId): string[] {
+  const items = path.analysis?.knowledge ?? [];
+  if (items.length === 0) return [];
+  return items
+    .filter((k) => k.importance === 'essential' && k.cognitiveLevel === MISSION_LEVEL_FR[id])
+    .filter((k) => !path.knowledge?.[k.knowledgeId])
+    .map((k) => k.label);
+}
+
+/**
+ * Règles de déblocage : score de la mission précédente + toutes les
+ * connaissances essentielles de cette mission maîtrisées.
+ */
 export function isUnlocked(path: MasteryPath, id: MissionId): boolean {
   if (path.overrides?.[id]) return true;
   switch (id) {
     case 'memoire':
       return true;
     case 'comprehension':
-      return (bestPct(path, 'memoire') ?? 0) >= MISSION_DEFS.memoire.masteryPct;
+      return (bestPct(path, 'memoire') ?? 0) >= MISSION_DEFS.memoire.masteryPct
+        && unmasteredEssentials(path, 'memoire').length === 0;
     case 'application':
-      return (bestPct(path, 'comprehension') ?? 0) >= MISSION_DEFS.comprehension.masteryPct;
+      return (bestPct(path, 'comprehension') ?? 0) >= MISSION_DEFS.comprehension.masteryPct
+        && unmasteredEssentials(path, 'comprehension').length === 0;
     case 'defi':
-      return (bestPct(path, 'application') ?? 0) >= MISSION_DEFS.application.masteryPct;
+      return (bestPct(path, 'application') ?? 0) >= MISSION_DEFS.application.masteryPct
+        && unmasteredEssentials(path, 'application').length === 0;
   }
 }
 
 /** Raison affichée sur une mission verrouillée (null si débloquée). */
 export function lockReason(path: MasteryPath, id: MissionId): string | null {
   if (isUnlocked(path, id)) return null;
-  switch (id) {
-    case 'comprehension':
-      return `Se débloque quand la Mission Mémoire atteint ${MISSION_DEFS.memoire.masteryPct} %.`;
-    case 'application':
-      return `Se débloque quand la Mission Compréhension atteint ${MISSION_DEFS.comprehension.masteryPct} %.`;
-    case 'defi':
-      return `Se débloque quand la Mission Application atteint ${MISSION_DEFS.application.masteryPct} %.`;
-    default:
-      return null;
+  const prev: Partial<Record<MissionId, MissionId>> = {
+    comprehension: 'memoire', application: 'comprehension', defi: 'application',
+  };
+  const p = prev[id];
+  if (!p) return null;
+  const missing = unmasteredEssentials(path, p);
+  const scoreOk = (bestPct(path, p) ?? 0) >= MISSION_DEFS[p].masteryPct;
+  if (scoreOk && missing.length > 0) {
+    return `${missing.length} connaissance${missing.length > 1 ? 's' : ''} essentielle${missing.length > 1 ? 's' : ''} encore non maîtrisée${missing.length > 1 ? 's' : ''} : ${missing.slice(0, 2).join(', ')}${missing.length > 2 ? '…' : ''}`;
   }
+  const extra = missing.length > 0 ? ' et que toutes les connaissances essentielles sont maîtrisées' : '';
+  return `Se débloque quand la ${MISSION_DEFS[p].title} atteint ${MISSION_DEFS[p].masteryPct} %${extra}.`;
+}
+
+/** Enregistre la maîtrise constatée de connaissances (à la correction d'une mission). */
+export function recordKnowledgeMastery(path: MasteryPath, results: Record<string, boolean>): MasteryPath {
+  const next = { ...(path.knowledge ?? {}) };
+  for (const [id, mastered] of Object.entries(results)) {
+    // une connaissance maîtrisée le reste ; une ratée redevient non maîtrisée
+    next[id] = mastered;
+  }
+  return { ...path, knowledge: next };
 }
 
 export type MissionStatus =
