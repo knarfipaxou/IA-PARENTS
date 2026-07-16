@@ -35,20 +35,30 @@ interface AskParams {
   system: string;
   user: string;
   imageBase64?: string;
+  /** plusieurs pages photographiées (envoyées dans l'ordre) */
+  imagesBase64?: string[];
+  /** document PDF complet (base64) */
+  pdfBase64?: string;
   maxTokens?: number;
 }
 
-export async function askClaude({ system, user, imageBase64, maxTokens = 4096 }: AskParams): Promise<string> {
+export async function askClaude({ system, user, imageBase64, imagesBase64, pdfBase64, maxTokens = 4096 }: AskParams): Promise<string> {
   const apiKey = await getApiKey();
   if (!apiKey) {
     throw new AiError('NO_KEY', 'Aucune clé API configurée.');
   }
 
   const content: any[] = [];
-  if (imageBase64) {
+  if (pdfBase64) {
+    content.push({
+      type: 'document',
+      source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
+    });
+  }
+  for (const img of [...(imageBase64 ? [imageBase64] : []), ...(imagesBase64 ?? [])]) {
     content.push({
       type: 'image',
-      source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 },
+      source: { type: 'base64', media_type: 'image/jpeg', data: img },
     });
   }
   content.push({ type: 'text', text: user });
@@ -153,14 +163,45 @@ export interface LessonAnalysis {
 }
 
 export async function analyzeLesson(imageBase64: string, child: Child): Promise<LessonAnalysis> {
+  return analyzeLessonSources({ images: [imageBase64] }, child);
+}
+
+export interface LessonSources {
+  /** pages photographiées, dans l'ordre (20 max) */
+  images?: string[];
+  /** document PDF complet (base64) */
+  pdfBase64?: string;
+  /** texte brut (fichier Word ou .txt converti) */
+  text?: string;
+}
+
+/**
+ * Analyse une leçon à partir d'une ou plusieurs sources : jusqu'à 20 photos,
+ * un PDF, ou le texte extrait d'un document (Word, txt). Une seule leçon en
+ * sortie, couvrant TOUTES les pages fournies.
+ */
+export async function analyzeLessonSources(sources: LessonSources, child: Child): Promise<LessonAnalysis> {
+  const images = (sources.images ?? []).slice(0, 20);
+  const nbPages = images.length;
+  const intro = sources.pdfBase64
+    ? "Voici une leçon au format PDF (toutes les pages du document font partie de la MÊME leçon)."
+    : nbPages > 1
+      ? `Voici les ${nbPages} pages photographiées d'une MÊME leçon, dans l'ordre.`
+      : sources.text
+        ? 'Voici le texte complet d\'une leçon (extrait d\'un document).'
+        : "Voici la photo d'une leçon.";
   const text = await askClaude({
     system: SYSTEM,
-    imageBase64,
+    imagesBase64: images,
+    pdfBase64: sources.pdfBase64,
     user: `${childCtx(child)}
-Voici la photo d'une leçon. Analyse-la et renvoie:
+${intro}
+${sources.text ? `\n--- CONTENU DE LA LEÇON ---\n${sources.text}\n--- FIN ---\n` : ''}
+Analyse l'ENSEMBLE du contenu (toutes les pages) et renvoie UNE seule synthèse:
 {"matiere": "matière scolaire", "titre": "titre de la leçon", "niveau": "niveau scolaire estimé", "notions": ["notion 1", "notion 2", ...], "resume": "résumé simple en 2-3 phrases compréhensible par un parent"}
+Les "notions" doivent couvrir toutes les pages fournies, sans rien inventer qui n'y figure pas.
 ${JSON_ONLY}`,
-    maxTokens: 2048,
+    maxTokens: 3072,
   });
   return extractJSON<LessonAnalysis>(text);
 }

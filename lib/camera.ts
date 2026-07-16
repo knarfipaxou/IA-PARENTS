@@ -44,3 +44,22 @@ export async function pickFromLibrary(): Promise<string | null> {
   if (result.canceled || !result.assets?.length) return null;
   return result.assets[0].base64 ?? null;
 }
+
+/**
+ * Opens the photo library with multi-selection (up to `max` images) and
+ * returns the picked images as base64 strings (empty array if cancelled).
+ */
+export async function pickManyFromLibrary(max: number): Promise<string[]> {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted && Platform.OS !== 'web') return [];
+  const result = await ImagePicker.launchImageLibraryAsync({
+    ...OPTIONS,
+    allowsMultipleSelection: true,
+    selectionLimit: max,
+  });
+  if (result.canceled || !result.assets?.length) return [];
+  return result.assets
+    .slice(0, max)
+    .map((a) => a.base64)
+    .filter((b): b is string => !!b);
+}
