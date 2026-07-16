@@ -1,20 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Image, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { DK, DK_ICONS } from '../constants/darkTheme';
 import { saveExamResult, loadExamResults, filterForLesson, type ExamResult } from '../lib/examResults';
+import { buildDevoirHtml } from '../lib/devoirPrint';
+import { questionMastered } from '../lib/masteryScoring';
 import { CyanBtn, DarkGhostBtn } from '../components/generate/Buttons';
 import { FicheView } from '../components/generate/FicheView';
-import { FlashcardsView } from '../components/generate/FlashcardsView';
 import { ExercicesView } from '../components/generate/ExercicesView';
 import { MiniTestView } from '../components/generate/MiniTestView';
 import { PlanningView } from '../components/generate/PlanningView';
-import { ControleBlancView } from '../components/generate/ControleBlancView';
-import { useChild, type GeneratedKind, type SavedLesson } from '../contexts/ChildContext';
+import { DevoirBlancView } from '../components/generate/DevoirBlancView';
+import { useChild, type SavedLesson } from '../contexts/ChildContext';
 import {
   AiError,
   generateForControl,
@@ -22,31 +25,27 @@ import {
   type Planning,
   type ControlKind,
   generateRevisionSheet,
-  generateFlashcards,
   generateExercises,
   generateMiniTest,
   generateMockExam,
   type LessonAnalysis,
   type RevisionSheet,
-  type Flashcards,
   type Exercises,
   type MiniTest,
-  type MockExam,
+  type DevoirBlanc,
 } from '../services/ai';
 
 const META: Record<string, { title: string; accent: string }> = {
   fiche: { title: 'Fiche de révision', accent: DK.blue },
-  flashcards: { title: 'Flashcards', accent: DK.violet },
   exercices: { title: 'Exercices', accent: DK.amber },
   minitest: { title: 'Mini-test', accent: DK.gold },
-  controle: { title: 'Contrôle blanc', accent: DK.red },
+  controle: { title: 'Devoir blanc complet', accent: DK.red },
   piege: { title: 'Test piégeux', accent: DK.amber },
   planning: { title: 'Planning J-10 → J-1', accent: DK.blue },
 };
 
 const LESSON_FIELD: Record<string, keyof SavedLesson> = {
   fiche: 'fiche',
-  flashcards: 'flashcards',
   exercices: 'exercices',
   minitest: 'minitest',
   controle: 'controleBlanc',
@@ -56,7 +55,8 @@ const LESSON_FIELD: Record<string, keyof SavedLesson> = {
  * Écran d'orchestration : résout la source (leçon ou échéance), génère ou
  * relit le contenu IA en cache, gère les XP, puis délègue le RENDU à un
  * composant dédié par type de contenu (components/generate/*View). La
- * logique de notation du contrôle blanc vit dans lib/examScoring.ts (testée).
+ * correction du devoir blanc (critères de réussite) vit dans
+ * lib/masteryScoring.ts (testée).
  */
 export default function GenerateScreen() {
   const router = useRouter();
@@ -67,7 +67,7 @@ export default function GenerateScreen() {
   const meta = META[kind] ?? META.fiche;
   const { child, lessons, updateLesson, updateEcheance, addXP, addDrillResult } = useChild();
 
-  // ── mode échéance (contrôle global) ──
+  // ── mode échéance (devoir global) ──
   const echeance = echeanceId ? child?.echeances?.find((e) => e.id === echeanceId) : undefined;
   const linkedLessons = echeance ? lessons.filter((l) => (echeance.lessonIds ?? []).includes(l.id)) : [];
   const echeanceMode = !!echeanceId;
@@ -96,17 +96,17 @@ export default function GenerateScreen() {
     : savedLesson
       ? (savedLesson as any)[LESSON_FIELD[kind] ?? 'fiche']
       : undefined;
-  // un contrôle blanc de l'ancien format (sans sous-questions) est périmé :
-  // on le régénère pour obtenir la notation 1 point par sous-question
+  // un devoir blanc d'un ancien format (sans critères de réussite) est périmé :
+  // on le régénère pour obtenir la correction guidée par critères
   const cachedStale = kind === 'controle' && cachedRaw
-    && !(cachedRaw.questions ?? []).some((q: any) => (q.sousQuestions ?? []).length > 0);
+    && !(cachedRaw.questions ?? []).some((q: any) => (q.correction_criteria ?? []).length > 0);
   const cached = cachedStale ? undefined : cachedRaw;
 
   const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState<any>(cached ?? null);
 
-  // tableau de bord de progression (résultats des contrôles de CETTE leçon/matière)
+  // tableau de bord de progression (résultats des devoirs blancs de CETTE leçon/matière)
   const [examHistory, setExamHistory] = useState<ExamResult[]>([]);
   const reloadExamHistory = useCallback(() => {
     if (kind === 'controle' && child) {
@@ -134,7 +134,6 @@ export default function GenerateScreen() {
         updateEcheance(child.id, echeance.id, { generated: { ...(echeance.generated ?? {}), [kind]: result } });
       } else if (lesson) {
         if (kind === 'fiche') result = await generateRevisionSheet(lesson, child);
-        else if (kind === 'flashcards') result = await generateFlashcards(lesson, child);
         else if (kind === 'exercices') result = await generateExercises(lesson, child);
         else if (kind === 'minitest') result = await generateMiniTest(lesson, child);
         else result = await generateMockExam(lesson, child);
@@ -145,12 +144,12 @@ export default function GenerateScreen() {
       setLoading(false);
       if (child) {
         const xpMap: Record<string, import('../lib/gamification').XPReason> = {
-          fiche: 'fiche', flashcards: 'flashcard_set', exercices: 'exercise',
+          fiche: 'fiche', exercices: 'exercise',
           minitest: 'minitest', controle: 'controle', planning: 'fiche',
         };
         const reason = (xpMap[kind] ?? 'fiche') as import('../lib/gamification').XPReason;
         const amountMap: Partial<Record<import('../lib/gamification').XPReason, number>> = {
-          fiche: 5, flashcard_set: 5, exercise: 5, minitest: 15, controle: 30,
+          fiche: 5, exercise: 5, minitest: 15, controle: 30,
         };
         addXP(child.id, amountMap[reason] ?? 5, reason);
       }
@@ -170,6 +169,22 @@ export default function GenerateScreen() {
     if (!cached) generate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generate]);
+
+  // impression du sujet élève (PDF A4, aucune réponse ni correction)
+  async function printDevoir(devoir: DevoirBlanc) {
+    if (!child) return;
+    try {
+      const html = buildDevoirHtml(devoir, child.name, child.classe);
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Devoir blanc — sujet élève' });
+      } else {
+        await Print.printAsync({ uri });
+      }
+    } catch {
+      Alert.alert('Impression impossible', "Le PDF n'a pas pu être généré. Réessayez.");
+    }
+  }
 
   const screenShell = (children: React.ReactNode) => (
     <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
@@ -281,17 +296,6 @@ export default function GenerateScreen() {
     body = <FicheView fiche={content as RevisionSheet} />;
   }
 
-  if (kind === 'flashcards' && content) {
-    const masteryKey = `${child.id}:${echeanceMode ? echeance?.id : savedLesson?.id}`;
-    body = (
-      <FlashcardsView
-        fc={content as Flashcards}
-        masteryKey={masteryKey}
-        onFlip={() => addXP(child.id, 2, 'flashcard_flip')}
-      />
-    );
-  }
-
   if ((kind === 'exercices' || kind === 'piege') && content) {
     body = <ExercicesView exercises={content as Exercises} />;
   }
@@ -310,34 +314,34 @@ export default function GenerateScreen() {
   }
 
   if (kind === 'controle' && content) {
-    const fallbackNotion = echeanceMode ? (echeance?.subj ?? 'général') : (lesson?.matiere ?? 'général');
-    const matiere = echeanceMode ? (echeance?.subj ?? 'Contrôle') : (lesson?.matiere ?? 'Contrôle');
+    const devoir = content as DevoirBlanc;
+    const matiere = echeanceMode ? (echeance?.subj ?? 'Devoir') : (lesson?.matiere ?? 'Devoir');
     body = (
-      <ControleBlancView
-        exam={content as MockExam}
+      <DevoirBlancView
+        devoir={devoir}
         examHistory={examHistory}
-        fallbackNotion={fallbackNotion}
-        onFinish={(questions, score, subChecks) => {
+        onPrint={() => printDevoir(devoir)}
+        onFinish={(score, checks) => {
           const now = new Date().toISOString();
           const sessionId = `controle-${Date.now()}`;
-          // réinjection dans le moteur d'adaptation : un résultat par sous-question
-          questions.forEach((qu, qi) => qu.sousQuestions.forEach((sq, si) => {
+          // réinjection dans le moteur d'adaptation : un résultat par question
+          (devoir.questions ?? []).forEach((qu, qi) => {
             addDrillResult({
-              id: `${sessionId}-${qi}-${si}`,
+              id: `${sessionId}-${qi}`,
               sessionId,
-              exerciseId: `${sessionId}-q${qi}${String.fromCharCode(97 + si)}`,
+              exerciseId: `${sessionId}-${qu.question_id ?? `q${qi}`}`,
               childId: child.id,
               date: now.slice(0, 10),
               matiere,
-              competence: sq.notion || 'général',
-              reussite: !!subChecks[`${qi}-${si}`],
+              competence: qu.notion || 'général',
+              reussite: questionMastered(qu, qi, checks),
             } as any);
-          }));
+          });
           saveExamResult({
             id: sessionId,
             childId: child.id,
             date: now,
-            titre: (content as MockExam).titre,
+            titre: devoir.titre,
             matiere,
             note: score.note,
             totalOk: score.totalOk,
@@ -365,7 +369,7 @@ export default function GenerateScreen() {
       {body}
 
       <DarkGhostBtn
-        label="Régénérer"
+        label={kind === 'controle' ? 'Refaire le devoir blanc' : 'Régénérer'}
         icon={<Ionicons name="refresh" size={19} color="#DDE4FF" />}
         onPress={generate}
         style={{ marginTop: 20 }}

@@ -67,7 +67,7 @@ export function nextDeadlines<T extends { date?: string; days: number }>(
 // ─── Maîtrise ────────────────────────────────────────────────────────────────
 
 /**
- * Maîtrise d'une matière = dernière note de contrôle blanc, convertie en %.
+ * Maîtrise d'une matière = dernière note de devoir blanc, convertie en %.
  * `null` si aucune matière ne correspond (non évalué).
  */
 export function masteryForSubject(

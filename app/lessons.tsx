@@ -32,7 +32,7 @@ export default function LessonsScreen() {
         <View style={s.list}>
           {list.map((l) => {
             const a = accentForMatiere(l.matiere);
-            const genCount = [l.fiche, l.flashcards, l.exercices, l.minitest, l.controleBlanc].filter(Boolean).length;
+            const genCount = [l.fiche, l.exercices, l.minitest, l.controleBlanc].filter(Boolean).length;
             return (
               <TouchableOpacity
                 key={l.id}

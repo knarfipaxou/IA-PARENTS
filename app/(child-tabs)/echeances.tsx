@@ -28,7 +28,7 @@ export default function EcheancesScreen() {
       if (child) loadExamResults(child.id).then(setExams);
     }, [child?.id])
   );
-  // maîtrise (dernier contrôle blanc) par matière → % ; null = non évalué
+  // maîtrise (dernier devoir blanc) par matière → % ; null = non évalué
   const masteryPctFor = (subj: string) => masteryForSubject(exams, subj)?.pct ?? null;
 
   return (

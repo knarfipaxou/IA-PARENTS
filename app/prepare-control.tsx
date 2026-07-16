@@ -86,7 +86,7 @@ export default function PrepareControl() {
             <Text style={s.infoText}>
               L'échéance sera rattachée à {child ? child.name : 'cet enfant'} et déclenchera un plan de révision
               du type <Text style={{ color: DK.cyan, fontWeight: '800' }}>J-8 → Jour J</Text> : fiche, QCM,
-              flashcards ciblées, contrôle blanc, relecture le matin du jour J.
+              missions de maîtrise ciblées, devoir blanc complet, relecture le matin du jour J.
             </Text>
           </LinearGradient>
         </ScrollView>

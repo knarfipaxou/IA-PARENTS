@@ -59,14 +59,14 @@ export interface ExamAnalysis {
   last?: ExamResult;
   delta?: number; // évolution vs contrôle précédent
   bestScore: boolean; // nouveau meilleur score
-  streak: number; // nombre de contrôles terminés
+  streak: number; // nombre de devoirs blancs terminés
   gaugePct: number; // note/20 en %
   gaugeLabel: string; // palier de maîtrise
   motivation: string; // message motivant (sans masquer les difficultés)
   last3: ExamResult[];
   priorities: ExamPriority[]; // max 3, classées par priorité
   improvements: ExamImprovement[]; // compétences en amélioration
-  objectif?: string; // objectif du prochain contrôle
+  objectif?: string; // objectif du prochain devoir blanc
 }
 
 export function gaugeTier(note: number): string {
@@ -94,15 +94,15 @@ export function analyzeExams(results: ExamResult[]): ExamAnalysis {
   let motivation = '';
   if (!last) motivation = '';
   else if (bestScore) motivation = '🏆 Nouveau meilleur score !';
-  else if (delta !== undefined && delta > 0) motivation = `Tu progresses : +${delta} point${delta > 1 ? 's' : ''} depuis le dernier contrôle`;
+  else if (delta !== undefined && delta > 0) motivation = `Tu progresses : +${delta} point${delta > 1 ? 's' : ''} depuis le dernier devoir blanc`;
   else {
     const next = nextTierThreshold(note);
     if (next) motivation = `Encore ${next - note} point${next - note > 1 ? 's' : ''} pour atteindre le niveau « ${gaugeTier(next)} »`;
     else motivation = 'Niveau maximal atteint, continue !';
   }
-  if (streak >= 3 && motivation === '') motivation = `Série de ${streak} contrôles terminés`;
+  if (streak >= 3 && motivation === '') motivation = `Série de ${streak} devoirs blancs terminés`;
 
-  // agrégation par notion sur les 5 derniers contrôles (du plus récent au plus ancien)
+  // agrégation par notion sur les 5 derniers devoirs blancs (du plus récent au plus ancien)
   const recent = results.slice(0, 5);
   const byNotion: Record<string, { missedExams: number; seenExams: number; missesByExam: number[] }> = {};
   recent.forEach((r, idx) => {
@@ -125,7 +125,7 @@ export function analyzeExams(results: ExamResult[]): ExamAnalysis {
       if (v.missedExams >= 3) return {
         notion,
         label: i === 0 ? 'Priorité' : 'Erreur fréquente',
-        detail: `Cette erreur est apparue dans ${v.missedExams} des ${recent.length} derniers contrôles.`,
+        detail: `Cette erreur est apparue dans ${v.missedExams} des ${recent.length} derniers devoirs blancs.`,
       };
       if (v.missedExams === 2) return {
         notion,
@@ -153,11 +153,11 @@ export function analyzeExams(results: ExamResult[]): ExamAnalysis {
       const olderMisses = v.missesByExam.slice(2).reduce((a, m) => a + (m ?? 0), 0);
       return {
         notion,
-        detail: `${recentMisses === 0 ? 'Aucune erreur' : `${recentMisses} seule erreur`} sur les deux derniers contrôles, contre ${olderMisses} auparavant.`,
+        detail: `${recentMisses === 0 ? 'Aucune erreur' : `${recentMisses} seule erreur`} sur les deux derniers devoirs blancs, contre ${olderMisses} auparavant.`,
       };
     });
 
-  // objectif du prochain contrôle
+  // objectif du prochain devoir blanc
   let objectif: string | undefined;
   if (last) {
     const cible = Math.min(20, last.note + 2);

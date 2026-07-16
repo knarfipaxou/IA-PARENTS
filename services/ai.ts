@@ -205,21 +205,9 @@ Crée une fiche de révision claire et structurée pour cette leçon:
   return extractJSON<RevisionSheet>(text);
 }
 
+// conservé uniquement pour le typage des données déjà stockées (ppia.*)
 export interface Flashcards {
   cards: { recto: string; verso: string }[];
-}
-
-export async function generateFlashcards(lesson: LessonAnalysis, child: Child): Promise<Flashcards> {
-  const text = await askClaude({
-    system: SYSTEM,
-    user: `${childCtx(child)}
-Leçon: ${JSON.stringify(lesson)}
-Crée 8 à 10 flashcards (question au recto, réponse courte au verso) pour réviser cette leçon:
-{"cards": [{"recto": "question", "verso": "réponse"}]}
-${JSON_ONLY}`,
-    maxTokens: 3072,
-  });
-  return extractJSON<Flashcards>(text);
 }
 
 export interface QcmExercise {
@@ -264,41 +252,88 @@ Exactement 4 options par question. "bonneReponse" est l'index (0-3). ${JSON_ONLY
   return extractJSON<MiniTest>(text);
 }
 
-export interface MockExamSubQ {
-  texte: string; // ex: "a) 3 L = … cL"
-  reponse: string; // réponse attendue (côté parent)
-  notion: string; // notion évaluée, ex: "conversion L → cL"
+// ─── Devoir blanc complet & parcours de maîtrise (questions ouvertes à critères) ─
+
+export interface CorrectionCriterion {
+  criterion_id: string;
+  label: string; // ex: "Formule écrite avant le calcul"
+  points: number;
+  required_for_mastery?: boolean;
+  related_knowledge_id?: string;
 }
-export interface MockExamQuestion {
+
+export type MissionIdAI = 'memoire' | 'comprehension' | 'application' | 'defi';
+
+export interface OpenQuestion {
+  question_id: string;
+  mission_id?: MissionIdAI;
   enonce: string;
-  points: number; // = nombre de sous-questions (1 point chacune)
-  sousQuestions?: MockExamSubQ[];
-  correction?: string; // ancien format (rétro-compatibilité des contenus déjà enregistrés)
+  points_total: number;
+  expected_answer: string; // réservé au parent
+  accepted_variants?: string[];
+  correction_criteria: CorrectionCriterion[];
+  common_errors?: string[];
+  explication?: string; // explication pédagogique de la bonne réponse
+  mini_lecon?: string; // mini-leçon corrective si l'enfant s'est trompé
+  notion?: string; // notion évaluée (classement des erreurs)
+  answer_space?: 'courte' | 'definition' | 'explication' | 'redaction' | 'calcul' | 'geometrie';
 }
-export interface MockExam {
+
+export interface DevoirBlanc {
   titre: string;
+  matiere: string;
+  classe: string;
   duree_min: number;
-  questions: MockExamQuestion[];
+  outils_autorises?: string[];
+  consignes?: string;
+  questions: OpenQuestion[];
 }
 
-const MOCK_EXAM_FORMAT = `{"titre": "...", "duree_min": 30, "questions": [{"enonce": "consigne générale de la question", "points": 3, "sousQuestions": [{"texte": "a) 3 L = … cL", "reponse": "300 cL (×100)", "notion": "conversion L → cL"}, {"texte": "b) ...", "reponse": "...", "notion": "..."}]}]}
-RÈGLES DE NOTATION IMPÉRATIVES :
-- Chaque question est DÉCOUPÉE en sous-questions a), b), c)… évaluables séparément, 1 point chacune.
-- "points" = nombre exact de sousQuestions de la question.
-- Le total de tous les points fait exactement 20.
-- "notion" est courte et précise (elle sert à classer les erreurs par notion).`;
+// alias historique : les anciens contenus « contrôle blanc » stockés utilisent
+// d'autres champs ; ils sont détectés comme périmés et régénérés
+export type MockExam = DevoirBlanc;
 
-export async function generateMockExam(lesson: LessonAnalysis, child: Child): Promise<MockExam> {
+export interface KnowledgeAtom {
+  id: string; // ex: "DEF-01"
+  type: 'DEF' | 'VOC' | 'FCT' | 'REG' | 'PRO' | 'FOR' | 'MET' | 'CON' | 'EXC' | 'RAI' | 'REP' | 'RED' | 'SYN' | string;
+  label: string;
+  importance: 'ESSENTIELLE' | 'IMPORTANTE' | 'SECONDAIRE';
+  cognitive_level: 'RESTITUER' | 'COMPRENDRE' | 'APPLIQUER' | 'TRANSFERER';
+}
+
+export interface KnowledgeMap {
+  knowledge: KnowledgeAtom[];
+}
+
+// Règles absolues communes à toute génération du parcours et du devoir blanc.
+const OPEN_RULES = `RÈGLES ABSOLUES (non négociables) :
+- Utilise UNIQUEMENT le contenu des leçons fournies. N'invente RIEN qui n'y figure pas.
+- AUCUN QCM, AUCUN vrai/faux, AUCUNE liste de réponses proposées : l'enfant produit lui-même toutes ses réponses (à l'écrit ou à l'oral).
+- Les critères de réussite et les réponses attendues sont réservés au PARENT, jamais montrés à l'enfant.
+- Le barème valorise la méthode et la justification, pas seulement le résultat (ex : formule 1 pt, calcul 1 pt, unité + conclusion 1 pt).
+- Accepte les formulations équivalentes correctes ("accepted_variants").
+- "notion" est courte et précise (elle sert à classer les erreurs).`;
+
+const OPEN_QUESTION_FORMAT = `{"question_id": "Q1", "enonce": "consigne complète, autonome", "points_total": 3, "expected_answer": "réponse modèle complète", "accepted_variants": ["formulation équivalente acceptée"], "correction_criteria": [{"criterion_id": "Q1-C1", "label": "Formule écrite avant le calcul", "points": 1, "required_for_mastery": true}, {"criterion_id": "Q1-C2", "label": "Calcul exact", "points": 1, "required_for_mastery": true}, {"criterion_id": "Q1-C3", "label": "Unité et phrase de conclusion", "points": 1}], "common_errors": ["erreur classique"], "explication": "explication pédagogique de la bonne réponse", "mini_lecon": "mini-leçon corrective courte si l'enfant s'est trompé", "notion": "notion évaluée", "answer_space": "calcul"}
+"answer_space" ∈ courte (1-2 lignes), definition, explication, redaction, calcul, geometrie.
+"points_total" = somme des points des critères de la question.`;
+
+const DEVOIR_FORMAT = `{"titre": "...", "matiere": "...", "classe": "...", "duree_min": 30, "outils_autorises": ["règle", "calculatrice"], "consignes": "consignes générales pour l'élève", "questions": [${OPEN_QUESTION_FORMAT}]}
+Le total des points de toutes les questions fait exactement 20.
+Le devoir mélange les 4 dimensions : restitution (mémoire), compréhension (expliquer), application (exercices) et transfert (problème complet), avec "mission_id" ∈ memoire|comprehension|application|defi sur chaque question.`;
+
+export async function generateMockExam(lesson: LessonAnalysis, child: Child): Promise<DevoirBlanc> {
   const text = await askClaude({
     system: SYSTEM,
     user: `${childCtx(child)}
 Leçon: ${JSON.stringify(lesson)}
-Crée un contrôle blanc (comme un vrai contrôle à l'école) sur cette leçon, 5 à 6 questions notées sur 20 au total:
-${MOCK_EXAM_FORMAT}
+Crée un devoir blanc complet (comme un vrai devoir à l'école) sur cette leçon, 5 à 6 questions ouvertes notées sur 20 au total :
+${DEVOIR_FORMAT}
+${OPEN_RULES}
 ${JSON_ONLY}`,
-    maxTokens: 4096,
+    maxTokens: 8192,
   });
-  return extractJSON<MockExam>(text);
+  return extractJSON<DevoirBlanc>(text);
 }
 
 // ─── Contrôles : suggestion, génération globale, planning ────────────────────
@@ -337,7 +372,7 @@ Si aucune leçon ne correspond, renvoie {"suggestions": []}. ${JSON_ONLY}`,
   return extractJSON<LessonSuggestions>(text);
 }
 
-export type ControlKind = 'fiche' | 'flashcards' | 'exercices' | 'minitest' | 'controle' | 'piege';
+export type ControlKind = 'fiche' | 'exercices' | 'minitest' | 'controle' | 'piege';
 
 function lessonsBlock(lessons: LessonLite[]): string {
   return lessons
@@ -363,11 +398,6 @@ ${lessonsBlock(lessons)}`;
 Crée une fiche de révision globale couvrant toutes ces leçons:
 {"titre": "...", "sections": [{"titre": "...", "contenu": "explication simple et pédagogique", "points_cles": ["point 1", "point 2"]}]}
 4 à 6 sections. ${JSON_ONLY}`;
-  } else if (kind === 'flashcards') {
-    user = `${ctx}
-Crée 10 à 12 flashcards mélangeant toutes ces leçons:
-{"cards": [{"recto": "question", "verso": "réponse"}]}
-${JSON_ONLY}`;
   } else if (kind === 'exercices') {
     user = `${ctx}
 Crée 6 exercices QCM mélangés couvrant l'ensemble des leçons:
@@ -385,14 +415,80 @@ Crée un test piégeux: 5 questions QCM avec des distracteurs très plausibles c
 Exactement 4 options par question. ${JSON_ONLY}`;
   } else {
     user = `${ctx}
-Crée un contrôle blanc complet (comme un vrai contrôle à l'école) couvrant toutes les leçons, 6 à 8 questions notées sur 20 au total:
-${MOCK_EXAM_FORMAT}
+Crée un devoir blanc complet (comme un vrai devoir à l'école) couvrant toutes les leçons, 6 à 8 questions ouvertes notées sur 20 au total :
+${DEVOIR_FORMAT}
+${OPEN_RULES}
 ${JSON_ONLY}`;
-    maxTokens = 4096;
+    maxTokens = 8192;
   }
 
   const text = await askClaude({ system: SYSTEM, user, maxTokens });
   return extractJSON<any>(text);
+}
+
+// ─── Parcours de maîtrise : carte des connaissances + missions à la demande ──
+
+export interface MissionContent {
+  mission_id: MissionIdAI;
+  titre: string;
+  duree_min?: number;
+  questions: OpenQuestion[];
+}
+
+/**
+ * Carte des connaissances atomiques de la leçon (générée UNE seule fois par
+ * échéance puis réutilisée pour toutes les missions).
+ */
+export async function generateKnowledgeMap(
+  echeance: EcheanceLite, lessons: LessonLite[], child: Child,
+): Promise<KnowledgeMap> {
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+L'enfant prépare: ${echeance.type} de ${echeance.subj} (${echeance.date}).
+Leçons:
+${lessonsBlock(lessons)}
+Découpe ces leçons en connaissances ATOMIQUES (une idée testable par entrée) :
+{"knowledge": [{"id": "DEF-01", "type": "DEF|VOC|FCT|REG|PRO|FOR|MET|CON|EXC|RAI|REP|RED|SYN", "label": "énoncé court de la connaissance", "importance": "ESSENTIELLE|IMPORTANTE|SECONDAIRE", "cognitive_level": "RESTITUER|COMPRENDRE|APPLIQUER|TRANSFERER"}]}
+Utilise UNIQUEMENT le contenu des leçons fournies, n'invente rien. ${JSON_ONLY}`,
+    maxTokens: 4096,
+  });
+  return extractJSON<KnowledgeMap>(text);
+}
+
+const MISSION_BRIEFS: Record<MissionIdAI, string> = {
+  memoire: `Mission Mémoire (RESTITUER) : 5 à 7 questions courtes de restitution pure — définitions, vocabulaire, formules, dates, règles. Cible en priorité les connaissances d'importance ESSENTIELLE.`,
+  comprehension: `Mission Compréhension (COMPRENDRE) : 4 à 5 questions où l'enfant explique AVEC SES PROPRES MOTS le pourquoi et le comment (reformuler, justifier, donner un exemple personnel, expliquer une cause ou une conséquence).`,
+  application: `Mission Application (APPLIQUER) : 4 à 5 exercices concrets d'application directe de la leçon (calculs, analyses, constructions), avec méthode exigée dans les critères.`,
+  defi: `Mission Défi final (TRANSFÉRER) : 2 à 3 problèmes complets qui mélangent plusieurs notions de la leçon dans un contexte nouveau, exigeant raisonnement structuré et justification.`,
+};
+
+/** Contenu d'UNE mission du parcours, généré à la demande (appel court). */
+export async function generateMission(
+  missionId: MissionIdAI,
+  echeance: EcheanceLite,
+  lessons: LessonLite[],
+  knowledgeMap: KnowledgeMap | undefined,
+  child: Child,
+): Promise<MissionContent> {
+  const km = knowledgeMap && (knowledgeMap.knowledge ?? []).length > 0
+    ? `Carte des connaissances de la leçon (référence les "related_knowledge_id" dans les critères) : ${JSON.stringify(knowledgeMap.knowledge)}`
+    : '';
+  const text = await askClaude({
+    system: SYSTEM,
+    user: `${childCtx(child)}
+L'enfant prépare: ${echeance.type} de ${echeance.subj} (${echeance.date}).
+Leçons:
+${lessonsBlock(lessons)}
+${km}
+${MISSION_BRIEFS[missionId]}
+{"mission_id": "${missionId}", "titre": "titre court de la mission", "duree_min": 10, "questions": [${OPEN_QUESTION_FORMAT}]}
+Chaque question porte "mission_id": "${missionId}".
+${OPEN_RULES}
+${JSON_ONLY}`,
+    maxTokens: 8192,
+  });
+  return extractJSON<MissionContent>(text);
 }
 
 export interface Planning {

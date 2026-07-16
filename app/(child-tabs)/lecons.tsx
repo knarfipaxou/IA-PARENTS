@@ -37,7 +37,7 @@ export default function LeconsTab() {
 
           <View style={{ gap: 10 }}>
             {list.map((l, i) => {
-              const genCount = [l.fiche, l.flashcards, l.exercices, l.minitest, l.controleBlanc].filter(Boolean).length;
+              const genCount = [l.fiche, l.exercices, l.minitest, l.controleBlanc].filter(Boolean).length;
               return (
                 <Animated.View key={l.id} entering={FadeInDown.delay(Math.min(i, 8) * 60).springify().damping(16)}>
                   <TouchableOpacity
@@ -66,7 +66,7 @@ export default function LeconsTab() {
               <View style={s.emptyBox}>
                 <Image source={DK_ICONS.scan} style={{ width: 56, height: 56, opacity: 0.8 }} />
                 <Text style={s.emptyText}>Aucune leçon enregistrée pour le moment.</Text>
-                <Text style={s.emptySub}>Scannez une première leçon pour créer des fiches, QCM et flashcards IA.</Text>
+                <Text style={s.emptySub}>Scannez une première leçon pour créer des fiches, exercices et devoirs blancs IA.</Text>
               </View>
             )}
           </View>

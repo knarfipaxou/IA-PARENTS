@@ -119,7 +119,7 @@ export default function EspaceScreen() {
   // toutes les échéances à venir (toutes matières et tous types d'évaluation)
   const controles = child?.echeances ?? [];
 
-  // maîtrise par matière (dernière note de contrôle blanc)
+  // maîtrise par matière (dernière note de devoir blanc)
   const [examResults, setExamResults] = useState<ExamResult[]>([]);
   useFocusEffect(
     useCallback(() => {
@@ -184,7 +184,7 @@ export default function EspaceScreen() {
   // 3 cartes verticales côte à côte (maquette) — « Préparer un contrôle » retiré
   const TILES = [
     { img: A.drill, title: 'Drill du jour', desc: 'Exercices quotidiens IA adaptés à ses besoins', route: '/drill', accent: '#2BC48A', bodyBg: P.scheme === 'dark' ? '#01313F' : '#F0FAF7' },
-    { img: A.scan, title: 'Scanner une leçon', desc: 'Fiches, QCM, flashcards IA', route: '/scan', accent: '#3D7BFF', bodyBg: P.scheme === 'dark' ? '#0A1E4A' : '#F2F6FE' },
+    { img: A.scan, title: 'Scanner une leçon', desc: 'Fiches, exercices, devoir blanc IA', route: '/scan', accent: '#3D7BFF', bodyBg: P.scheme === 'dark' ? '#0A1E4A' : '#F2F6FE' },
     { img: A.agenda, title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda', accent: '#2E9E5B', bodyBg: P.scheme === 'dark' ? '#0A2E22' : '#F2FAF4' },
   ];
   const visibleTiles = isCollege ? TILES : TILES.slice(2, 3);
@@ -261,7 +261,7 @@ export default function EspaceScreen() {
               </View>
               <View style={{ gap: 12, marginBottom: 22 }}>
                 {prochainControles.map((e) => {
-                  // jauge de maîtrise (dernier contrôle blanc de la matière)
+                  // jauge de maîtrise (dernier devoir blanc de la matière)
                   const mastery = masteryFor(e.subj);
                   const pct = mastery ? Math.max(0.04, mastery.pct / 100) : 0.08;
                   const urg = urgencyColor(e.days);
@@ -300,8 +300,8 @@ export default function EspaceScreen() {
                               numberOfLines={2}
                             >
                               {mastery
-                                ? `${mastery.pct} % de maîtrise • dernier contrôle blanc ${mastery.note}/20`
-                                : 'À préparer — pas encore de contrôle blanc noté'}
+                                ? `${mastery.pct} % de maîtrise • dernier devoir blanc ${mastery.note}/20`
+                                : 'À préparer — pas encore de devoir blanc noté'}
                             </Text>
                           </View>
                           <View style={[s.jPill, { borderColor: urg }]}>

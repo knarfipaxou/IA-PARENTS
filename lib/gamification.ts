@@ -51,10 +51,9 @@ export const DEFAULT_GAMIFICATION: GamificationData = {
 
 export const BADGE_DEFS: Badge[] = [
   { id: 'first_scan', label: 'Premier scan', desc: 'Scanne ta première leçon', icon: 'scan-outline', accent: 'blue' },
-  { id: 'first_flashcard', label: 'Flashcard pro', desc: 'Révise avec les flashcards', icon: 'layers-outline', accent: 'violet' },
   { id: 'first_exercise', label: 'En pratique', desc: 'Fais tes premiers exercices', icon: 'pencil-outline', accent: 'amber' },
   { id: 'first_minitest', label: 'Mini-test', desc: 'Passe un mini-test', icon: 'flask-outline', accent: 'coral' },
-  { id: 'first_controle', label: 'Contrôle blanc', desc: 'Passe un contrôle blanc', icon: 'ribbon-outline', accent: 'green' },
+  { id: 'first_controle', label: 'Devoir blanc', desc: 'Passe un devoir blanc complet', icon: 'ribbon-outline', accent: 'green' },
   { id: 'streak_3', label: 'Sur la lancée', desc: '3 jours de suite actif', icon: 'flame-outline', accent: 'coral' },
   { id: 'streak_7', label: 'Semaine parfaite', desc: '7 jours de suite actif', icon: 'flame', accent: 'amber' },
   { id: 'xp_100', label: '100 XP', desc: 'Atteins 100 XP', icon: 'star-outline', accent: 'amber' },
@@ -143,7 +142,6 @@ export function checkBadges(data: GamificationData): { data: GamificationData; n
   const has = (id: BadgeId) => data.badges.includes(id);
   const candidates: Array<{ id: BadgeId; cond: boolean }> = [
     { id: 'first_scan', cond: data.totalScans >= 1 },
-    { id: 'first_flashcard', cond: data.totalFlashcards >= 1 },
     { id: 'first_exercise', cond: data.totalExercises >= 1 },
     { id: 'first_minitest', cond: data.totalMinitests >= 1 },
     { id: 'first_controle', cond: data.totalControles >= 1 },

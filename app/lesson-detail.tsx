@@ -14,10 +14,9 @@ import { formatLessonDate } from '../lib/matiere';
 
 const ACTIONS: { kind: string; field: keyof SavedLesson; label: string; desc: string; icon: string; accent: AccentKey }[] = [
   { kind: 'fiche', field: 'fiche', label: 'Fiche de révision', desc: 'Résumé structuré avec points clés', icon: 'document-text-outline', accent: 'green' },
-  { kind: 'flashcards', field: 'flashcards', label: 'Flashcards', desc: 'Cartes question / réponse', icon: 'albums-outline', accent: 'violet' },
   { kind: 'exercices', field: 'exercices', label: 'Exercices', desc: '5 QCM interactifs', icon: 'pencil-outline', accent: 'amber' },
   { kind: 'minitest', field: 'minitest', label: 'Mini-test', desc: '3 questions avec score', icon: 'flash-outline', accent: 'blue' },
-  { kind: 'controle', field: 'controleBlanc', label: 'Contrôle blanc', desc: 'Comme en classe, avec correction', icon: 'school-outline', accent: 'coral' },
+  { kind: 'controle', field: 'controleBlanc', label: 'Devoir blanc complet', desc: 'Comme en classe, corrigé par critères', icon: 'school-outline', accent: 'coral' },
 ];
 
 export default function LessonDetailScreen() {

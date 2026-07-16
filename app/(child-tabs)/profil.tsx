@@ -22,7 +22,7 @@ const TON_LABELS: Record<string, string> = { bienveillant: 'Bienveillant', exige
 
 // Icônes du pack pour les badges pertinents (sinon Ionicons du badge)
 const BADGE_ICON: Record<string, any> = {
-  first_flashcard: ICONS.flashcards, first_exercise: ICONS.pencil, first_controle: ICONS.medal,
+  first_exercise: ICONS.pencil, first_controle: ICONS.medal,
   first_minitest: ICONS.medal, first_scan: ICONS.scan, perfect_test: ICONS.trophy,
 };
 // Teintes néon par accent de badge (comme la maquette : débloqué = pilule colorée)

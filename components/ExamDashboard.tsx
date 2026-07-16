@@ -22,7 +22,7 @@ function relDate(iso: string) {
   return fmtShort(iso);
 }
 
-/** Tableau de bord de progression des contrôles blancs (par leçon/matière). */
+/** Tableau de bord de progression des devoirs blancs (par leçon/matière). */
 export function ExamDashboard({ an }: { an: ExamAnalysis }) {
   const last = an.last;
   if (!last) return null;
@@ -42,7 +42,7 @@ export function ExamDashboard({ an }: { an: ExamAnalysis }) {
               <View style={[s.deltaPill, { borderColor: an.delta > 0 ? 'rgba(52,214,150,0.55)' : 'rgba(255,107,90,0.55)' }]}>
                 <Ionicons name={an.delta > 0 ? 'trending-up' : 'trending-down'} size={13} color={an.delta > 0 ? DK.green : DK.red} />
                 <Text style={{ color: an.delta > 0 ? DK.green : DK.red, fontWeight: '800', fontSize: 12.5 }}>
-                  {an.delta > 0 ? '+' : ''}{an.delta} point{Math.abs(an.delta) > 1 ? 's' : ''} depuis le dernier contrôle
+                  {an.delta > 0 ? '+' : ''}{an.delta} point{Math.abs(an.delta) > 1 ? 's' : ''} depuis le dernier devoir blanc
                 </Text>
               </View>
             )}
