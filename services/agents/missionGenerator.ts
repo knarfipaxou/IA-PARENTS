@@ -1,4 +1,5 @@
 import { askClaude, extractJSON, type EcheanceLite } from '../ai';
+import { salvageArray } from '../../lib/jsonSalvage';
 import type { Child } from '../../data/mock';
 import {
   validateMissionQuestions,
@@ -41,8 +42,59 @@ function childCtx(child: Child): string {
 }
 
 /**
+ * Extrait les questions d'une réponse IA : JSON strict d'abord, puis
+ * récupération des objets complets si la réponse a été tronquée.
+ */
+function parseQuestions(text: string): any[] {
+  try {
+    const raw = extractJSON<{ questions: any[] }>(text);
+    if (Array.isArray(raw.questions) && raw.questions.length > 0) return raw.questions;
+  } catch {
+    // réponse tronquée : on tente la récupération ci-dessous
+  }
+  return salvageArray(text, 'questions');
+}
+
+// une leçon riche est traitée en plusieurs appels courts : moins de risque de
+// réponse tronquée, et chaque lot reste rapide sur mobile
+const CHUNK_SIZE = 10;
+
+function chunkKnowledge(items: KnowledgeItem[]): KnowledgeItem[][] {
+  if (items.length <= CHUNK_SIZE) return [items];
+  const nChunks = Math.ceil(items.length / CHUNK_SIZE);
+  const per = Math.ceil(items.length / nChunks);
+  const out: KnowledgeItem[][] = [];
+  for (let i = 0; i < items.length; i += per) out.push(items.slice(i, i + per));
+  return out;
+}
+
+async function generateChunk(
+  missionType: MissionType,
+  chunk: KnowledgeItem[],
+  echeance: EcheanceLite,
+  child: Child,
+  chunkIdx: number,
+): Promise<MissionQuestion[]> {
+  const user = `${childCtx(child)}
+Il prépare : ${echeance.type} de ${echeance.subj} (${echeance.date}).
+${MISSION_BRIEFS[missionType]}
+Connaissances à couvrir (niveau ${MISSION_LEVEL[missionType]}) — TOUTES les "essential" doivent être évaluées, et au moins 90 % des "important" :
+${knowledgeBlock(chunk)}
+Crée le nombre de questions réellement nécessaire pour couvrir ces connaissances (≈3 connaissances max par question). Préfixe les question_id par "${missionType.toUpperCase().slice(0, 3)}-${chunkIdx + 1}".
+{"questions": [${QUESTION_FORMAT}]}`;
+  // une tentative + un retry en cas de réponse inexploitable
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const text = await askClaude({ system: SYSTEM, user, maxTokens: 8192 });
+    const questions = parseQuestions(text);
+    if (questions.length > 0) return validateMissionQuestions(questions, missionType);
+  }
+  throw new Error("L'IA a renvoyé un format inattendu (deux tentatives). Réessayez.");
+}
+
+/**
  * Agent 2 — mission-generator : génère TOUTES les questions nécessaires pour
- * couvrir les connaissances du niveau cognitif de la mission.
+ * couvrir les connaissances du niveau cognitif de la mission. Les leçons
+ * riches sont traitées par lots pour éviter les réponses tronquées.
  */
 export async function runMissionGenerator(
   missionType: MissionType,
@@ -50,19 +102,20 @@ export async function runMissionGenerator(
   echeance: EcheanceLite,
   child: Child,
 ): Promise<MissionQuestion[]> {
-  const text = await askClaude({
-    system: SYSTEM,
-    user: `${childCtx(child)}
-Il prépare : ${echeance.type} de ${echeance.subj} (${echeance.date}).
-${MISSION_BRIEFS[missionType]}
-Connaissances à couvrir (niveau ${MISSION_LEVEL[missionType]}) — TOUTES les "essential" doivent être évaluées, et au moins 90 % des "important" :
-${knowledgeBlock(scopedKnowledge)}
-Crée le nombre de questions réellement nécessaire pour couvrir ces connaissances (≈3 connaissances max par question).
-{"questions": [${QUESTION_FORMAT}]}`,
-    maxTokens: 16384,
-  });
-  const raw = extractJSON<{ questions: any[] }>(text);
-  return validateMissionQuestions(raw.questions ?? [], missionType);
+  const chunks = chunkKnowledge(scopedKnowledge);
+  const all: MissionQuestion[] = [];
+  const seen = new Set<string>();
+  for (let c = 0; c < chunks.length; c++) {
+    const questions = await generateChunk(missionType, chunks[c], echeance, child, c);
+    for (const q of questions) {
+      // ids uniques même si l'IA ignore le préfixe demandé
+      let id = q.question_id ?? `Q${all.length + 1}`;
+      while (seen.has(id)) id = `${id}b`;
+      seen.add(id);
+      all.push({ ...q, question_id: id });
+    }
+  }
+  return all;
 }
 
 /**
@@ -90,6 +143,7 @@ Crée UNIQUEMENT les nouvelles questions nécessaires pour couvrir les connaissa
 {"questions": [${QUESTION_FORMAT}]}`,
     maxTokens: 8192,
   });
-  const raw = extractJSON<{ questions: any[] }>(text);
-  return validateMissionQuestions(raw.questions ?? [], missionType);
+  const questions = parseQuestions(text);
+  if (questions.length === 0) throw new Error("L'IA a renvoyé un format inattendu. Réessayez.");
+  return validateMissionQuestions(questions, missionType);
 }

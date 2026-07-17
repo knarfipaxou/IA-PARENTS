@@ -9,7 +9,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { DK, DK_ICONS } from '../constants/darkTheme';
 import { useChild } from '../contexts/ChildContext';
-import { pickImage, pickManyFromLibrary } from '../lib/camera';
+import { pickImage, pickManyFromLibrary, toApiBase64 } from '../lib/camera';
 import { extractDocxText } from '../lib/docText';
 import { analyzeLessonSources, AiError, type LessonSources } from '../services/ai';
 
@@ -84,7 +84,8 @@ export default function ScanScreen() {
       if (mime === 'application/pdf' || name.endsWith('.pdf')) {
         await analyze({ pdfBase64: base64 });
       } else if (mime.startsWith('image/') || /\.(jpe?g|png|heic|webp)$/.test(name)) {
-        addPages([base64]);
+        const resized = await toApiBase64(asset.uri);
+        if (resized) addPages([resized]);
       } else if (mime === 'text/plain' || name.endsWith('.txt') || name.endsWith('.md')) {
         const text = await FileSystem.readAsStringAsync(asset.uri);
         await analyze({ text });

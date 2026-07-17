@@ -1,4 +1,5 @@
 import { askClaude, extractJSON, type EcheanceLite, type LessonLite } from '../ai';
+import { salvageArray } from '../../lib/jsonSalvage';
 import type { Child } from '../../data/mock';
 import { validateLessonAnalysis, type LessonAnalysis2 } from './types';
 
@@ -43,7 +44,19 @@ RÈGLES :
 - "cognitiveLevel": remember = à restituer par cœur ; understand = à expliquer ; apply = à mettre en œuvre dans un exercice ; transfer = à mobiliser dans un problème nouveau.
 - Si un champ n'est pas lisible ou absent : ne l'invente pas, signale-le dans detectedUncertainties.
 - Si plus de 40 % du contenu est illisible ou manquant : status incomplete ou illegible.`,
-    maxTokens: 8192,
+    maxTokens: 16384,
   });
-  return validateLessonAnalysis(extractJSON(text));
+  try {
+    return validateLessonAnalysis(extractJSON(text));
+  } catch {
+    // réponse tronquée : on récupère les connaissances complètes + le statut
+    const knowledge = salvageArray(text, 'knowledge');
+    const statusMatch = text.match(/"status"\s*:\s*"([a-z_]+)"/);
+    if (knowledge.length === 0) throw new Error("L'IA a renvoyé un format inattendu. Réessayez.");
+    return validateLessonAnalysis({
+      status: statusMatch?.[1] ?? 'probably_complete',
+      knowledge,
+      detectedUncertainties: ["Analyse partiellement tronquée : certaines connaissances de fin de leçon peuvent manquer."],
+    });
+  }
 }

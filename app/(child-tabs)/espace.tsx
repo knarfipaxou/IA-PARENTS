@@ -7,10 +7,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { speakGreeting } from '../../lib/greeting';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
-import { progressColor, progressGradient } from '../../lib/progressColor';
-import { subjectIcon } from '../../lib/subjectIcons';
-import { nextDeadlines, masteryForSubject, isDeadlineAtRisk } from '../../lib/deadlines';
-import { AlertPulse } from '../../components/AlertPulse';
+import { nextDeadlines, masteryForSubject } from '../../lib/deadlines';
+import { DeadlineCard } from '../../components/DeadlineCard';
 import { AvatarRing } from '../../components/AvatarRing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -260,58 +258,15 @@ export default function EspaceScreen() {
                 </TouchableOpacity>
               </View>
               <View style={{ gap: 12, marginBottom: 22 }}>
-                {prochainControles.map((e) => {
-                  // jauge de maîtrise (dernier devoir blanc de la matière)
-                  const mastery = masteryFor(e.subj);
-                  const pct = mastery ? Math.max(0.04, mastery.pct / 100) : 0.08;
-                  const urg = urgencyColor(e.days);
-                  const nLessons = (e.lessonIds ?? []).length;
-                  // état d'alerte : non évalué OU maîtrise < 80 %
-                  const alert = isDeadlineAtRisk(mastery);
-                  const neutral = {
-                    borderWidth: 1.2, borderColor: P.cardBorder,
-                    backgroundColor: P.scheme === 'dark' ? 'rgba(20,27,51,0.75)' : '#FFFFFF',
-                  };
-                  return (
-                    <TouchableOpacity
-                      key={e.id}
-                      onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
-                      activeOpacity={0.85}
-                    >
-                      <AlertPulse active={alert} scheme={P.scheme} neutralStyle={neutral}>
-                        <View style={s.ctrlRow}>
-                          <Image source={subjectIcon(e.subj, P.scheme)} style={s.ctrlIconTile} />
-                          <View style={{ flex: 1, marginLeft: 14 }}>
-                            <Text style={[s.ctrlTitle, { color: P.ink }]} numberOfLines={1}>{e.type} de {e.subj}</Text>
-                            <Text style={[s.ctrlSub, { color: P.sub }]}>
-                              {e.date}  •  {nLessons} {nLessons > 1 ? 'leçons liées' : 'leçon liée'}
-                            </Text>
-                            <View style={[s.ctrlTrack, {
-                              backgroundColor: P.scheme === 'dark' ? 'rgba(255,255,255,0.13)' : 'rgba(27,37,89,0.1)',
-                            }]}>
-                              <LinearGradient
-                                colors={mastery ? progressGradient(mastery.pct) : [P.teal, P.teal]}
-                                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                                style={[s.ctrlFill, { width: `${pct * 100}%` }]}
-                              />
-                            </View>
-                            <Text
-                              style={[s.ctrlMastery, { color: mastery ? progressColor(mastery.pct) : (P.scheme === 'dark' ? '#FF8A80' : '#D6353A') }]}
-                              numberOfLines={2}
-                            >
-                              {mastery
-                                ? `${mastery.pct} % de maîtrise • dernier devoir blanc ${mastery.note}/20`
-                                : 'À préparer — pas encore de devoir blanc noté'}
-                            </Text>
-                          </View>
-                          <View style={[s.jPill, { borderColor: urg }]}>
-                            <Text style={[s.jPillText, { color: urg }]}>{e.days === 0 ? 'Auj.' : `J-${e.days}`}</Text>
-                          </View>
-                        </View>
-                      </AlertPulse>
-                    </TouchableOpacity>
-                  );
-                })}
+                {prochainControles.map((e) => (
+                  <TouchableOpacity
+                    key={e.id}
+                    onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
+                    activeOpacity={0.85}
+                  >
+                    <DeadlineCard e={e} mastery={masteryFor(e.subj)} scheme={P.scheme} />
+                  </TouchableOpacity>
+                ))}
               </View>
             </>
           )}

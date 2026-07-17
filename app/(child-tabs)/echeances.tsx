@@ -9,10 +9,9 @@ import { DK } from '../../constants/darkTheme';
 import { useChild } from '../../contexts/ChildContext';
 import { isControle } from '../../lib/matiere';
 import { useScheme } from '../../lib/useScheme';
-import { subjectIcon } from '../../lib/subjectIcons';
 import { loadExamResults, type ExamResult } from '../../lib/examResults';
-import { masteryForSubject, isDeadlineAtRisk, upcomingDeadlines } from '../../lib/deadlines';
-import { AlertPulse } from '../../components/AlertPulse';
+import { masteryForSubject, upcomingDeadlines } from '../../lib/deadlines';
+import { DeadlineCard } from '../../components/DeadlineCard';
 
 export default function EcheancesScreen() {
   const router = useRouter();
@@ -28,8 +27,8 @@ export default function EcheancesScreen() {
       if (child) loadExamResults(child.id).then(setExams);
     }, [child?.id])
   );
-  // maîtrise (dernier devoir blanc) par matière → % ; null = non évalué
-  const masteryPctFor = (subj: string) => masteryForSubject(exams, subj)?.pct ?? null;
+  // maîtrise (dernier devoir blanc) par matière ; null = non évalué
+  const masteryFor = (subj: string) => masteryForSubject(exams, subj);
 
   return (
     <LinearGradient colors={scheme === 'light' ? ['#F3F5FA', '#EEF1F8'] : [DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
@@ -76,67 +75,13 @@ export default function EcheancesScreen() {
             {echeances.map((it) => {
               const nb = (it.lessonIds ?? []).length;
               const noLesson = isControle(it.type) && nb === 0;
-              const pct = masteryPctFor(it.subj);
-              // état d'alerte : non évalué OU maîtrise < 80 %
-              const alert = isDeadlineAtRisk(pct === null ? null : { pct });
-              const neutral = {
-                borderWidth: 1, borderColor: DK.cardBorder,
-                backgroundColor: scheme === 'light' ? '#FFFFFF' : 'rgba(47,60,112,0.4)',
-              };
               return (
                 <TouchableOpacity
                   key={it.id}
                   onPress={() => router.push(`/echeance-detail?id=${it.id}` as any)}
                   activeOpacity={0.88}
                 >
-                  <AlertPulse active={alert} scheme={scheme} neutralStyle={neutral}>
-                    <View style={s.row}>
-                      <Image source={subjectIcon(it.subj, scheme)} style={s.rowIcon} />
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <View style={s.titleRow}>
-                          <Text style={[s.rowTitle, scheme === 'light' && { color: '#1B2559' }]} numberOfLines={1}>
-                            {it.type} de {it.subj}
-                          </Text>
-                          <View style={[s.typeChip, isControle(it.type) ? s.typeChipControle : s.typeChipDevoir]}>
-                            <Text style={[s.typeChipText, { color: isControle(it.type) ? '#C9A0FF' : '#FF8DB8' }]}>
-                              {it.type.toUpperCase()}
-                            </Text>
-                          </View>
-                        </View>
-                        <Text style={[s.rowSub, scheme === 'light' && { color: '#6B7699' }]}>
-                          {it.date} • {nb} {nb > 1 ? 'leçons liées' : 'leçon liée'}
-                        </Text>
-                        {/* niveau de préparation */}
-                        <View style={s.statusRow}>
-                          {alert ? (
-                            <>
-                              <Ionicons name="alert-circle" size={13} color={scheme === 'light' ? '#D6353A' : '#FF6B6B'} />
-                              <Text style={[s.statusText, { color: scheme === 'light' ? '#D6353A' : '#FF8A80' }]}>
-                                {pct === null ? 'À préparer — non évalué' : `À renforcer — ${pct} % prêt`}
-                              </Text>
-                            </>
-                          ) : (
-                            <>
-                              <Ionicons name="checkmark-circle" size={13} color={DK.green} />
-                              <Text style={[s.statusText, { color: DK.green }]}>Prêt — {pct} %</Text>
-                            </>
-                          )}
-                          {it.urg && (
-                            <View style={s.urgChip}><Text style={s.urgText}>Urgent</Text></View>
-                          )}
-                        </View>
-                        {noLesson && (
-                          <View style={s.warnRow}>
-                            <Ionicons name="warning" size={12} color={DK.red} />
-                            <Text style={s.warnText}>Aucune leçon rattachée</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={s.jPill}>
-                        <Text style={s.jPillText}>{it.days === 0 ? 'Auj.' : `J-${it.days}`}</Text>
-                      </View>
-                    </View>
-                  </AlertPulse>
+                  <DeadlineCard e={it} mastery={masteryFor(it.subj)} scheme={scheme} noLesson={noLesson} />
                 </TouchableOpacity>
               );
             })}
