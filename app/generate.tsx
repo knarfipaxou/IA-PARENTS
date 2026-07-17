@@ -227,7 +227,7 @@ export default function GenerateScreen() {
             <CyanBtn
               label="Rattacher une leçon"
               icon={<Ionicons name="link-outline" size={19} color="#052A26" />}
-              onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)}
+              onPress={() => router.push(`/scan?echeanceId=${echeance.id}` as any)}
               style={{ alignSelf: 'stretch' }}
             />
           )}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -18,7 +18,11 @@ const TIPS = ['Utilisez une bonne lumière', 'Cadrez toute la page', `Jusqu'à $
 
 export default function ScanScreen() {
   const router = useRouter();
-  const { child, addLesson, addXP } = useChild();
+  // échéance à laquelle rattacher automatiquement la leçon scannée
+  const params = useLocalSearchParams<{ echeanceId?: string }>();
+  const echeanceId = typeof params.echeanceId === 'string' ? params.echeanceId : undefined;
+  const { child, addLesson, addXP, updateEcheance } = useChild();
+  const echeance = echeanceId ? child?.echeances?.find((e) => e.id === echeanceId) : undefined;
   const [scanning, setScanning] = useState(false);
   // pages photographiées ou importées (base64), dans l'ordre
   const [pages, setPages] = useState<string[]>([]);
@@ -125,9 +129,16 @@ export default function ScanScreen() {
         imageBase64: firstImage && firstImage.length < 1500000 ? firstImage : undefined,
       });
       addXP(child.id, 10, 'lesson_scan');
+      // rattachement direct à l'échéance d'origine (aucune étape intermédiaire)
+      if (echeance) {
+        updateEcheance(child.id, echeance.id, {
+          lessonIds: [...(echeance.lessonIds ?? []), lesson.id],
+        });
+      }
       setScanning(false);
       setPages([]);
-      router.push(`/result?lessonId=${lesson.id}` as any);
+      if (echeance) router.replace(`/echeance-detail?id=${echeance.id}` as any);
+      else router.push(`/result?lessonId=${lesson.id}` as any);
     } catch (e) {
       setScanning(false);
       if (e instanceof AiError && e.code === 'NO_KEY') {
@@ -154,7 +165,9 @@ export default function ScanScreen() {
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={s.title}>Scanner une leçon</Text>
-              <Text style={s.sub}>Photos, galerie ou fichier (PDF, Word…)</Text>
+              <Text style={s.sub}>
+                {echeance ? `Sera rattachée à : ${echeance.type} de ${echeance.subj}` : 'Photos, galerie ou fichier (PDF, Word…)'}
+              </Text>
             </View>
             <View style={s.iaPill}>
               <Ionicons name="sparkles" size={13} color={DK.cyan} />

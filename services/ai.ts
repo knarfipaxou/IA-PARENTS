@@ -400,24 +400,6 @@ export interface EcheanceLite {
   consigne?: string;
 }
 
-export interface LessonSuggestions {
-  suggestions: { lessonId: string; raison: string }[];
-}
-
-export async function suggestLessons(echeance: EcheanceLite, lessons: LessonLite[], child: Child): Promise<LessonSuggestions> {
-  const text = await askClaude({
-    system: SYSTEM,
-    user: `${childCtx(child)}
-Contrôle à venir: ${JSON.stringify(echeance)}
-Leçons enregistrées de l'enfant: ${JSON.stringify(lessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume })))}
-Compare la matière, le titre, les notions et le résumé de chaque leçon avec le contrôle (matière, titre, consigne). Renvoie uniquement les leçons probablement concernées par ce contrôle:
-{"suggestions": [{"lessonId": "id de la leçon", "raison": "explication courte en une phrase"}]}
-Si aucune leçon ne correspond, renvoie {"suggestions": []}. ${JSON_ONLY}`,
-    maxTokens: 2048,
-  });
-  return extractJSON<LessonSuggestions>(text);
-}
-
 export type ControlKind = 'fiche' | 'exercices' | 'minitest' | 'controle' | 'piege';
 
 function lessonsBlock(lessons: LessonLite[]): string {

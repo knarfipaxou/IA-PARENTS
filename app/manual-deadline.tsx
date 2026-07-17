@@ -18,23 +18,18 @@ type FormState = {
   matiere: string;
   type: string;
   date: string;
-  notions: string;
-  priorite: string;
+  typePerso: string;
 };
 
 const TYPES = ['Contrôle', 'Composition', 'Dictée', 'Exposé'];
-const PRIOS: { label: string; accent: AccentKey }[] = [
-  { label: 'Basse', accent: 'green' },
-  { label: 'Moyenne', accent: 'amber' },
-  { label: 'Haute', accent: 'coral' },
-];
+const TYPE_AUTRE = 'Autre';
 
 export default function ManualDeadline() {
   const router = useRouter();
   const { child, addEcheance } = useChild();
   const scheme = useScheme();
   const [calOpen, setCalOpen] = useState(false);
-  const [form, setForm] = useState<FormState>({ matiere: '', type: 'Contrôle', date: '', notions: '', priorite: 'Moyenne' });
+  const [form, setForm] = useState<FormState>({ matiere: '', type: 'Contrôle', date: '', typePerso: '' });
 
   function set(k: keyof FormState, v: string) {
     setForm((prev) => ({ ...prev, [k]: v }));
@@ -47,6 +42,11 @@ export default function ManualDeadline() {
     }
     if (!form.matiere.trim()) {
       Alert.alert('Matière manquante', "Touchez l'icône de la matière concernée.");
+      return;
+    }
+    const typeFinal = form.type === TYPE_AUTRE ? form.typePerso.trim() : form.type;
+    if (!typeFinal) {
+      Alert.alert('Type manquant', "Saisissez l'intitulé de l'évaluation (ex : Oral, Devoir maison…).");
       return;
     }
     const accents: AccentKey[] = ['green', 'violet', 'coral', 'blue', 'amber'];
@@ -62,13 +62,15 @@ export default function ManualDeadline() {
     addEcheance(child.id, {
       id: `ech-${Date.now()}`,
       subj: form.matiere.trim(),
-      type: form.type,
+      type: typeFinal,
       date: form.date.trim() || 'À définir',
       days,
       status: 'confirme',
       accent: accents[(child.echeances?.length ?? 0) % accents.length],
       icon: 'school-outline',
-      urg: form.priorite === 'Haute',
+      // la priorité n'est plus saisie : elle est déduite automatiquement
+      // (proximité de la date, niveau de maîtrise) par les écrans qui l'affichent
+      urg: days <= 3,
     });
     router.push('/(child-tabs)/echeances' as any);
   }
@@ -112,7 +114,7 @@ export default function ManualDeadline() {
           <View>
             <Text style={s.fieldLabel}>Type d'évaluation</Text>
             <View style={s.pillsRow}>
-              {TYPES.map((ty) => {
+              {[...TYPES, TYPE_AUTRE].map((ty) => {
                 const on = form.type === ty;
                 return (
                   <TouchableOpacity
@@ -125,6 +127,19 @@ export default function ManualDeadline() {
                 );
               })}
             </View>
+            {form.type === TYPE_AUTRE && (
+              <View style={[s.inputRow, { marginTop: 10 }]}>
+                <Ionicons name="create-outline" size={19} color={T.faint} style={{ marginRight: 10 }} />
+                <TextInput
+                  style={s.input}
+                  value={form.typePerso}
+                  onChangeText={(v) => set('typePerso', v)}
+                  placeholder="Oral, Devoir maison, Brevet blanc, Récitation…"
+                  placeholderTextColor={T.faint}
+                  autoFocus
+                />
+              </View>
+            )}
           </View>
 
           {/* Date : sélection via calendrier (aucune saisie clavier) */}
@@ -139,39 +154,6 @@ export default function ManualDeadline() {
             </TouchableOpacity>
           </View>
 
-          {/* Notions */}
-          <View>
-            <Text style={s.fieldLabel}>Notions à réviser</Text>
-            <View style={s.inputRow}>
-              <Ionicons name="text-outline" size={19} color={T.faint} style={{ marginRight: 10 }} />
-              <TextInput
-                style={s.input}
-                value={form.notions}
-                onChangeText={(v) => set('notions', v)}
-                placeholder="Fractions, proportions…"
-                placeholderTextColor={T.faint}
-              />
-            </View>
-          </View>
-
-          {/* Priorité */}
-          <View>
-            <Text style={s.fieldLabel}>Priorité</Text>
-            <View style={s.prioRow}>
-              {PRIOS.map((p) => {
-                const on = form.priorite === p.label;
-                return (
-                  <TouchableOpacity
-                    key={p.label}
-                    onPress={() => set('priorite', p.label)}
-                    style={[s.prioBtn, on && { backgroundColor: T[p.accent].soft, borderColor: T[p.accent].solid }]}
-                  >
-                    <Text style={[s.prioText, on && { color: T[p.accent].fg }]}>{p.label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
         </Card>
 
         <View style={{ height: 24 }} />
@@ -211,13 +193,6 @@ const s = StyleSheet.create({
   pillOn: { backgroundColor: T.primary, borderColor: T.primary },
   pillText: { fontWeight: '700', fontSize: 14, color: T.ink },
   pillTextOn: { color: '#fff' },
-  prioRow: { flexDirection: 'row', gap: 8 },
-  prioBtn: {
-    flex: 1, borderRadius: 12, paddingVertical: 11,
-    alignItems: 'center',
-    backgroundColor: T.surfaceAlt, borderWidth: 1.5, borderColor: 'transparent',
-  },
-  prioText: { fontWeight: '700', fontSize: 14, color: T.sub },
   subjectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   subjectTile: {
     width: '22.5%', alignItems: 'center', borderRadius: 16, paddingVertical: 8, paddingHorizontal: 3,

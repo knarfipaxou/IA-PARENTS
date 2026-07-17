@@ -112,7 +112,7 @@ export default function EcheanceDetail() {
             </View>
             <TouchableOpacity
               style={s.metaPill}
-              onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)}
+              onPress={() => router.push(`/scan?echeanceId=${echeance.id}` as any)}
               activeOpacity={0.8}
             >
               <Text style={s.metaPillText}>• {linked.length} {linked.length > 1 ? 'leçons liées' : 'leçon liée'}</Text>
@@ -274,14 +274,30 @@ export default function EcheanceDetail() {
           </TouchableOpacity>
 
           {linked.length === 0 && (
-            <TouchableOpacity
-              onPress={() => router.push(`/link-lessons?echeanceId=${echeance.id}` as any)}
-              style={s.warnBox}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="warning" size={18} color={DK.red} />
-              <Text style={s.warnText}>Aucune leçon rattachée : rattachez une leçon pour lancer le parcours de maîtrise et le devoir blanc.</Text>
-            </TouchableOpacity>
+            <>
+              <View style={s.warnBox}>
+                <Ionicons name="warning" size={18} color={DK.red} />
+                <Text style={s.warnText}>Aucune leçon rattachée : rattachez une leçon pour lancer le parcours de maîtrise et le devoir blanc.</Text>
+              </View>
+              {/* action PRINCIPALE : scan direct, rattachement automatique */}
+              <TouchableOpacity
+                onPress={() => router.push(`/scan?echeanceId=${echeance.id}` as any)}
+                activeOpacity={0.88}
+              >
+                <LinearGradient
+                  colors={['#1FB8A8', DK.cyan]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={s.attachBtn}
+                >
+                  <Ionicons name="scan" size={22} color="#052A26" />
+                  <Text style={s.attachBtnText}>Rattacher une leçon</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <Text style={s.attachHint}>
+                Photo, galerie ou fichier (PDF, Word…) — la leçon sera rattachée
+                automatiquement à cette échéance.
+              </Text>
+            </>
           )}
 
           <View style={{ height: 24 }} />
@@ -383,4 +399,11 @@ const s = StyleSheet.create({
     borderRadius: 18, padding: 13, marginBottom: 12,
   },
   warnText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: DK.red, lineHeight: 18 },
+  attachBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    borderRadius: 999, paddingVertical: 18,
+    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.45, shadowRadius: 24, elevation: 8,
+  },
+  attachBtnText: { color: '#052A26', fontSize: 17, fontWeight: '900', letterSpacing: -0.2 },
+  attachHint: { color: DK.faint, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 10, lineHeight: 17 },
 });
