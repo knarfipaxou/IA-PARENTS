@@ -128,7 +128,7 @@ export default function GenerateScreen() {
       let result: any;
       if (echeanceMode && echeance) {
         const eLite = { subj: echeance.subj, type: echeance.type, date: echeance.date, titre: echeance.titre, consigne: echeance.consigne };
-        const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume, texte: l.texte }));
+        const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume, texte: l.texte, programme: l.programme }));
         if (kind === 'planning') result = await generatePlanning(eLite, lLite, child);
         else result = await generateForControl(kind as ControlKind, eLite, lLite, child);
         // persist on the échéance so the content is never lost

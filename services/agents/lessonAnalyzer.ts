@@ -1,5 +1,6 @@
 import { askClaude, extractJSON, type EcheanceLite, type LessonLite } from '../ai';
 import { salvageArray } from '../../lib/jsonSalvage';
+import { buildProgramContext } from '../education/programmes';
 import type { Child } from '../../data/mock';
 import { validateLessonAnalysis, type LessonAnalysis2 } from './types';
 
@@ -33,6 +34,7 @@ export async function runLessonAnalyzer(
     system: SYSTEM,
     user: `Élève : ${child.name}, classe ${child.classe}, ${child.age} ans.
 Il prépare : ${echeance.type} de ${echeance.subj} (${echeance.date})${echeance.consigne ? ` — consigne du professeur : ${echeance.consigne}` : ''}.
+${buildProgramContext(lessons.map((l) => l.programme))}
 Voici la ou les leçons à analyser INTÉGRALEMENT :
 ${lessonsBlock}
 

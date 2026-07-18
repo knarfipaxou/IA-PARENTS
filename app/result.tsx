@@ -10,6 +10,7 @@ import { Card } from '../components/ui/Card';
 import { Squircle } from '../components/ui/Squircle';
 import { TopBar } from '../components/ui/TopBar';
 import { useChild, type SavedLesson } from '../contexts/ChildContext';
+import { ProgramCard } from '../components/ProgramCard';
 
 const ACTIONS: { kind: string; label: string; desc: string; icon: string; accent: AccentKey }[] = [
   { kind: 'fiche', label: 'Créer la fiche de révision', desc: 'Résumé structuré avec points clés', icon: 'document-text-outline', accent: 'green' },
@@ -21,7 +22,7 @@ const ACTIONS: { kind: string; label: string; desc: string; icon: string; accent
 export default function ResultScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ lessonId?: string }>();
-  const { child, lessons } = useChild();
+  const { child, lessons, updateLesson } = useChild();
   const lessonId = typeof params.lessonId === 'string' ? params.lessonId : undefined;
   const lesson: SavedLesson | undefined = lessonId
     ? lessons.find((l) => l.id === lessonId)
@@ -100,6 +101,14 @@ export default function ResultScreen() {
           </View>
           <Text style={s.resumeText}>{lesson.resume}</Text>
         </Card>
+
+        {/* Programme officiel identifié (data.education.gouv.fr) */}
+        {lesson.programme && (
+          <ProgramCard
+            programme={lesson.programme}
+            onUpdate={(p) => updateLesson(lesson.id, { programme: p })}
+          />
+        )}
 
         {/* Actions */}
         <Text style={s.sectionLabel}>QUE GÉNÉRER POUR {child.name.toUpperCase()} ?</Text>

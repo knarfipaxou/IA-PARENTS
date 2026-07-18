@@ -12,6 +12,7 @@ import { useChild } from '../contexts/ChildContext';
 import { pickImage, pickManyFromLibrary, toApiBase64 } from '../lib/camera';
 import { extractDocxText } from '../lib/docText';
 import { analyzeLessonSources, AiError, type LessonSources } from '../services/ai';
+import { identifyProgram } from '../services/education/programmes';
 
 const MAX_PAGES = 20;
 const TIPS = ['Utilisez une bonne lumière', 'Cadrez toute la page', `Jusqu'à ${MAX_PAGES} pages par leçon`];
@@ -21,7 +22,7 @@ export default function ScanScreen() {
   // échéance à laquelle rattacher automatiquement la leçon scannée
   const params = useLocalSearchParams<{ echeanceId?: string }>();
   const echeanceId = typeof params.echeanceId === 'string' ? params.echeanceId : undefined;
-  const { child, addLesson, addXP, updateEcheance } = useChild();
+  const { child, addLesson, addXP, updateEcheance, updateLesson } = useChild();
   const echeance = echeanceId ? child?.echeances?.find((e) => e.id === echeanceId) : undefined;
   const [scanning, setScanning] = useState(false);
   // pages photographiées ou importées (base64), dans l'ordre
@@ -129,6 +130,14 @@ export default function ScanScreen() {
         imageBase64: firstImage && firstImage.length < 1500000 ? firstImage : undefined,
       });
       addXP(child.id, 10, 'lesson_scan');
+      // identification du programme officiel (non bloquante : comparaison
+      // réelle avec les données data.education.gouv.fr, jamais inventée)
+      identifyProgram(
+        { matiere: result.matiere, titre: result.titre, notions: result.notions, resume: result.resume, texte: result.texte },
+        child.classe,
+      ).then((prog) => {
+        if (prog) updateLesson(lesson.id, { programme: prog });
+      }).catch(() => { /* API indisponible : la leçon reste utilisable sans programme */ });
       // rattachement direct à l'échéance d'origine (aucune étape intermédiaire)
       if (echeance) {
         updateEcheance(child.id, echeance.id, {

@@ -28,4 +28,6 @@ export interface SavedLesson {
   exercices?: Exercises;
   minitest?: MiniTest;
   controleBlanc?: MockExam;
+  // rattachement au programme officiel (data.education.gouv.fr) + validation parent
+  programme?: import('../../services/education/programmes').LessonProgram;
 }

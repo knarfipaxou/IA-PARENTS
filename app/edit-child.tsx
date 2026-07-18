@@ -8,6 +8,8 @@ import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
 import { Btn, GhostBtn } from '../components/ui/Btn';
 import { useChild } from '../contexts/ChildContext';
+import { SchoolPicker } from '../components/SchoolPicker';
+import type { EtablissementScolaire } from '../services/education/annuaire';
 import type { MatiereStat } from '../data/mock';
 import type { ChildProfile, SchoolLevel, LearningObjective, DrillDuration, WorkRhythm, ParentTone } from '../types/childProfile';
 
@@ -57,7 +59,12 @@ export default function EditChild() {
   const [matieres, setMatieres] = useState<string[]>(child ? child.matieres.map((m) => m.s) : []);
 
   // Profil personnalisé
-  const [etablissement, setEtablissement] = useState(existingProfile?.etablissement ?? '');
+  const [etablissement, setEtablissement] = useState<EtablissementScolaire | null>(
+    existingProfile?.etablissementInfo
+      ?? (existingProfile?.etablissement
+        ? { uai: '', nom: existingProfile.etablissement, type: 'Établissement', statut: '', fetchedAt: '', source: 'Saisie manuelle', manuel: true }
+        : null),
+  );
   const [niveau, setNiveau] = useState<SchoolLevel>(existingProfile?.niveauEstime ?? 'moyen');
   const [objectif, setObjectif] = useState<LearningObjective>(existingProfile?.objectif ?? 'bon_niveau');
   const [duree, setDuree] = useState<DrillDuration>(existingProfile?.dureeQuotidienne ?? 20);
@@ -110,7 +117,8 @@ export default function EditChild() {
     // Profil personnalisé pour l'IA
     if (existingProfile) {
       updateProfile(child.id, {
-        etablissement: etablissement.trim() || undefined,
+        etablissement: etablissement?.nom || undefined,
+        etablissementInfo: etablissement ?? undefined,
         niveauEstime: niveau,
         objectif,
         matieresPrioritaires: matieres,
@@ -124,7 +132,8 @@ export default function EditChild() {
     } else {
       const profile: ChildProfile = {
         childId: child.id,
-        etablissement: etablissement.trim() || undefined,
+        etablissement: etablissement?.nom || undefined,
+        etablissementInfo: etablissement ?? undefined,
         pays: 'France',
         niveauEstime: niveau,
         objectif,
@@ -224,10 +233,7 @@ export default function EditChild() {
         <Card pad={18} style={{ marginTop: 12, gap: 18 }}>
           <View>
             <Text style={s.fieldLabel}>Établissement scolaire</Text>
-            <View style={s.inputRow}>
-              <Ionicons name="school-outline" size={19} color={T.faint} style={{ marginRight: 10 }} />
-              <TextInput style={s.input} value={etablissement} onChangeText={setEtablissement} placeholder="Collège Victor Hugo" placeholderTextColor={T.faint} />
-            </View>
+            <SchoolPicker value={etablissement} onChange={setEtablissement} classe={classe} />
           </View>
 
           <View>

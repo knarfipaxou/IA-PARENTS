@@ -10,6 +10,8 @@ import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
 import { Btn } from '../components/ui/Btn';
 import { useChild } from '../contexts/ChildContext';
+import { SchoolPicker } from '../components/SchoolPicker';
+import type { EtablissementScolaire } from '../services/education/annuaire';
 import type { Child, CollegeChild, MaternelleChild, MatiereStat } from '../data/mock';
 import type { ChildProfile, SchoolLevel, LearningObjective, DrillDuration, WorkRhythm, ParentTone } from '../types/childProfile';
 
@@ -72,7 +74,7 @@ export default function AddChild() {
   const [prenom, setPrenom] = useState('');
   const [dateNaissance, setDateNaissance] = useState('');
   const [classe, setClasse] = useState('');
-  const [etablissement, setEtablissement] = useState('');
+  const [etablissement, setEtablissement] = useState<EtablissementScolaire | null>(null);
   const [matieres, setMatieres] = useState<string[]>(['Mathématiques', 'Français']);
   const [niveau, setNiveau] = useState<SchoolLevel>('moyen');
   const [objectif, setObjectif] = useState<LearningObjective>('bon_niveau');
@@ -132,7 +134,8 @@ export default function AddChild() {
     const profile: ChildProfile = {
       childId: newChild.id,
       dateNaissance: dnFormatted,
-      etablissement: etablissement.trim() || undefined,
+      etablissement: etablissement?.nom || undefined,
+      etablissementInfo: etablissement ?? undefined,
       pays: 'France',
       niveauEstime: niveau,
       objectif,
@@ -176,10 +179,7 @@ export default function AddChild() {
           {theorique && <Text style={s.hintGreen}>Classe théorique détectée : {theorique}</Text>}
 
           <Text style={[s.fieldLabel, { marginTop: 14 }]}>Établissement scolaire</Text>
-          <View style={s.inputRow}>
-            <Ionicons name="school-outline" size={18} color={T.faint} />
-            <TextInput style={s.input} value={etablissement} onChangeText={setEtablissement} placeholder="Collège Victor Hugo, Paris" placeholderTextColor={T.faint} />
-          </View>
+          <SchoolPicker value={etablissement} onChange={setEtablissement} classe={classe} />
         </Card>
 
         {/* ── Classe ── */}

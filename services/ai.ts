@@ -1,4 +1,5 @@
 import { getJSON, setJSON } from '../lib/storage';
+import { buildProgramContext } from './education/programmes';
 import type { Child } from '../data/mock';
 
 // ─── API key management ─────────────────────────────────────────────────────
@@ -390,6 +391,8 @@ export interface LessonLite {
   resume: string;
   /** transcription complète de la leçon si disponible */
   texte?: string;
+  /** rattachement au programme officiel (contexte de génération) */
+  programme?: import('./education/programmes').LessonProgram;
 }
 
 export interface EcheanceLite {
@@ -418,8 +421,10 @@ export async function generateForControl(
   lessons: LessonLite[],
   child: Child
 ): Promise<any> {
+  const progCtx = buildProgramContext(lessons.map((l) => l.programme));
   const ctx = `${childCtx(child)}
 L'enfant prépare: ${echeance.type} de ${echeance.subj} (${echeance.date})${echeance.titre ? ` — ${echeance.titre}` : ''}${echeance.consigne ? `\nConsigne du professeur: ${echeance.consigne}` : ''}
+${progCtx}
 Le contenu doit couvrir TOUTES les leçons suivantes (mélange les notions):
 ${lessonsBlock(lessons)}`;
 

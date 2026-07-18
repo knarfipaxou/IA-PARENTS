@@ -97,7 +97,9 @@ export type ErrorType =
 export interface ChildProfile {
   childId: string;
   dateNaissance?: string;         // ISO date string "YYYY-MM-DD"
-  etablissement?: string;         // school name
+  etablissement?: string;         // school name (affichage / compat)
+  // fiche officielle de l'établissement (annuaire Éducation nationale, réf. = code UAI)
+  etablissementInfo?: import('../services/education/annuaire').EtablissementScolaire;
   pays?: string;                  // default "France"
   niveauEstime: SchoolLevel;
   objectif: LearningObjective;

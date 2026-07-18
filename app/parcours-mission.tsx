@@ -85,7 +85,7 @@ export default function ParcoursMissionScreen() {
         return;
       }
       const eLite = { subj: echeance.subj, type: echeance.type, date: echeance.date, titre: echeance.titre, consigne: echeance.consigne };
-      const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume, texte: l.texte }));
+      const lLite = linkedLessons.map((l) => ({ id: l.id, matiere: l.matiere, titre: l.titre, notions: l.notions, resume: l.resume, texte: l.texte, programme: l.programme }));
 
       // 1. analyse de la leçon (lesson-analyzer) : une seule fois, puis réutilisée
       // (« Régénérer » force aussi une nouvelle analyse, utile après un nouveau scan)
