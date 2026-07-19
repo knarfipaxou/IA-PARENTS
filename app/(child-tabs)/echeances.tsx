@@ -15,7 +15,9 @@ import { DeadlineCard } from '../../components/DeadlineCard';
 
 export default function EcheancesScreen() {
   const router = useRouter();
-  const { child } = useChild();
+  const { child, lessons } = useChild();
+  const lessonTitlesFor = (ids?: string[]) =>
+    (ids ?? []).map((id) => lessons.find((l) => l.id === id)?.titre).filter((t): t is string => !!t);
   const scheme = useScheme();
   // uniquement les échéances à venir (dépassées exclues), jours recalculés,
   // triées de la plus proche à la plus lointaine
@@ -81,7 +83,7 @@ export default function EcheancesScreen() {
                   onPress={() => router.push(`/echeance-detail?id=${it.id}` as any)}
                   activeOpacity={0.88}
                 >
-                  <DeadlineCard e={it} mastery={masteryFor(it.subj)} scheme={scheme} noLesson={noLesson} />
+                  <DeadlineCard e={it} mastery={masteryFor(it.subj)} scheme={scheme} noLesson={noLesson} lessonTitles={lessonTitlesFor(it.lessonIds)} />
                 </TouchableOpacity>
               );
             })}

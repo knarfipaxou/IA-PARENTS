@@ -113,7 +113,9 @@ export default function EspaceScreen() {
   const scheme = useScheme();
   const P = scheme === 'light' ? PALETTES.light : PALETTES.dark;
   const A = scheme === 'light' ? ART.light : ART.dark;
-  const { child, setChild, updateChild, gamification } = useChild();
+  const { child, setChild, updateChild, gamification, lessons } = useChild();
+  const lessonTitlesFor = (ids?: string[]) =>
+    (ids ?? []).map((id) => lessons.find((l) => l.id === id)?.titre).filter((t): t is string => !!t);
   // toutes les échéances à venir (toutes matières et tous types d'évaluation)
   const controles = child?.echeances ?? [];
 
@@ -182,7 +184,7 @@ export default function EspaceScreen() {
   // 3 cartes verticales côte à côte (maquette) — « Préparer un contrôle » retiré
   const TILES = [
     { img: A.drill, title: 'Drill du jour', desc: 'Exercices quotidiens IA adaptés à ses besoins', route: '/drill', accent: '#2BC48A', bodyBg: P.scheme === 'dark' ? '#01313F' : '#F0FAF7' },
-    { img: A.scan, title: 'Scanner une leçon', desc: 'Fiches, exercices, devoir blanc IA', route: '/scan', accent: '#3D7BFF', bodyBg: P.scheme === 'dark' ? '#0A1E4A' : '#F2F6FE' },
+    { img: A.scan, title: 'Scanner une leçon', desc: 'Parcours de maîtrise & devoir blanc IA', route: '/scan', accent: '#3D7BFF', bodyBg: P.scheme === 'dark' ? '#0A1E4A' : '#F2F6FE' },
     { img: A.agenda, title: "Scanner l'agenda", desc: 'Contrôles & échéances', route: '/scan-agenda', accent: '#2E9E5B', bodyBg: P.scheme === 'dark' ? '#0A2E22' : '#F2FAF4' },
   ];
   const visibleTiles = isCollege ? TILES : TILES.slice(2, 3);
@@ -264,7 +266,7 @@ export default function EspaceScreen() {
                     onPress={() => router.push(`/echeance-detail?id=${e.id}` as any)}
                     activeOpacity={0.85}
                   >
-                    <DeadlineCard e={e} mastery={masteryFor(e.subj)} scheme={P.scheme} />
+                    <DeadlineCard e={e} mastery={masteryFor(e.subj)} scheme={P.scheme} lessonTitles={lessonTitlesFor(e.lessonIds)} />
                   </TouchableOpacity>
                 ))}
               </View>

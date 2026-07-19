@@ -22,13 +22,15 @@ export interface DeadlineCardData {
  * maîtrise < 80 % ou non évalué.
  */
 export function DeadlineCard({
-  e, mastery, scheme, noLesson,
+  e, mastery, scheme, noLesson, lessonTitles,
 }: {
   e: DeadlineCardData;
   /** dernier devoir blanc de la matière (null = non évalué) */
   mastery: { pct: number; note: number } | null;
   scheme: 'dark' | 'light';
   noLesson?: boolean;
+  /** titres des leçons rattachées à l'échéance */
+  lessonTitles?: string[];
 }) {
   const light = scheme === 'light';
   const alert = !mastery || mastery.pct < 80;
@@ -47,6 +49,16 @@ export function DeadlineCard({
           <Text style={[s.title, light && { color: '#1B2559' }]} numberOfLines={1}>
             {e.type} de {e.subj}
           </Text>
+
+          {/* leçon(s) rattachée(s) */}
+          {lessonTitles && lessonTitles.length > 0 && (
+            <View style={s.lessonRow}>
+              <Ionicons name="book" size={11} color={light ? '#7B52F0' : '#B39DFF'} />
+              <Text style={[s.lessonText, { color: light ? '#7B52F0' : '#B39DFF' }]} numberOfLines={1}>
+                {lessonTitles.join(' · ')}
+              </Text>
+            </View>
+          )}
 
           {/* date + note du dernier devoir blanc */}
           <View style={s.metaRow}>
@@ -91,6 +103,8 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, paddingHorizontal: 14 },
   icon: { width: 62, height: 66, borderRadius: 16 },
   title: { fontSize: 17, fontWeight: '800', color: '#fff', letterSpacing: -0.35 },
+  lessonRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+  lessonText: { flex: 1, fontSize: 12.5, fontWeight: '700', letterSpacing: -0.1 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 6 },
   date: { fontSize: 13.5, color: 'rgba(190,202,240,0.75)', fontWeight: '600' },
   dbChip: { borderWidth: 1.1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },

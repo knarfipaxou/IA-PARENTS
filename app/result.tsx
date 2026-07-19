@@ -13,9 +13,6 @@ import { useChild, type SavedLesson } from '../contexts/ChildContext';
 import { ProgramCard } from '../components/ProgramCard';
 
 const ACTIONS: { kind: string; label: string; desc: string; icon: string; accent: AccentKey }[] = [
-  { kind: 'fiche', label: 'Créer la fiche de révision', desc: 'Résumé structuré avec points clés', icon: 'document-text-outline', accent: 'green' },
-  { kind: 'exercices', label: 'Exercices', desc: '5 QCM interactifs', icon: 'pencil-outline', accent: 'amber' },
-  { kind: 'minitest', label: 'Mini-test', desc: '3 questions avec score', icon: 'flash-outline', accent: 'blue' },
   { kind: 'controle', label: 'Devoir blanc complet', desc: 'Comme en classe, corrigé par critères', icon: 'school-outline', accent: 'coral' },
 ];
 

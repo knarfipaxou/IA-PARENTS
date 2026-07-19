@@ -13,9 +13,6 @@ import { useChild, type SavedLesson } from '../contexts/ChildContext';
 import { formatLessonDate } from '../lib/matiere';
 
 const ACTIONS: { kind: string; field: keyof SavedLesson; label: string; desc: string; icon: string; accent: AccentKey }[] = [
-  { kind: 'fiche', field: 'fiche', label: 'Fiche de révision', desc: 'Résumé structuré avec points clés', icon: 'document-text-outline', accent: 'green' },
-  { kind: 'exercices', field: 'exercices', label: 'Exercices', desc: '5 QCM interactifs', icon: 'pencil-outline', accent: 'amber' },
-  { kind: 'minitest', field: 'minitest', label: 'Mini-test', desc: '3 questions avec score', icon: 'flash-outline', accent: 'blue' },
   { kind: 'controle', field: 'controleBlanc', label: 'Devoir blanc complet', desc: 'Comme en classe, corrigé par critères', icon: 'school-outline', accent: 'coral' },
 ];
 
@@ -108,7 +105,11 @@ export default function LessonDetailScreen() {
         </Card>
 
         {/* Contenus IA */}
-        <Text style={s.sectionLabel}>CONTENUS IA</Text>
+        <Text style={s.sectionLabel}>CONTENU IA</Text>
+        <Text style={s.sectionHint}>
+          Le parcours de maîtrise (missions Mémoire, Compréhension, Application, Défi)
+          se lance en rattachant cette leçon à un contrôle, ci-dessous.
+        </Text>
         <View style={s.actionsList}>
           {ACTIONS.map((a) => {
             const done = !!lesson[a.field];
@@ -204,7 +205,8 @@ const s = StyleSheet.create({
   notionsList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   notionChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: T.primarySoft, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 13 },
   notionText: { fontSize: 14, fontWeight: '700', color: T.primaryDeep, letterSpacing: -0.2 },
-  sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 22, marginBottom: 12, letterSpacing: 0.2 },
+  sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 22, marginBottom: 8, letterSpacing: 0.2 },
+  sectionHint: { fontSize: 12.5, color: T.faint, fontWeight: '500', lineHeight: 18, marginBottom: 12 },
   actionsList: { gap: 11 },
   actionRow: {
     flexDirection: 'row', alignItems: 'center',

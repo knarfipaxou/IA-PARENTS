@@ -64,6 +64,10 @@ export async function askClaude({ system, user, imageBase64, imagesBase64, pdfBa
   }
   content.push({ type: 'text', text: user });
 
+  // délai maximal par appel : sans lui, une connexion qui « pend » laisse
+  // l'écran tourner indéfiniment sans erreur ni résultat
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 150000);
   let res: Response;
   try {
     res = await fetch(API_URL, {
@@ -79,9 +83,14 @@ export async function askClaude({ system, user, imageBase64, imagesBase64, pdfBa
         system,
         messages: [{ role: 'user', content }],
       }),
+      signal: controller.signal,
     });
   } catch {
-    throw new AiError('NETWORK', 'Impossible de joindre le serveur. Vérifiez votre connexion.');
+    throw new AiError('NETWORK', controller.signal.aborted
+      ? "La génération a pris trop de temps (2 min 30). Réessayez — la connexion est peut-être instable."
+      : 'Impossible de joindre le serveur. Vérifiez votre connexion.');
+  } finally {
+    clearTimeout(timer);
   }
 
   if (res.status === 401 || res.status === 403) {

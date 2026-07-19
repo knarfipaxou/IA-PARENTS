@@ -122,6 +122,27 @@ export default function EcheanceDetail() {
             </View>
           </View>
 
+          {/* ── Leçons rattachées ── */}
+          {linked.length > 0 && (
+            <TouchableOpacity
+              onPress={() => router.push(`/attach-lesson?echeanceId=${echeance.id}` as any)}
+              activeOpacity={0.85}
+              style={s.lessonsCard}
+            >
+              <View style={s.lessonsHead}>
+                <Ionicons name="book" size={15} color="#C9A0FF" />
+                <Text style={s.lessonsTitle}>{linked.length > 1 ? 'Leçons rattachées' : 'Leçon rattachée'}</Text>
+                <Ionicons name="create-outline" size={15} color={DK.sub} style={{ marginLeft: 'auto' }} />
+              </View>
+              {linked.map((l) => (
+                <View key={l.id} style={s.lessonItem}>
+                  <Image source={subjectIcon(l.matiere, 'dark')} style={s.lessonItemIcon} />
+                  <Text style={s.lessonItemText} numberOfLines={1}>{l.titre}</Text>
+                </View>
+              ))}
+            </TouchableOpacity>
+          )}
+
           {/* ── Niveau de préparation (basé sur le devoir blanc uniquement) ── */}
           <View style={s.mainCard}>
             {mainPct === null ? (
@@ -349,6 +370,15 @@ const s = StyleSheet.create({
   },
   metaPillText: { color: DK.sub, fontWeight: '700', fontSize: 12.5 },
 
+  lessonsCard: {
+    backgroundColor: 'rgba(139,124,246,0.08)', borderWidth: 1, borderColor: 'rgba(150,110,255,0.3)',
+    borderRadius: 20, padding: 14, marginBottom: 14,
+  },
+  lessonsHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 },
+  lessonsTitle: { color: DK.ink, fontSize: 13, fontWeight: '800', letterSpacing: 0.3, textTransform: 'uppercase' },
+  lessonItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
+  lessonItemIcon: { width: 34, height: 37, borderRadius: 10 },
+  lessonItemText: { flex: 1, color: 'rgba(230,236,255,0.92)', fontSize: 14, fontWeight: '700', letterSpacing: -0.2 },
   mainCard: {
     backgroundColor: 'rgba(19,26,58,0.55)', borderWidth: 1, borderColor: DK.cardBorder,
     borderRadius: 26, padding: 20, marginBottom: 14,

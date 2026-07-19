@@ -103,10 +103,14 @@ export async function runMissionGenerator(
   child: Child,
 ): Promise<MissionQuestion[]> {
   const chunks = chunkKnowledge(scopedKnowledge);
+  // les lots sont générés EN PARALLÈLE : une leçon de 5 pages (4-5 lots) prend
+  // le temps du lot le plus lent, pas la somme des lots
+  const results = await Promise.all(
+    chunks.map((chunk, c) => generateChunk(missionType, chunk, echeance, child, c)),
+  );
   const all: MissionQuestion[] = [];
   const seen = new Set<string>();
-  for (let c = 0; c < chunks.length; c++) {
-    const questions = await generateChunk(missionType, chunks[c], echeance, child, c);
+  for (const questions of results) {
     for (const q of questions) {
       // ids uniques même si l'IA ignore le préfixe demandé
       let id = q.question_id ?? `Q${all.length + 1}`;
