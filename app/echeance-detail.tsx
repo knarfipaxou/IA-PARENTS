@@ -112,7 +112,7 @@ export default function EcheanceDetail() {
             </View>
             <TouchableOpacity
               style={s.metaPill}
-              onPress={() => router.push(`/scan?echeanceId=${echeance.id}` as any)}
+              onPress={() => router.push(`/attach-lesson?echeanceId=${echeance.id}` as any)}
               activeOpacity={0.8}
             >
               <Text style={s.metaPillText}>• {linked.length} {linked.length > 1 ? 'leçons liées' : 'leçon liée'}</Text>
@@ -279,9 +279,9 @@ export default function EcheanceDetail() {
                 <Ionicons name="warning" size={18} color={DK.red} />
                 <Text style={s.warnText}>Aucune leçon rattachée : rattachez une leçon pour lancer le parcours de maîtrise et le devoir blanc.</Text>
               </View>
-              {/* action PRINCIPALE : scan direct, rattachement automatique */}
+              {/* actions PRINCIPALES : leçon existante ou nouveau scan */}
               <TouchableOpacity
-                onPress={() => router.push(`/scan?echeanceId=${echeance.id}` as any)}
+                onPress={() => router.push(`/attach-lesson?echeanceId=${echeance.id}` as any)}
                 activeOpacity={0.88}
               >
                 <LinearGradient
@@ -289,13 +289,21 @@ export default function EcheanceDetail() {
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                   style={s.attachBtn}
                 >
-                  <Ionicons name="scan" size={22} color="#052A26" />
-                  <Text style={s.attachBtnText}>Rattacher une leçon</Text>
+                  <Ionicons name="link" size={22} color="#052A26" />
+                  <Text style={s.attachBtnText}>Rattacher une leçon existante</Text>
                 </LinearGradient>
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push(`/scan?echeanceId=${echeance.id}` as any)}
+                style={s.attachBtnGhost}
+                activeOpacity={0.88}
+              >
+                <Ionicons name="scan" size={20} color={DK.cyan} />
+                <Text style={s.attachBtnGhostText}>Scanner une leçon</Text>
+              </TouchableOpacity>
               <Text style={s.attachHint}>
-                Photo, galerie ou fichier (PDF, Word…) — la leçon sera rattachée
-                automatiquement à cette échéance.
+                Choisissez une leçon déjà enregistrée, ou scannez-en une nouvelle
+                (photo, galerie ou fichier) : elle sera rattachée automatiquement.
               </Text>
             </>
           )}
@@ -405,5 +413,11 @@ const s = StyleSheet.create({
     shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.45, shadowRadius: 24, elevation: 8,
   },
   attachBtnText: { color: '#052A26', fontSize: 17, fontWeight: '900', letterSpacing: -0.2 },
+  attachBtnGhost: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+    borderWidth: 1.6, borderColor: 'rgba(53,228,210,0.55)', borderRadius: 999,
+    paddingVertical: 15, marginTop: 10,
+  },
+  attachBtnGhostText: { color: DK.cyan, fontSize: 15.5, fontWeight: '800' },
   attachHint: { color: DK.faint, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 10, lineHeight: 17 },
 });

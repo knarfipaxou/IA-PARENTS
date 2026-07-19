@@ -17,6 +17,7 @@ export default function RootLayout() {
           <Stack.Screen name="scan-agenda" />
           <Stack.Screen name="result" />
           <Stack.Screen name="echeance-detail" />
+          <Stack.Screen name="attach-lesson" />
           <Stack.Screen name="prepare-control" />
           <Stack.Screen name="manual-deadline" />
           <Stack.Screen name="add-child" />
