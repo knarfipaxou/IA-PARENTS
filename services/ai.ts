@@ -366,7 +366,8 @@ const OPEN_RULES = `RÈGLES ABSOLUES (non négociables) :
 - Les critères de réussite et les réponses attendues sont réservés au PARENT, jamais montrés à l'enfant.
 - Le barème valorise la méthode et la justification, pas seulement le résultat (ex : formule 1 pt, calcul 1 pt, unité + conclusion 1 pt).
 - Accepte les formulations équivalentes correctes ("accepted_variants").
-- "notion" est courte et précise (elle sert à classer les erreurs).`;
+- "notion" est courte et précise (elle sert à classer les erreurs).
+- SOIS CONCIS : réponse modèle, explication et mini-leçon en 1-2 phrases chacune ; JSON compact.`;
 
 const OPEN_QUESTION_FORMAT = `{"question_id": "Q1", "enonce": "consigne complète, autonome", "points_total": 3, "expected_answer": "réponse modèle complète", "accepted_variants": ["formulation équivalente acceptée"], "correction_criteria": [{"criterion_id": "Q1-C1", "label": "Formule écrite avant le calcul", "points": 1, "required_for_mastery": true}, {"criterion_id": "Q1-C2", "label": "Calcul exact", "points": 1, "required_for_mastery": true}, {"criterion_id": "Q1-C3", "label": "Unité et phrase de conclusion", "points": 1}], "common_errors": ["erreur classique"], "explication": "explication pédagogique de la bonne réponse", "mini_lecon": "mini-leçon corrective courte si l'enfant s'est trompé", "notion": "notion évaluée", "answer_space": "calcul"}
 "answer_space" ∈ courte (1-2 lignes), definition, explication, redaction, calcul, geometrie.

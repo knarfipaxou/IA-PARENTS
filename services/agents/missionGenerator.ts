@@ -19,6 +19,7 @@ RÈGLES ABSOLUES :
 - Ne supprime JAMAIS une connaissance essentielle pour raccourcir la mission.
 - Le barème valorise la méthode et la justification (critères précis, jamais « réponse correcte »).
 - Aucune question ne doit révéler la réponse d'une autre.
+- SOIS CONCIS : réponse modèle, explication et mini-leçon en 1-2 phrases chacune ; JSON compact.
 Tu réponds UNIQUEMENT en JSON valide, sans markdown ni texte autour.`;
 
 const MISSION_BRIEFS: Record<MissionType, string> = {
