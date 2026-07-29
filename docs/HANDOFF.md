@@ -143,8 +143,10 @@ Historique des commits, du plus ancien au plus récent :
    - Matching matière+niveau adapté à ces métadonnées. Live : leçon maths 5e →
      « Mathématiques : attendus de fin de 5e ».
 2. **Tester le flux complet school-picker → scan leçon → identification
-   programme → génération mission** sur device/simulateur réel, pas
-   seulement en web. (Simulateur iOS toujours indisponible en cloud Linux.)
+   programme → génération mission** sur device réel via **Expo Go**
+   (`npx expo start` + QR code — voir section ci-dessus), ou simulateur
+   iOS local sur Mac. Priorité : caméra / scan photo, non testables en
+   cloud Linux. Pas de soumission store (`eas submit`) en phase actuelle.
 3. Le moteur de progression (`lib/adaptation.ts`) et les règles
    pédagogiques transverses du CLAUDE.md s'appliquent à toute nouvelle
    génération — les relire avant de toucher aux agents IA
