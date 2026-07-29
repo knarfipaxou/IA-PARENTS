@@ -15,22 +15,35 @@ npm install
 npx expo start
 ```
 
-## ⚠️ Important : rien n'a été publié ni exposé à un téléphone depuis cette session
+## ⚠️ Important : qui a exposé quoi à un téléphone
 
-Cette session tourne dans un **conteneur cloud isolé, sans accès réseau
-vers l'extérieur** (pas de tunnel, pas d'exposition publique). À un
-moment, un serveur `expo start --web --offline` a été lancé, mais
-uniquement pour du test interne en Chromium headless sur `localhost` —
-**jamais accessible depuis un vrai téléphone, jamais de QR code partagé,
-aucun rafraîchissement possible côté Expo Go depuis cette conversation.**
+### Session Claude Code (conteneur cloud précédent)
 
-Si des mises à jour ont été vues sur un iPhone via Expo Go, elles
-viennent forcément d'un **autre environnement** (typiquement une session
-Claude Code desktop locale sur Mac, avec un vrai `expo start` exposé sur
-le réseau local). Ne pas supposer qu'un serveur est déjà actif ou qu'un
-appareil est déjà connecté en arrivant dans Cursor : il faut relancer
-`expo start` depuis Cursor/le Mac local pour obtenir un nouveau QR code
-valide.
+Aucun serveur Expo n'a été exposé à un téléphone. Un
+`expo start --web --offline` a servi uniquement à du test Chromium
+headless sur `localhost` — **pas de tunnel, pas de QR, pas de refresh
+Expo Go depuis cette conversation Claude Code.**
+
+Si des mises à jour ont été vues sur un iPhone via Expo Go à ce
+moment-là, elles venaient d'un **autre environnement** (souvent Claude
+Code desktop local sur Mac).
+
+### Session Cursor cloud (cette reprise)
+
+Contrairement à l'hypothèse « cloud = pas de réseau externe », **cette**
+session Cursor a un egress ouvert et un vrai tunnel Expo a été lancé :
+`npx expo start --tunnel --go` → hôte `*.exp.direct`. Un QR / lien
+`exp://…` peut donc être partagé depuis Cursor cloud.
+
+Le tunnel n'est valide que tant que la session Cursor tourne : à chaque
+nouvelle session, relancer `npx expo start --tunnel` pour un nouveau QR.
+
+### Ne pas confondre avec Vercel
+
+Le dashboard « Projects » (`ia-parents`, `la_parents`, etc. sous
+`@knarfipaxous-team`) est l'**app Vercel**, pas Expo Go. Ce n'est pas
+le serveur de dev mobile. Pour tester l'app native : ouvrir **Expo Go**
+et scanner le QR du `expo start` actif.
 
 ## Tester sur device réel : Expo Go
 
