@@ -41,14 +41,11 @@ Historique des commits, du plus ancien au plus récent :
      saisie manuelle, "École à la maison"
    - `components/ProgramCard.tsx` : affichage programme identifié +
      validation parent (Confirmer / Cycle seul / Incorrect)
-   - Tests : `__tests__/education.test.ts` (18 tests)
-   - ⚠️ **Non vérifié en conditions réelles** : l'environnement de dev de
-     cette session n'a pas accès réseau à data.education.gouv.fr (proxy
-     bloquant). Le code tolère les noms de champs inconnus par heuristique
-     regex, mais les schémas réels des datasets n'ont pas pu être
-     confirmés. **Premier test à faire dans Cursor** : lancer une vraie
-     recherche d'établissement et une identification de programme sur un
-     scan réel, vérifier que les champs sont bien mappés.
+   - Tests : `__tests__/education.test.ts` (22+ tests)
+   - ✅ **Schémas vérifiés en conditions réelles** (Cursor cloud, 2026-07-29) :
+     voir section « Points d'attention » et branche
+     `cursor/verify-education-schemas-eaae` (mapping explicite + pagination
+     + matching matière/niveau).
 
 2. **Deux actions distinctes pour rattacher une leçon** (`77e742f9`)
    - `app/attach-lesson.tsx` : liste à cocher des leçons enregistrées,
@@ -94,12 +91,21 @@ Historique des commits, du plus ancien au plus récent :
 
 ## Points d'attention pour la suite
 
-1. **Vérifier les schémas réels des datasets Éducation nationale** dès que
-   l'accès réseau est possible (voir point 1 ci-dessus) — c'est la plus
-   grosse zone d'incertitude du code livré.
+1. ~~**Vérifier les schémas réels des datasets Éducation nationale**~~ — **FAIT**
+   dans Cursor cloud (2026-07-29), branche `cursor/verify-education-schemas-eaae`.
+   Accès réseau OK. Corrections livrées :
+   - Annuaire : schémas confirmés à 13/13 champs ; `searchSchools` validé en
+     live (texte, CP, UAI).
+   - Programmes : mapping explicite du schéma Explore v2.1 réel
+     (`descriptif`, `discipline`, `niveau_d_enseignement`, `nature_du_complement`,
+     URLs PDF). Les datasets sont des **métadonnées** (titres + liens), pas le
+     corps des programmes — les URLs ne polluent plus le matching ; pagination
+     complète ; préférence aux programmes non abrogés ; filtre de cycle resserré.
+   - Matching matière+niveau adapté à ces métadonnées. Live : leçon maths 5e →
+     « Mathématiques : attendus de fin de 5e ».
 2. **Tester le flux complet school-picker → scan leçon → identification
    programme → génération mission** sur device/simulateur réel, pas
-   seulement en web.
+   seulement en web. (Simulateur iOS toujours indisponible en cloud Linux.)
 3. Le moteur de progression (`lib/adaptation.ts`) et les règles
    pédagogiques transverses du CLAUDE.md s'appliquent à toute nouvelle
    génération — les relire avant de toucher aux agents IA

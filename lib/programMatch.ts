@@ -91,8 +91,40 @@ export function matchLessonToProgram(
   const lessonTokens = tokenize(lessonText);
   if (lessonTokens.size === 0 || entries.length === 0) return null;
 
+  const lessonMatiere = (lesson.matiere ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
   const scored = entries
-    .map((e) => ({ e, score: overlapScore(lessonTokens, tokenize(`${e.domaine ?? ''} ${e.sousDomaine ?? ''} ${e.texte}`)) }))
+    .map((e) => {
+      // Les jeux EN sont surtout des métadonnées (titres + discipline) : on
+      // combine recouvrement lexical et alignement matière/niveau.
+      // Un match matière+niveau suffit (les attendus n'exposent pas le corps
+      // du programme) ; un match niveau SEUL ne suffit jamais.
+      const lexical = overlapScore(
+        lessonTokens,
+        tokenize(`${e.domaine ?? ''} ${e.sousDomaine ?? ''} ${e.matiere ?? ''} ${e.texte}`),
+      );
+      let matiereMatch = false;
+      if (lessonMatiere && e.matiere) {
+        const em = e.matiere.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        matiereMatch = em.includes(lessonMatiere) || lessonMatiere.includes(em);
+      }
+      let niveauMatch = false;
+      if (childClasse && e.niveau) {
+        const niv = e.niveau.toLowerCase();
+        const cl = childClasse.toLowerCase();
+        niveauMatch = niv === cl || niv.includes(cl) || cl.includes(niv);
+      }
+
+      let score = lexical;
+      if (matiereMatch) {
+        // base matière (métadonnées EN) + boost si le texte recoupe aussi
+        score = Math.max(score, 0.4) + (lexical > 0 ? 0.2 : 0);
+        if (niveauMatch) score += 0.15;
+      } else if (lexical > 0 && niveauMatch) {
+        score += 0.15;
+      }
+      return { e, score: Math.min(1, score) };
+    })
     .sort((a, b) => b.score - a.score);
   const best = scored[0];
   if (!best || best.score < 0.08) return null; // pas de correspondance suffisamment fiable
