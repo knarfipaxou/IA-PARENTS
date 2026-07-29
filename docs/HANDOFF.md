@@ -45,6 +45,21 @@ Le dashboard « Projects » (`ia-parents`, `la_parents`, etc. sous
 le serveur de dev mobile. Pour tester l'app native : ouvrir **Expo Go**
 et scanner le QR du `expo start` actif.
 
+## Comment l'app apparaît dans Expo Go (compte @knarfipaxous-team)
+
+Ce n'est **pas** le QR tunnel local. Le flux réel utilisé jusqu'ici :
+
+1. Push sur la branche `claude/lucid-lamport-AeSNN` (hors fichiers `.md`)
+2. Le workflow GitHub **« Publier sur Expo (EAS Update) »**
+   (`.github/workflows/eas-update.yml`) tourne automatiquement
+3. Il exécute `eas update --branch preview` avec le secret `EXPO_TOKEN`
+4. Sur le téléphone : Expo Go → compte **`knarfipaxous-team`** → projet
+   **`ia-parents`** (`@knarfipaxous-team/ia-parents`) → ouvrir / tirer pour
+   rafraîchir → la dernière update `preview` se charge
+
+Ne pas confondre avec l'app **Vercel** (même liste de noms de projets
+possible). L'app mobile est bien **Expo Go**.
+
 ## Tester sur device réel : Expo Go
 
 Le projet est compatible **Expo Go** (aucun module natif custom hors
