@@ -15,6 +15,45 @@ npm install
 npx expo start
 ```
 
+## Tester sur device réel : Expo Go
+
+Le projet est compatible **Expo Go** (aucun module natif custom hors
+`expo-camera` / `expo-image-picker`, tous deux supportés par Expo Go) :
+
+```bash
+npx expo start
+```
+
+Puis scanner le QR code affiché dans le terminal avec l'app **Expo Go**
+(iOS App Store / Android Play Store) — le téléphone doit être sur le
+même réseau Wi-Fi que la machine de dev (ou utiliser `--tunnel` si
+réseaux différents). C'est la méthode la plus rapide pour tester le scan
+photo et la caméra en conditions réelles, ce qui n'a pas pu être fait
+dans cette session cloud (pas d'accès caméra/device).
+
+Pour un simulateur iOS local (nécessite Xcode sur Mac) :
+```bash
+npx expo run:ios
+# ou, avec un serveur déjà lancé : appuyer sur "i" dans le terminal expo start
+```
+
+## Publication / mises à jour
+
+Le projet a déjà un projet **EAS** configuré (`app.json` →
+`extra.eas.projectId`, `updates.url`). Pas de build de production ni de
+soumission store à ce stade — voir la contrainte produit non négociable
+du CLAUDE.md : *"Aucun paiement, abonnement, compte Google/Apple, ni
+publication store (phase actuelle)"*.
+
+Ce qui est possible/pertinent maintenant si besoin de partager une build
+de test (au-delà d'Expo Go) :
+```bash
+npx eas build --profile development --platform ios   # build de dev installable
+npx eas update                                         # push OTA sur un build existant
+```
+Ne pas lancer `eas submit` (soumission store) sans validation explicite
+du produit — c'est hors scope de la phase actuelle.
+
 Lire `/CLAUDE.md` en premier : il contient les conventions non négociables
 du projet (stack, design system, garde-fous pédagogiques, règles de
 progression). Ces règles s'appliquent à tout agent IA (Claude, Cursor, etc.)
