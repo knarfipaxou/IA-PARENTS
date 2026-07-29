@@ -15,6 +15,23 @@ npm install
 npx expo start
 ```
 
+## ⚠️ Important : rien n'a été publié ni exposé à un téléphone depuis cette session
+
+Cette session tourne dans un **conteneur cloud isolé, sans accès réseau
+vers l'extérieur** (pas de tunnel, pas d'exposition publique). À un
+moment, un serveur `expo start --web --offline` a été lancé, mais
+uniquement pour du test interne en Chromium headless sur `localhost` —
+**jamais accessible depuis un vrai téléphone, jamais de QR code partagé,
+aucun rafraîchissement possible côté Expo Go depuis cette conversation.**
+
+Si des mises à jour ont été vues sur un iPhone via Expo Go, elles
+viennent forcément d'un **autre environnement** (typiquement une session
+Claude Code desktop locale sur Mac, avec un vrai `expo start` exposé sur
+le réseau local). Ne pas supposer qu'un serveur est déjà actif ou qu'un
+appareil est déjà connecté en arrivant dans Cursor : il faut relancer
+`expo start` depuis Cursor/le Mac local pour obtenir un nouveau QR code
+valide.
+
 ## Tester sur device réel : Expo Go
 
 Le projet est compatible **Expo Go** (aucun module natif custom hors
