@@ -1,0 +1,136 @@
+IA-PARENTS — archive complète pour Cloud Design
+================================================
+
+Fichier : IA-PARENTS-full-for-design.zip
+Taille  : 5.6 Mo
+Fichiers: 320
+
+OUI — les visuels sont inclus :
+- assets/icons/     : icônes UI (nav, scan, trophée…)
+- assets/home/      : tuiles accueil clair/sombre
+- assets/subjects/  : icônes matières (clair/sombre)
+- assets/sounds/    : sons feedback
+- design/project/   : prototypes HTML Claude Design + captures
+- design/chats/     : historique design
+
+Code inclus (pour comprendre la structure des écrans) :
+- app/              : écrans Expo Router
+- components/       : UI (Btn, Card, TopBar…)
+- constants/theme.ts: design tokens (couleurs, typo)
+- design/           : maquettes HTML d'origine
+
+Exclu volontairement (trop lourd / inutile pour le design) :
+- node_modules/, .git/, builds iOS/Android
+
+Pour Cloud Design / Figma :
+1. Télécharge IA-PARENTS-full-for-design.zip
+2. Dézippe
+3. Importe surtout assets/ + design/project/
+4. Lis constants/theme.ts et design/README.md pour les tokens
+
+Inventaire images (99) :
+assets/home/avatar.png
+assets/home/dark_agenda.png
+assets/home/dark_ctrl_doc.png
+assets/home/dark_ctrl_sqrt.png
+assets/home/dark_drill.png
+assets/home/dark_scan.png
+assets/home/dark_trophy.png
+assets/home/light_agenda.png
+assets/home/light_ctrl_doc.png
+assets/home/light_ctrl_sqrt.png
+assets/home/light_drill.png
+assets/home/light_scan.png
+assets/home/light_trophy.png
+assets/icons/agenda.png
+assets/icons/agenda_big.png
+assets/icons/agenda_tile.png
+assets/icons/avatar.png
+assets/icons/book.png
+assets/icons/calculator.png
+assets/icons/clock.png
+assets/icons/drill_tile.png
+assets/icons/flame.png
+assets/icons/flashcards.png
+assets/icons/lamp.png
+assets/icons/lecture_big.png
+assets/icons/lightning.png
+assets/icons/medal.png
+assets/icons/music.png
+assets/icons/nav_calendar.png
+assets/icons/nav_home.png
+assets/icons/nav_profile.png
+assets/icons/pencil.png
+assets/icons/planning.png
+assets/icons/planning_big.png
+assets/icons/profile.png
+assets/icons/scan.png
+assets/icons/scan_tile.png
+assets/icons/sqrt.png
+assets/icons/target.png
+assets/icons/trophy.png
+assets/icons/trophy_big.png
+assets/icons/trophy_tile.png
+assets/icons/warning.png
+assets/subjects/anglais.png
+assets/subjects/arts.png
+assets/subjects/dark_allemand.png
+assets/subjects/dark_anglais.png
+assets/subjects/dark_arts.png
+assets/subjects/dark_emc.png
+assets/subjects/dark_eps.png
+assets/subjects/dark_espagnol.png
+assets/subjects/dark_francais.png
+assets/subjects/dark_geographie.png
+assets/subjects/dark_grec.png
+assets/subjects/dark_histgeo.png
+assets/subjects/dark_histoire.png
+assets/subjects/dark_informatique.png
+assets/subjects/dark_italien.png
+assets/subjects/dark_latin.png
+assets/subjects/dark_maths.png
+assets/subjects/dark_musique.png
+assets/subjects/dark_physchim.png
+assets/subjects/dark_svt.png
+assets/subjects/dark_techno.png
+assets/subjects/defaut.png
+assets/subjects/eps.png
+assets/subjects/espagnol.png
+assets/subjects/francais.png
+assets/subjects/histgeo.png
+assets/subjects/latin.png
+assets/subjects/light_allemand.png
+assets/subjects/light_anglais.png
+assets/subjects/light_arts.png
+assets/subjects/light_emc.png
+assets/subjects/light_eps.png
+assets/subjects/light_espagnol.png
+assets/subjects/light_francais.png
+assets/subjects/light_geographie.png
+assets/subjects/light_grec.png
+assets/subjects/light_histgeo.png
+assets/subjects/light_histoire.png
+assets/subjects/light_informatique.png
+assets/subjects/light_italien.png
+assets/subjects/light_latin.png
+assets/subjects/light_maths.png
+assets/subjects/light_musique.png
+assets/subjects/light_physchim.png
+assets/subjects/light_svt.png
+assets/subjects/light_techno.png
+assets/subjects/maths.png
+assets/subjects/musique.png
+assets/subjects/physchim.png
+assets/subjects/svt.png
+assets/subjects/techno.png
+design/project/uploads/Capture d'écran 2026-06-06 à 18.08.04.png
+design/project/uploads/Capture d'écran 2026-06-06 à 18.08.15.png
+design/project/uploads/Capture d'écran 2026-06-06 à 18.08.30.png
+design/project/uploads/Capture d'écran 2026-06-06 à 18.08.40.png
+design/project/uploads/Capture d'écran 2026-06-06 à 18.08.51.png
+
+Sons (4) :
+assets/sounds/badge.wav
+assets/sounds/correct.wav
+assets/sounds/success.wav
+assets/sounds/wrong.wav
