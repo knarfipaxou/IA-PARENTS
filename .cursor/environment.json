@@ -1,0 +1,17 @@
+{
+  "name": "IA Parents",
+  "install": "npm ci --legacy-peer-deps || npm install --legacy-peer-deps",
+  "terminals": [
+    {
+      "name": "expo-web",
+      "command": "npx expo start --web --port 8081",
+      "description": "Expo Metro dev server serving the app on the web at http://localhost:8081"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Expo web",
+      "port": 8081
+    }
+  ]
+}
