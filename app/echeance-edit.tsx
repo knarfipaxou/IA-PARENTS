@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
 import { Btn, GhostBtn } from '../components/ui/Btn';
@@ -136,22 +137,22 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  centerText: { fontSize: 15, color: T.sub, fontWeight: '600', textAlign: 'center' },
-  title: { fontSize: 24, fontWeight: '800', color: T.ink, letterSpacing: -0.5, marginTop: 14 },
-  sub: { fontSize: 14, color: T.sub, fontWeight: '500', marginTop: 6 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: T.sub, marginBottom: 8 },
+  centerText: { fontFamily: FONT.num, fontSize: 15, color: T.sub, textAlign: 'center' },
+  title: { fontFamily: FONT.title, fontSize: 24, color: T.ink, letterSpacing: -0.5, marginTop: 14 },
+  sub: { fontFamily: FONT.body, fontSize: 14, color: T.sub, marginTop: 6 },
+  fieldLabel: { fontFamily: FONT.num, fontSize: 13, color: T.sub, marginBottom: 8 },
   input: {
     borderWidth: 1, borderColor: T.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12,
-    backgroundColor: T.surfaceAlt, fontSize: 15, fontWeight: '500', color: T.ink,
+    backgroundColor: T.surfaceAlt, fontSize: 15, fontFamily: FONT.body, color: T.ink,
   },
   pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: T.surfaceAlt, borderWidth: 1.5, borderColor: 'transparent' },
   pillOn: { backgroundColor: T.primary, borderColor: T.primary },
-  pillText: { fontWeight: '700', fontSize: 13.5, color: T.ink },
+  pillText: { fontFamily: FONT.num, fontSize: 13.5, color: T.ink },
   pillTextOn: { color: '#fff' },
   deleteRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     backgroundColor: T.coral.soft, borderRadius: 16, padding: 15,
   },
-  deleteText: { fontWeight: '800', fontSize: 15, color: T.coral.fg },
+  deleteText: { fontFamily: FONT.bodyBold, fontSize: 15, color: T.coral.fg },
 });

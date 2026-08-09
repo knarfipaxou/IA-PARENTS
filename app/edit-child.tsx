@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { T, type AccentKey } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
 import { Btn, GhostBtn } from '../components/ui/Btn';
@@ -340,31 +341,31 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  centerText: { fontSize: 15, color: T.sub, fontWeight: '600', textAlign: 'center' },
-  title: { fontSize: 24, fontWeight: '800', color: T.ink, letterSpacing: -0.5, marginTop: 14 },
-  sub: { fontSize: 14, color: T.sub, fontWeight: '500', marginTop: 6 },
-  section: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 24, letterSpacing: 0.2 },
-  sectionHint: { fontSize: 13, color: T.faint, fontWeight: '500', marginTop: 5, lineHeight: 18 },
-  miniHint: { fontSize: 12, color: T.faint, fontWeight: '500', marginBottom: 7, marginTop: -3 },
+  centerText: { fontFamily: FONT.num, fontSize: 15, color: T.sub, textAlign: 'center' },
+  title: { fontFamily: FONT.title, fontSize: 24, color: T.ink, letterSpacing: -0.5, marginTop: 14 },
+  sub: { fontFamily: FONT.body, fontSize: 14, color: T.sub, marginTop: 6 },
+  section: { fontFamily: FONT.bodySemi, fontSize: 13, color: T.sub, marginTop: 24, letterSpacing: 0.5 },
+  sectionHint: { fontFamily: FONT.body, fontSize: 13, color: T.faint, marginTop: 5, lineHeight: 18 },
+  miniHint: { fontFamily: FONT.body, fontSize: 12, color: T.faint, marginBottom: 7, marginTop: -3 },
   textArea: { alignItems: 'flex-start', minHeight: 56, paddingTop: 12 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: T.sub, marginBottom: 9 },
+  fieldLabel: { fontFamily: FONT.num, fontSize: 13, color: T.sub, marginBottom: 9 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
     borderWidth: 1, borderColor: T.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12,
     backgroundColor: T.surfaceAlt,
   },
-  input: { flex: 1, fontSize: 15, fontWeight: '500', color: T.ink },
+  input: { flex: 1, fontSize: 15, fontFamily: FONT.body, color: T.ink },
   pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pill: {
     borderRadius: 12, paddingVertical: 10, paddingHorizontal: 15,
     backgroundColor: T.surfaceAlt, borderWidth: 1.5, borderColor: 'transparent',
   },
   pillOn: { backgroundColor: T.primary, borderColor: T.primary },
-  pillText: { fontWeight: '700', fontSize: 14, color: T.ink },
+  pillText: { fontFamily: FONT.num, fontSize: 14, color: T.ink },
   pillTextOn: { color: '#fff' },
   deleteRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     backgroundColor: T.coral.soft, borderRadius: 16, padding: 15,
   },
-  deleteText: { fontWeight: '800', fontSize: 15, color: T.coral.fg },
+  deleteText: { fontFamily: FONT.bodyBold, fontSize: 15, color: T.coral.fg },
 });
