@@ -61,7 +61,7 @@ export function Btn({
       ) : (
         <View style={{ flexDirection: iconRight ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
           {icon}
-          <Text style={{ color: textColor, fontSize: fs, fontFamily: Fonts.display, letterSpacing: -0.2 }}>{children}</Text>
+          <Text style={{ color: textColor, fontSize: fs, fontFamily: Fonts.display, fontWeight: '700', letterSpacing: -0.2 }}>{children}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -99,6 +99,7 @@ export function GhostBtn({
           color: dark ? DK.sub : T.ink,
           fontSize: 16,
           fontFamily: Fonts.display,
+          fontWeight: '700',
           letterSpacing: -0.2,
         }}>{children}</Text>
       </View>

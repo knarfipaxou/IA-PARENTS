@@ -1,29 +1,14 @@
-import React, { useEffect } from 'react';
-import { Text, StyleSheet } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
+import React from 'react';
+import { Text, View, StyleSheet } from 'react-native';
 import { DK, Fonts } from '../../constants/darkTheme';
 
-/** Bulle d'encouragement Kitsune (ppBubble). */
-export function CheerBubble({ text, tick }: { text: string; tick: number }) {
-  const v = useSharedValue(0);
-  useEffect(() => {
-    v.value = 0;
-    v.value = withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) });
-  }, [tick, text]);
-
-  const anim = useAnimatedStyle(() => ({
-    opacity: v.value,
-    transform: [
-      { translateY: (1 - v.value) * 6 },
-      { scale: 0.96 + v.value * 0.04 },
-    ],
-  }));
-
+/** Bulle d'encouragement Kitsune. */
+export function CheerBubble({ text }: { text: string; tick?: number }) {
   if (!text) return null;
   return (
-    <Animated.View style={[styles.bubble, anim]}>
+    <View style={styles.bubble}>
       <Text style={styles.text}>{text}</Text>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -40,6 +25,7 @@ const styles = StyleSheet.create({
   text: {
     color: DK.ink,
     fontFamily: Fonts.displayMed,
+    fontWeight: '600',
     fontSize: 14,
     lineHeight: 20,
   },

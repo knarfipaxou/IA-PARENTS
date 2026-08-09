@@ -1,5 +1,5 @@
 // Thème Kitsune — handoff design/handoff (high-fidelity dark)
-// Vert = lu/acquis · Ambre = à vérifier · Corail = erreur répétée
+// Fonts: noms optionnels — si absents, le système prend le relais (pas de crash).
 
 export const DK = {
   bg: '#0F1424',
@@ -14,16 +14,13 @@ export const DK = {
   ink: '#FFFFFF',
   sub: '#96A3CC',
   faint: '#5D6890',
-  // Parent primary
   primary: '#16B26E',
   primaryDeep: '#0D8C56',
   primaryLight: '#3FD694',
   onPrimary: '#062E1E',
-  // Child accent
   cyan: '#35E4D2',
   cyanDeep: '#1BB3A3',
   onCyan: '#06322D',
-  // Accents
   blue: '#3B7DFF',
   blueLight: '#7FAAFF',
   amber: '#FFB020',
@@ -32,14 +29,12 @@ export const DK = {
   coralLight: '#FF9683',
   violet: '#A97BFF',
   violetLight: '#C4A2FF',
-  // XP / gold (kept for gamification)
   xpFrom: '#FF3D8A',
   xpMid: '#FF7A3D',
   xpTo: '#FFC24B',
   gold: '#F5C24B',
   red: '#FF6B5A',
   green: '#16B26E',
-  // Spacing
   screenPadX: 22,
   screenPadXWelcome: 26,
   screenPadTop: 60,
@@ -49,9 +44,7 @@ export const DK = {
   radiusPill: 999,
 } as const;
 
-/** Teinte pastille = accent @ 16–18 % d'opacité. */
 export function softTint(rgb: string, alpha = 0.16): string {
-  // rgb like "22,178,110" or hex "#16B26E"
   if (rgb.startsWith('#')) {
     const h = rgb.slice(1);
     const n = parseInt(h.length === 3 ? h.split('').map((c) => c + c).join('') : h, 16);
@@ -63,17 +56,18 @@ export function softTint(rgb: string, alpha = 0.16): string {
   return `rgba(${rgb},${alpha})`;
 }
 
+/** Polices Kitsune — undefined = police système (jamais de crash). */
 export const Fonts = {
-  display: 'Fredoka_600SemiBold',
-  displayMed: 'Fredoka_500Medium',
-  displayReg: 'Fredoka_400Regular',
-  displayBold: 'Fredoka_700Bold',
-  body: 'PlusJakartaSans_400Regular',
-  bodyMed: 'PlusJakartaSans_500Medium',
-  bodySemi: 'PlusJakartaSans_600SemiBold',
-  bodyBold: 'PlusJakartaSans_700Bold',
-  bodyExtra: 'PlusJakartaSans_800ExtraBold',
-} as const;
+  display: 'Fredoka_600SemiBold' as string | undefined,
+  displayMed: 'Fredoka_500Medium' as string | undefined,
+  displayReg: 'Fredoka_400Regular' as string | undefined,
+  displayBold: 'Fredoka_700Bold' as string | undefined,
+  body: 'PlusJakartaSans_400Regular' as string | undefined,
+  bodyMed: 'PlusJakartaSans_500Medium' as string | undefined,
+  bodySemi: 'PlusJakartaSans_600SemiBold' as string | undefined,
+  bodyBold: 'PlusJakartaSans_700Bold' as string | undefined,
+  bodyExtra: 'PlusJakartaSans_800ExtraBold' as string | undefined,
+};
 
 export const DK_ICONS = {
   avatar: require('../assets/icons/avatar.png'),
@@ -107,7 +101,6 @@ export const KITSUNE = {
   tail: require('../assets/kitsune/kitsune-tail.png'),
 };
 
-/** Icône illustrée par matière (listes contrôles/leçons). */
 export function dkIconForSubject(subj?: string) {
   const s = (subj ?? '').toLowerCase();
   if (s.includes('musi')) return DK_ICONS.music;

@@ -1,32 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { DarkScreen } from '../../components/ui/DarkScreen';
 import { Btn, GhostBtn } from '../../components/ui/Btn';
-import { Kitsune, type KitsuneMove } from '../../components/Kitsune';
-import { DK, Fonts } from '../../constants/darkTheme';
+import { DK, Fonts, KITSUNE } from '../../constants/darkTheme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const [tick, setTick] = useState(0);
-  const [move, setMove] = useState<KitsuneMove>('idle');
-
-  function poke() {
-    const moves: KitsuneMove[] = ['wag', 'hop', 'nod', 'paw'];
-    setMove(moves[tick % moves.length]);
-    setTick((t) => t + 1);
-  }
 
   return (
     <DarkScreen style={s.safe}>
       <View style={s.hero}>
         <View style={s.ringOuter} />
         <View style={s.ringInner} />
-        <TouchableOpacity activeOpacity={0.9} onPress={poke} style={s.kitsuneWrap}>
-          <Kitsune size={196} move={move} tick={tick} />
+        <View style={s.kitsuneWrap}>
+          <Image source={KITSUNE.full} style={{ width: 196, height: 238 }} resizeMode="contain" />
           <View style={[s.badge, s.badgePlus]}><Text style={s.badgePlusText}>+</Text></View>
           <View style={[s.badge, s.badgeOk]}><Text style={s.badgeOkText}>✓</Text></View>
-        </TouchableOpacity>
+        </View>
       </View>
 
       <View style={s.bottom}>
@@ -60,13 +51,13 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   badgePlus: { left: -6, top: 16, backgroundColor: DK.amber, transform: [{ rotate: '-14deg' }] },
-  badgePlusText: { fontFamily: Fonts.display, fontSize: 23, color: DK.onAmber },
+  badgePlusText: { fontFamily: Fonts.display, fontSize: 23, fontWeight: '700', color: DK.onAmber },
   badgeOk: { right: -4, bottom: 44, width: 44, height: 44, borderRadius: 15, backgroundColor: DK.blue, transform: [{ rotate: '10deg' }] },
-  badgeOkText: { fontFamily: Fonts.display, fontSize: 21, color: '#fff' },
+  badgeOkText: { fontFamily: Fonts.display, fontSize: 21, fontWeight: '700', color: '#fff' },
   bottom: { paddingHorizontal: DK.screenPadXWelcome, paddingBottom: 44, gap: 26 },
   title: {
     fontFamily: Fonts.display, fontSize: 31, lineHeight: 36, letterSpacing: -0.3,
-    color: DK.ink, textAlign: 'center',
+    fontWeight: '700', color: DK.ink, textAlign: 'center',
   },
   sub: {
     fontFamily: Fonts.body, fontSize: 15, lineHeight: 23,
