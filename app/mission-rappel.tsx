@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path, Line } from 'react-native-svg';
 import { T } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { Card } from '../components/ui/Card';
 import { Squircle } from '../components/ui/Squircle';
 import { Btn } from '../components/ui/Btn';
@@ -94,7 +95,7 @@ const s = StyleSheet.create({
   },
   progressTrack: { flex: 1, height: 12, borderRadius: 999, backgroundColor: T.surfaceAlt, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 999, backgroundColor: T.primary },
-  stepCount: { fontSize: 13, fontWeight: '800', color: T.sub },
+  stepCount: { fontFamily: FONT.num, fontSize: 13, color: T.sub },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
   chipRow: { marginTop: 18 },
@@ -102,18 +103,18 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
     backgroundColor: T.blue.soft, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5,
   },
-  recallChipText: { fontSize: 12.5, fontWeight: '700', color: T.blue.fg },
-  title: { fontSize: 25, fontWeight: '800', color: T.ink, letterSpacing: -0.5, marginTop: 14 },
+  recallChipText: { fontFamily: FONT.bodySemi, fontSize: 12.5, color: T.blue.fg },
+  title: { fontFamily: FONT.title, fontSize: 25, color: T.ink, letterSpacing: -0.5, marginTop: 14 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  cardHeaderText: { fontWeight: '800', fontSize: 17, color: T.ink, letterSpacing: -0.3 },
-  explainText: { fontSize: 16, color: T.ink, lineHeight: 24, fontWeight: '500', marginBottom: 16 },
+  cardHeaderText: { fontFamily: FONT.num, fontSize: 17, color: T.ink, letterSpacing: -0.3 },
+  explainText: { fontFamily: FONT.body, fontSize: 16, color: T.ink, lineHeight: 24, marginBottom: 16 },
   vizBox: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 24,
     padding: 18, backgroundColor: T.surfaceAlt, borderRadius: 18, marginBottom: 16,
   },
-  fracText: { fontSize: 40, fontWeight: '800', color: T.primaryDeep, lineHeight: 44, letterSpacing: -1 },
-  fracSub: { fontSize: 13.5, color: T.sub, fontWeight: '600', marginTop: 6 },
+  fracText: { fontFamily: FONT.title, fontSize: 40, color: '#3FD694', lineHeight: 44, letterSpacing: -1 },
+  fracSub: { fontFamily: FONT.body, fontSize: 13.5, color: T.sub, marginTop: 6 },
   keywordsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   keyword: { backgroundColor: T.green.soft, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
-  keywordText: { fontSize: 12.5, fontWeight: '700', color: T.green.fg },
+  keywordText: { fontFamily: FONT.bodySemi, fontSize: 12.5, color: T.green.fg },
 });

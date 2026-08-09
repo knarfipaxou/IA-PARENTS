@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
 import { useChild } from '../contexts/ChildContext';
@@ -108,29 +109,29 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: T.bg },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
-  title: { fontSize: 24, fontWeight: '800', color: T.ink, letterSpacing: -0.5, marginTop: 14 },
-  sub: { fontSize: 14, color: T.sub, fontWeight: '500', marginTop: 6 },
+  title: { fontFamily: FONT.title, fontSize: 24, color: T.ink, letterSpacing: -0.5, marginTop: 14 },
+  sub: { fontFamily: FONT.body, fontSize: 14, color: T.sub, marginTop: 6 },
   rowTop: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 48, height: 48, borderRadius: 16, backgroundColor: T.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 20, fontWeight: '800', color: T.sub },
-  name: { fontSize: 16.5, fontWeight: '800', color: T.ink, letterSpacing: -0.3 },
-  meta: { fontSize: 13, color: T.sub, fontWeight: '600', marginTop: 2 },
-  metaFaint: { fontSize: 12, color: T.faint, fontWeight: '600', marginTop: 2 },
+  avatarText: { fontFamily: FONT.title, fontSize: 20, color: T.sub },
+  name: { fontFamily: FONT.num, fontSize: 16.5, color: T.ink, letterSpacing: -0.3 },
+  meta: { fontFamily: FONT.body, fontSize: 13, color: T.sub, marginTop: 2 },
+  metaFaint: { fontFamily: FONT.body, fontSize: 12, color: T.faint, marginTop: 2 },
   actions: { flexDirection: 'row', gap: 9, marginTop: 13 },
   restoreBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
     backgroundColor: T.green.soft, borderRadius: 13, paddingVertical: 11,
   },
-  restoreText: { fontWeight: '800', fontSize: 13.5, color: T.green.fg },
+  restoreText: { fontFamily: FONT.bodyBold, fontSize: 13.5, color: T.green.fg },
   deleteBtn: {
     flex: 1.4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
     backgroundColor: T.coral.soft, borderRadius: 13, paddingVertical: 11,
   },
-  deleteText: { fontWeight: '800', fontSize: 13.5, color: T.coral.fg },
+  deleteText: { fontFamily: FONT.bodyBold, fontSize: 13.5, color: T.coral.fg },
   emptyTrashRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     backgroundColor: T.coral.soft, borderRadius: 16, padding: 15, marginTop: 20,
   },
   emptyBox: { alignItems: 'center', paddingVertical: 48, gap: 12 },
-  emptyText: { fontSize: 15, color: T.faint, fontWeight: '600' },
+  emptyText: { fontFamily: FONT.num, fontSize: 15, color: T.faint },
 });
