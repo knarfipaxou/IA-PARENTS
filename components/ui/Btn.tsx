@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TouchableOpacity, Text, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { T } from '../../constants/theme';
+import { FONT } from '../../constants/handoff';
 
 interface BtnProps {
   children: string;
@@ -52,7 +53,7 @@ export function Btn({
       ) : (
         <View style={{ flexDirection: iconRight ? 'row-reverse' : 'row', alignItems: 'center', gap: 10 }}>
           {icon}
-          <Text style={{ color: fg, fontSize: fs, fontWeight: '700', letterSpacing: -0.2 }}>{children}</Text>
+          <Text style={{ color: fg, fontSize: fs, fontFamily: FONT.title, letterSpacing: -0.2 }}>{children}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -76,7 +77,7 @@ export function GhostBtn({ children, onPress, full, icon, style }: { children: s
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 9 }}>
         {icon}
-        <Text style={{ color: T.ink, fontSize: 16, fontWeight: '600', letterSpacing: -0.2 }}>{children}</Text>
+        <Text style={{ color: T.ink, fontSize: 16, fontFamily: FONT.num, letterSpacing: -0.2 }}>{children}</Text>
       </View>
     </TouchableOpacity>
   );
