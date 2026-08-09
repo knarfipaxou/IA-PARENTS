@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { T } from '../constants/theme';
-import { Btn } from '../components/ui/Btn';
+import { HC, FONT } from '../constants/handoff';
+import { PhysicalButton } from '../components/ui/PhysicalButton';
+import { Kitsune, useKitsuneReaction } from '../components/ui/Kitsune';
 
-type Option = {
-  id: string;
-  label: string;
-  frac: [number, number];
-};
-
+type Option = { id: string; label: string; frac: [number, number] };
 const OPTS: Option[] = [
   { id: 'a', label: '1/2', frac: [1, 2] },
   { id: 'b', label: '3/4', frac: [3, 4] },
@@ -31,127 +29,107 @@ function piePath(frac: number): string {
 
 export default function MissionExo() {
   const router = useRouter();
+  const kit = useKitsuneReaction();
   const [pick, setPick] = useState<string | null>(null);
 
   const checked = pick !== null;
   const isRight = pick === CORRECT;
 
+  function choose(id: string) {
+    if (checked) return;
+    setPick(id);
+    kit.react(null, id === CORRECT ? 'hop' : 'tilt');
+  }
+
+  const coach = !checked
+    ? 'Compare les parts de chaque cercle.'
+    : isRight
+      ? 'Exact ! 3/4 remplit presque tout le cercle.'
+      : 'Presque ! Quelle part est la plus grande ?';
+
   return (
-    <SafeAreaView style={s.safe}>
-      {/* progress */}
-      <View style={s.topBar}>
-        <View style={s.closeBtn}>
-          <Ionicons name="close" size={20} color={T.sub} />
-        </View>
-        <View style={s.progressTrack}>
-          <View style={[s.progressFill, { width: '50%' }]} />
-        </View>
-        <Text style={s.stepCount}>2/4</Text>
-      </View>
-
-      <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
-        <View style={s.chipRow}>
-          <View style={s.questionChip}>
-            <Text style={s.questionChipText}>Question 1 · QCM</Text>
+    <LinearGradient colors={['#0C2E36', HC.bgApp]} locations={[0, 0.6]} style={{ flex: 1 }}>
+      <SafeAreaView style={s.safe}>
+        <StatusBar style="light" />
+        <View style={s.topBar}>
+          <Pressable onPress={() => router.back()} hitSlop={8}>
+            <Ionicons name="close" size={22} color={HC.faint} />
+          </Pressable>
+          <View style={s.progressTrack}>
+            <View style={[s.progressFill, { width: '50%' }]} />
           </View>
+          <Text style={s.stepCount}>2/4</Text>
         </View>
 
-        <Text style={s.title}>Quelle fraction est la plus grande ?</Text>
-
-        <View style={s.optsList}>
-          {OPTS.map((o) => {
-            const sel = pick === o.id;
-            const isCorrect = checked && o.id === CORRECT;
-            const isWrong = checked && sel && o.id !== CORRECT;
-            const bgColor = isCorrect ? T.primarySoft : isWrong ? T.coral.soft : sel ? T.primarySoft : T.surface;
-            const bdColor = isCorrect ? T.primary : isWrong ? T.coral.solid : sel ? T.primary : T.line;
-            const fracVal = o.frac[0] / o.frac[1];
-
-            return (
-              <TouchableOpacity
-                key={o.id}
-                disabled={checked}
-                onPress={() => setPick(o.id)}
-                style={[s.optRow, { backgroundColor: bgColor, borderColor: bdColor }]}
-                activeOpacity={0.88}
-              >
-                <Svg width={40} height={40} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
-                  <Circle cx={20} cy={20} r={17} fill="none" stroke={T.lineStrong} strokeWidth={2.5} />
-                  <Path d={piePath(fracVal)} fill={isWrong ? T.coral.solid : T.primary} opacity={0.85} />
-                </Svg>
-                <Text style={s.optLabel}>{o.label}</Text>
-                {isCorrect && <Ionicons name="checkmark-circle" size={24} color={T.primaryDeep} />}
-                {isWrong && <Ionicons name="close-circle" size={24} color={T.coral.fg} />}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Feedback */}
-        {checked && (
-          <View style={[s.feedback, { backgroundColor: isRight ? T.primarySoft : T.amber.soft }]}>
-            <Ionicons
-              name={isRight ? 'checkmark-circle' : 'bulb-outline'}
-              size={22}
-              color={isRight ? T.primaryDeep : T.amber.fg}
-              style={{ flexShrink: 0 }}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={[s.feedbackTitle, { color: isRight ? T.primaryDeep : T.amber.fg }]}>
-                {isRight ? "Bravo, c'est exact !" : 'Presque !'}
-              </Text>
-              <Text style={s.feedbackSub}>
-                3/4 remplit presque tout le cercle : c'est plus que la moitié (1/2) et bien plus que 2/5.
-              </Text>
+        <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+          <View style={s.kitRow}>
+            <Kitsune width={72} move={kit.move} tick={kit.tick} />
+            <View style={s.bubble}>
+              <Text style={[s.bubbleTxt, checked ? { color: isRight ? HC.greenLight : HC.coralLight } : null]}>{coach}</Text>
             </View>
           </View>
-        )}
 
-        <View style={{ minHeight: 16 }} />
-        {checked ? (
-          <Btn onPress={() => router.push('/mission-result' as any)} full icon={<Ionicons name="arrow-forward" size={20} color="#fff" />} iconRight>
-            Continuer
-          </Btn>
-        ) : (
-          <Btn onPress={() => {}} full disabled>
-            Valider
-          </Btn>
-        )}
-        <View style={{ height: 24 }} />
-      </ScrollView>
-    </SafeAreaView>
+          <View style={s.questionCard}>
+            <Text style={s.qKicker}>QUESTION 1 SUR 4</Text>
+            <Text style={s.qTitle}>Quelle fraction est la plus grande&nbsp;?</Text>
+          </View>
+
+          <View style={s.optsList}>
+            {OPTS.map((o) => {
+              const sel = pick === o.id;
+              const isCorrect = checked && o.id === CORRECT;
+              const isWrong = checked && sel && o.id !== CORRECT;
+              const bg = isCorrect ? 'rgba(22,178,110,0.12)' : isWrong ? 'rgba(255,107,90,0.10)' : '#1B2238';
+              const bd = isCorrect ? HC.green : isWrong ? HC.coral : sel ? HC.cyan : 'rgba(255,255,255,0.09)';
+              const fg = isCorrect ? HC.greenLight : isWrong ? HC.coralLight : HC.ink;
+              const fracVal = o.frac[0] / o.frac[1];
+              return (
+                <Pressable
+                  key={o.id}
+                  disabled={checked}
+                  onPress={() => choose(o.id)}
+                  style={[s.optRow, { backgroundColor: bg, borderColor: bd }]}
+                >
+                  <Svg width={40} height={40} viewBox="0 0 40 40" style={{ flexShrink: 0 }}>
+                    <Circle cx={20} cy={20} r={17} fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth={2.5} />
+                    <Path d={piePath(fracVal)} fill={isWrong ? HC.coral : HC.cyan} opacity={0.9} />
+                  </Svg>
+                  <Text style={[s.optLabel, { color: fg }]}>{o.label}</Text>
+                  {isCorrect && <Ionicons name="checkmark-circle" size={24} color={HC.greenLight} />}
+                  {isWrong && <Ionicons name="close-circle" size={24} color={HC.coralLight} />}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={{ minHeight: 18 }} />
+          {checked ? (
+            <PhysicalButton label="CONTINUER" variant="enfant" onPress={() => router.push('/mission-result' as any)} />
+          ) : (
+            <PhysicalButton label="VALIDER" variant="neutral" disabled onPress={() => {}} />
+          )}
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
+  safe: { flex: 1 },
   topBar: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 4 },
-  closeBtn: {
-    width: 40, height: 40, borderRadius: 13, backgroundColor: T.surface,
-    borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center',
-  },
-  progressTrack: { flex: 1, height: 12, borderRadius: 999, backgroundColor: T.surfaceAlt, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 999, backgroundColor: T.primary },
-  stepCount: { fontSize: 13, fontWeight: '800', color: T.sub },
+  progressTrack: { flex: 1, height: 14, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 999, backgroundColor: HC.cyan },
+  stepCount: { fontFamily: FONT.num, fontSize: 14, color: HC.sub },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 18, paddingBottom: 32 },
-  chipRow: { marginTop: 18 },
-  questionChip: {
-    alignSelf: 'flex-start', backgroundColor: T.amber.soft,
-    borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5,
-  },
-  questionChipText: { fontSize: 12.5, fontWeight: '700', color: T.amber.fg },
-  title: { fontSize: 23, fontWeight: '800', color: T.ink, letterSpacing: -0.5, marginTop: 14, lineHeight: 30 },
-  optsList: { gap: 11, marginTop: 22 },
-  optRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    borderRadius: 18, padding: 16, borderWidth: 2,
-  },
-  optLabel: { flex: 1, fontSize: 22, fontWeight: '800', color: T.ink, letterSpacing: -0.3 },
-  feedback: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    borderRadius: 18, padding: 15, marginBottom: 12, marginTop: 16,
-  },
-  feedbackTitle: { fontWeight: '800', fontSize: 15.5 },
-  feedbackSub: { fontSize: 13.5, color: T.ink, fontWeight: '500', marginTop: 3, lineHeight: 20 },
+  content: { paddingHorizontal: 18, paddingBottom: 32, paddingTop: 14, gap: 16 },
+  kitRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-end' },
+  bubble: { flex: 1, backgroundColor: '#1B2238', borderWidth: 2, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16 },
+  bubbleTxt: { fontFamily: FONT.num, fontSize: 15.5, lineHeight: 21, color: HC.ink },
+  questionCard: { backgroundColor: '#1B2238', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 20, padding: 18, gap: 6 },
+  qKicker: { fontFamily: FONT.bodyBold, fontSize: 11, letterSpacing: 1, color: HC.faint },
+  qTitle: { fontFamily: FONT.num, fontSize: 20, color: HC.ink, lineHeight: 27 },
+  optsList: { gap: 11 },
+  optRow: { flexDirection: 'row', alignItems: 'center', gap: 16, borderRadius: 18, padding: 16, borderWidth: 2 },
+  optLabel: { flex: 1, fontFamily: FONT.num, fontSize: 22, letterSpacing: -0.3 },
 });
