@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DK } from '../../constants/darkTheme';
+import { FONT } from '../../constants/handoff';
 import { useChild } from '../../contexts/ChildContext';
 import { isControle } from '../../lib/matiere';
 import { useScheme } from '../../lib/useScheme';
@@ -108,9 +109,9 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 32 },
   titleRowTop: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 },
-  title: { fontSize: 26, fontWeight: '900', color: DK.ink, letterSpacing: -0.6 },
-  sub: { fontSize: 14, color: DK.sub, fontWeight: '600', marginTop: 4 },
-  count: { fontSize: 13, color: DK.faint, fontWeight: '600', marginTop: 6, marginBottom: 4 },
+  title: { fontFamily: FONT.num, fontSize: 26, color: DK.ink, letterSpacing: -0.4 },
+  sub: { fontFamily: FONT.body, fontSize: 14, color: DK.sub, marginTop: 4 },
+  count: { fontFamily: FONT.body, fontSize: 13, color: DK.faint, marginTop: 6, marginBottom: 4 },
   addBtn: {
     width: 48, height: 48, borderRadius: 999, backgroundColor: DK.cyan,
     alignItems: 'center', justifyContent: 'center',
@@ -122,7 +123,7 @@ const s = StyleSheet.create({
     borderWidth: 1.5, borderColor: 'rgba(53,228,210,0.4)', borderStyle: 'dashed',
     borderRadius: 16, paddingVertical: 13,
   },
-  addRowText: { color: DK.cyan, fontSize: 13.5, fontWeight: '800' },
+  addRowText: { color: DK.cyan, fontSize: 13.5, fontFamily: FONT.bodyBold },
   list: { gap: 12, marginTop: 12 },
   row: { flexDirection: 'row', alignItems: 'center', padding: 13 },
   rowIcon: { width: 56, height: 60, borderRadius: 16 },
@@ -148,6 +149,6 @@ const s = StyleSheet.create({
   },
   jPillText: { color: DK.cyan, fontWeight: '900', fontSize: 13 },
   emptyBox: { alignItems: 'center', paddingVertical: 40, gap: 9 },
-  emptyText: { fontSize: 15, fontWeight: '700', color: DK.sub },
-  emptySub: { fontSize: 12.5, color: DK.faint, fontWeight: '500', textAlign: 'center' },
+  emptyText: { fontFamily: FONT.num, fontSize: 15, color: DK.sub },
+  emptySub: { fontFamily: FONT.body, fontSize: 12.5, color: DK.faint, textAlign: 'center' },
 });

@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { DK, DK_ICONS } from '../../constants/darkTheme';
+import { FONT } from '../../constants/handoff';
 import { useChild } from '../../contexts/ChildContext';
 import { formatLessonDate } from '../../lib/matiere';
 import { useScheme } from '../../lib/useScheme';
@@ -88,27 +89,27 @@ const s = StyleSheet.create({
   safe: { flex: 1 },
   content: { padding: 18, paddingBottom: 32 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18, marginTop: 6 },
-  title: { fontSize: 24, fontWeight: '900', color: DK.ink, letterSpacing: -0.5 },
-  sub: { fontSize: 13, color: DK.sub, fontWeight: '600', marginTop: 3 },
+  title: { fontFamily: FONT.num, fontSize: 24, color: DK.ink, letterSpacing: -0.4 },
+  sub: { fontFamily: FONT.body, fontSize: 13, color: DK.sub, marginTop: 3 },
   row: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: DK.card, borderWidth: 1, borderColor: DK.cardBorder,
     borderRadius: 20, padding: 13,
   },
-  rowMatiere: { fontSize: 11.5, fontWeight: '800', color: DK.sub, letterSpacing: 0.3 },
-  rowTitre: { fontSize: 15, fontWeight: '800', color: DK.ink, letterSpacing: -0.3, marginTop: 1 },
-  rowMeta: { fontSize: 11.5, color: DK.faint, fontWeight: '600', marginTop: 3 },
+  rowMatiere: { fontFamily: FONT.bodyBold, fontSize: 11.5, color: DK.sub, letterSpacing: 0.3 },
+  rowTitre: { fontFamily: FONT.num, fontSize: 15, color: DK.ink, letterSpacing: -0.3, marginTop: 1 },
+  rowMeta: { fontFamily: FONT.body, fontSize: 11.5, color: DK.faint, marginTop: 3 },
   rowChevron: {
     width: 26, height: 26, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center', justifyContent: 'center',
   },
   emptyBox: { alignItems: 'center', paddingVertical: 34, gap: 9 },
-  emptyText: { fontSize: 15, fontWeight: '700', color: DK.sub },
-  emptySub: { fontSize: 12.5, color: DK.faint, fontWeight: '500', textAlign: 'center', lineHeight: 18, paddingHorizontal: 20 },
+  emptyText: { fontFamily: FONT.num, fontSize: 15, color: DK.sub },
+  emptySub: { fontFamily: FONT.body, fontSize: 12.5, color: DK.faint, textAlign: 'center', lineHeight: 18, paddingHorizontal: 20 },
   scanBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
     borderRadius: 999, paddingVertical: 15,
     shadowColor: DK.cyan, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 14, elevation: 6,
   },
-  scanBtnText: { color: '#052620', fontSize: 15, fontWeight: '800' },
+  scanBtnText: { color: '#052620', fontSize: 15, fontFamily: FONT.title },
 });
