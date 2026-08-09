@@ -1,72 +1,64 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
-import { DK } from '../../constants/darkTheme';
-import { Starfield } from '../../components/Starfield';
+import { HC, FONT } from '../../constants/handoff';
+import { PhysicalButton } from '../../components/ui/PhysicalButton';
+import { Kitsune } from '../../components/ui/Kitsune';
 
-const FEATURES = [
-  { icon: 'scan-outline', label: 'Scanner', desc: 'Numérisez devoirs et contrôles' },
-  { icon: 'trending-up-outline', label: 'Suivre', desc: 'Suivez les résultats et les progrès' },
-  { icon: 'book-outline', label: 'Réviser', desc: 'Des fiches et leçons personnalisées' },
-] as const;
-
+/**
+ * Écran de bienvenue — porté depuis le handoff Kitsune (écran 1 « welcome »).
+ * Mascotte + pitch + création de famille. Conserve la navigation existante
+ * (création de compte via l'espace famille, connexion via login).
+ */
 export default function WelcomeScreen() {
   const router = useRouter();
 
   return (
-    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
+    <LinearGradient colors={[HC.gradTop, HC.gradBottom]} locations={[0, 0.6]} style={{ flex: 1 }}>
       <SafeAreaView style={s.safe}>
         <StatusBar style="light" />
-        <Starfield />
-        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
-          <Text style={s.title}>Prof Parent IA</Text>
-          <Text style={s.tagline}>Scannez, comprenez, accompagnez.</Text>
-
-          {/* carte des 3 fonctionnalités */}
-          <View style={s.featureCard}>
-            <Ionicons name="star" size={15} color={DK.cyan} style={s.cardStar} />
-            <View style={s.featureRow}>
-              {FEATURES.map((f) => (
-                <View key={f.label} style={s.featureCol}>
-                  <View style={s.featureIconTile}>
-                    <Ionicons name={f.icon as any} size={30} color={DK.cyan} />
-                  </View>
-                  <Text style={s.featureLabel}>{f.label}</Text>
-                  <Text style={s.featureDesc}>{f.desc}</Text>
-                  <View style={s.featureDot} />
-                </View>
-              ))}
+        {/* Mascotte au centre, entourée de deux anneaux */}
+        <View style={s.hero}>
+          <View style={s.ringOuter} />
+          <View style={s.ringInner} />
+          <View style={s.mascotWrap}>
+            <Kitsune width={196} />
+            <View style={s.badgePlus}>
+              <Text style={s.badgePlusTxt}>+</Text>
+            </View>
+            <View style={s.badgeCheck}>
+              <Text style={s.badgeCheckTxt}>✓</Text>
             </View>
           </View>
+        </View>
 
-          <Text style={s.pitch}>
-            Créez votre espace famille et retrouvez{'\n'}les progrès de chaque enfant.
-          </Text>
+        {/* Pitch + actions */}
+        <View style={s.bottom}>
+          <View style={s.textBlock}>
+            <Text style={s.h1}>Une photo du cahier.{'\n'}Une révision sur mesure.</Text>
+            <Text style={s.sub}>
+              Vous scannez la leçon, l'IA prépare les exercices. Votre enfant révise, vous suivez.
+            </Text>
+          </View>
 
-          <TouchableOpacity onPress={() => router.push('/(onboarding)/family' as any)} activeOpacity={0.88}>
-            <View style={s.primaryBtn}>
-              <Text style={s.primaryBtnText}>Créer un compte</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => router.push('/(onboarding)/login' as any)}
-            style={s.secondaryBtn}
-            activeOpacity={0.85}
-          >
-            <Text style={s.secondaryBtnText}>Se connecter</Text>
-          </TouchableOpacity>
-
-          <Text style={s.footer}>
-            Déjà parent utilisateur ?{' '}
-            <Text style={s.footerLink} onPress={() => router.push('/(onboarding)/login' as any)}>Se connecter</Text>
-          </Text>
-        </ScrollView>
+          <View style={s.actions}>
+            <PhysicalButton
+              label="CRÉER MA FAMILLE"
+              variant="parent"
+              onPress={() => router.push('/(onboarding)/family' as any)}
+            />
+            <Pressable
+              onPress={() => router.push('/(onboarding)/login' as any)}
+              style={s.secondary}
+            >
+              <Text style={s.secondaryTxt}>J'ai déjà un compte</Text>
+            </Pressable>
+          </View>
+        </View>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -74,41 +66,76 @@ export default function WelcomeScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  content: { flexGrow: 1, padding: 22, paddingTop: 60, justifyContent: 'center' },
-  title: { color: '#fff', fontSize: 44, fontWeight: '900', letterSpacing: -1.2, textAlign: 'center' },
-  tagline: { color: DK.sub, fontSize: 17, fontWeight: '600', textAlign: 'center', marginTop: 10 },
-
-  featureCard: {
-    marginTop: 34, borderRadius: 28, borderWidth: 1.2, borderColor: 'rgba(53,228,210,0.45)',
-    backgroundColor: 'rgba(148,168,255,0.05)', paddingVertical: 30, paddingHorizontal: 12,
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.15, shadowRadius: 22,
+  hero: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  ringOuter: {
+    position: 'absolute',
+    width: 290,
+    height: 290,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  cardStar: { position: 'absolute', top: 18, right: 26 },
-  featureRow: { flexDirection: 'row' },
-  featureCol: { flex: 1, alignItems: 'center', paddingHorizontal: 6 },
-  featureIconTile: {
-    width: 78, height: 78, borderRadius: 22,
-    backgroundColor: 'rgba(148,168,255,0.09)', borderWidth: 1, borderColor: DK.cardBorder,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 12,
+  ringInner: {
+    position: 'absolute',
+    width: 196,
+    height: 196,
+    borderRadius: 999,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: 'rgba(255,255,255,0.11)',
   },
-  featureLabel: { color: '#fff', fontSize: 17, fontWeight: '800', marginTop: 14, letterSpacing: -0.3 },
-  featureDesc: { color: DK.sub, fontSize: 12, fontWeight: '600', textAlign: 'center', marginTop: 6, lineHeight: 17 },
-  featureDot: { width: 6, height: 6, borderRadius: 999, backgroundColor: DK.cyan, marginTop: 16 },
-
-  pitch: { color: DK.sub, fontSize: 15.5, fontWeight: '600', textAlign: 'center', marginTop: 30, lineHeight: 23 },
-
-  primaryBtn: {
-    marginTop: 26, borderRadius: 16, paddingVertical: 17, alignItems: 'center', backgroundColor: DK.cyan,
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 8,
+  mascotWrap: { width: 230, height: 230, alignItems: 'center', justifyContent: 'flex-end' },
+  badgePlus: {
+    position: 'absolute',
+    left: -6,
+    top: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
+    backgroundColor: HC.amber,
+    transform: [{ rotate: '-14deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  primaryBtnText: { color: '#062A26', fontSize: 17, fontWeight: '800' },
-  secondaryBtn: {
-    marginTop: 14, borderRadius: 16, paddingVertical: 16, alignItems: 'center',
-    borderWidth: 1.4, borderColor: 'rgba(53,228,210,0.55)',
+  badgePlusTxt: { fontFamily: FONT.title, fontSize: 23, color: HC.onAmber },
+  badgeCheck: {
+    position: 'absolute',
+    right: -4,
+    bottom: 44,
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: HC.blue,
+    transform: [{ rotate: '10deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  secondaryBtnText: { color: DK.cyan, fontSize: 16.5, fontWeight: '800' },
-
-  footer: { color: DK.sub, fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 22 },
-  footerLink: { color: DK.cyan, fontWeight: '800' },
+  badgeCheckTxt: { fontFamily: FONT.title, fontSize: 21, color: '#fff' },
+  bottom: { paddingHorizontal: 26, paddingBottom: 44, gap: 26 },
+  textBlock: { gap: 12, alignItems: 'center' },
+  h1: {
+    fontFamily: FONT.title,
+    fontSize: 31,
+    lineHeight: 36,
+    letterSpacing: -0.3,
+    color: HC.ink,
+    textAlign: 'center',
+  },
+  sub: {
+    fontFamily: FONT.body,
+    fontSize: 15,
+    lineHeight: 23,
+    color: HC.sub,
+    textAlign: 'center',
+  },
+  actions: { gap: 12 },
+  secondary: {
+    width: '100%',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  secondaryTxt: { fontFamily: FONT.title, fontSize: 16, color: HC.sub },
 });
