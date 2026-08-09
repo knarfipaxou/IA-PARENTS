@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { T, type AccentKey } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
 import { Btn } from '../components/ui/Btn';
@@ -319,11 +320,11 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: T.bg },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
-  title: { fontSize: 24, fontWeight: '800', color: T.ink, letterSpacing: -0.5, marginTop: 14 },
-  sub: { fontSize: 14, color: T.sub, fontWeight: '500', marginTop: 6, lineHeight: 20, marginBottom: 4 },
-  sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 22, marginBottom: 10, letterSpacing: 0.2 },
+  title: { fontFamily: FONT.title, fontSize: 24, color: T.ink, letterSpacing: -0.5, marginTop: 14 },
+  sub: { fontFamily: FONT.body, fontSize: 14, color: T.sub, marginTop: 6, lineHeight: 20, marginBottom: 4 },
+  sectionLabel: { fontFamily: FONT.bodySemi, fontSize: 13, color: T.sub, marginTop: 22, marginBottom: 10, letterSpacing: 0.5 },
   card: { marginBottom: 0 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: T.sub, marginBottom: 8 },
+  fieldLabel: { fontFamily: FONT.num, fontSize: 13, color: T.sub, marginBottom: 8 },
   hint: { fontSize: 12, color: T.faint, fontWeight: '500', marginBottom: 6 },
   hintGreen: { fontSize: 12, color: T.green.fg, fontWeight: '700', marginTop: 5 },
   inputRow: {
@@ -340,7 +341,7 @@ const s = StyleSheet.create({
     backgroundColor: T.surfaceAlt, borderWidth: 1.5, borderColor: 'transparent',
   },
   pillOn: { backgroundColor: T.primary, borderColor: T.primary },
-  pillText: { fontWeight: '700', fontSize: 13.5, color: T.ink },
+  pillText: { fontFamily: FONT.num, fontSize: 13.5, color: T.ink },
   pillTextOn: { color: '#fff' },
   objectifRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -348,8 +349,8 @@ const s = StyleSheet.create({
     padding: 13, backgroundColor: T.surfaceAlt,
   },
   objectifRowOn: { borderColor: T.primary, backgroundColor: T.primarySoft },
-  objectifLabel: { fontSize: 14.5, fontWeight: '800', color: T.ink },
-  objectifSub: { fontSize: 12.5, color: T.sub, fontWeight: '500', marginTop: 2 },
+  objectifLabel: { fontFamily: FONT.num, fontSize: 14.5, color: T.ink },
+  objectifSub: { fontFamily: FONT.body, fontSize: 12.5, color: T.sub, marginTop: 2 },
   warnBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     backgroundColor: T.amber.soft, borderRadius: 12, padding: 11, marginTop: 10,
