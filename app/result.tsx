@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { T, type AccentKey } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { GhostBtn } from '../components/ui/Btn';
 import { Card } from '../components/ui/Card';
 import { Squircle } from '../components/ui/Squircle';
@@ -144,22 +145,22 @@ const s = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
   emptyText: { fontSize: 15, color: T.sub, fontWeight: '600', textAlign: 'center' },
   header: { marginTop: 18, marginBottom: 0 },
-  title: { fontSize: 27, fontWeight: '800', color: T.ink, letterSpacing: -0.6 },
-  sub: { fontSize: 15, color: T.sub, marginTop: 8, fontWeight: '500' },
+  title: { fontFamily: FONT.title, fontSize: 27, color: T.ink, letterSpacing: -0.5 },
+  sub: { fontFamily: FONT.body, fontSize: 15, color: T.sub, marginTop: 8 },
   savedChip: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: T.primarySoft, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginTop: 10 },
   savedChipText: { fontSize: 12.5, fontWeight: '800', color: T.primaryDeep },
   lessonCard: { borderRadius: 24, padding: 20, marginTop: 18 },
   lessonBadgeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   lessonBadge: { backgroundColor: T.primary, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
   lessonBadgeText: { color: '#fff', fontWeight: '800', fontSize: 12.5 },
-  lessonTitle: { color: '#fff', fontWeight: '800', fontSize: 20, letterSpacing: -0.4 },
+  lessonTitle: { color: '#fff', fontFamily: FONT.title, fontSize: 20, letterSpacing: -0.4 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 13 },
-  cardTitle: { fontWeight: '800', fontSize: 16.5, color: T.ink, letterSpacing: -0.3 },
+  cardTitle: { fontFamily: FONT.num, fontSize: 16.5, color: T.ink, letterSpacing: -0.3 },
   notionsList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   notionChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: T.primarySoft, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 13 },
   notionText: { fontSize: 14, fontWeight: '700', color: T.primaryDeep, letterSpacing: -0.2 },
   resumeText: { fontSize: 14.5, color: T.sub, lineHeight: 22, fontWeight: '500' },
-  sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 22, marginBottom: 12, letterSpacing: 0.2 },
+  sectionLabel: { fontFamily: FONT.bodySemi, fontSize: 13, color: T.sub, marginTop: 22, marginBottom: 12, letterSpacing: 0.5 },
   actionsList: { gap: 11 },
   actionRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -167,6 +168,6 @@ const s = StyleSheet.create({
     borderRadius: 20, padding: 14,
     shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2,
   },
-  actionTitle: { fontWeight: '800', fontSize: 15.5, color: T.ink, letterSpacing: -0.3 },
-  actionDesc: { fontSize: 13, color: T.sub, fontWeight: '500', marginTop: 2 },
+  actionTitle: { fontFamily: FONT.num, fontSize: 15.5, color: T.ink, letterSpacing: -0.3 },
+  actionDesc: { fontFamily: FONT.body, fontSize: 13, color: T.sub, marginTop: 2 },
 });

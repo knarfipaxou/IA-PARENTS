@@ -11,6 +11,7 @@ import { useChild } from '../../contexts/ChildContext';
 import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS, type Badge } from '../../lib/gamification';
 import { statsByMatiere, fragileCompetences, masteredCompetences } from '../../lib/adaptation';
 import { DK, DK_ICONS as ICONS } from '../../constants/darkTheme';
+import { FONT } from '../../constants/handoff';
 
 const NIVEAU_LABELS: Record<string, string> = {
   fragile: 'Fragile', moyen: 'Moyen', bon: 'Bon', avance: 'Avancé', tres_avance: 'Très avancé',
@@ -334,8 +335,8 @@ const s = StyleSheet.create({
     shadowOpacity: 0.45, shadowRadius: 14, elevation: 8,
   },
   avatar: { width: 74, height: 74, borderRadius: 37, borderWidth: 2, borderColor: 'rgba(53,228,210,0.35)' },
-  name: { fontSize: 24, fontWeight: '800', color: DK.ink, letterSpacing: -0.5 },
-  classe: { fontSize: 13, color: DK.sub, fontWeight: '600', marginTop: 1 },
+  name: { fontFamily: FONT.title, fontSize: 24, color: DK.ink, letterSpacing: -0.5 },
+  classe: { fontFamily: FONT.body, fontSize: 13, color: DK.sub, marginTop: 1 },
   streakPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999,
@@ -354,8 +355,8 @@ const s = StyleSheet.create({
   },
   ringXP: { fontSize: 17, fontWeight: '800', color: DK.ink },
   ringXPSub: { fontSize: 10.5, fontWeight: '600', color: DK.sub, marginTop: 1 },
-  levelSub: { fontSize: 12, color: DK.sub, fontWeight: '600' },
-  levelName: { fontSize: 22, fontWeight: '800', color: DK.ink, letterSpacing: -0.4 },
+  levelSub: { fontFamily: FONT.body, fontSize: 12, color: DK.sub },
+  levelName: { fontFamily: FONT.title, fontSize: 22, color: DK.ink, letterSpacing: -0.4 },
   levelNext: { fontSize: 12, color: DK.sub, fontWeight: '600', marginTop: 3 },
   levelNextGold: { color: DK.gold, fontWeight: '800' },
   xpTrack: { height: 7, borderRadius: 4, backgroundColor: 'rgba(148,168,255,0.15)', marginTop: 8, overflow: 'hidden' },
@@ -366,9 +367,9 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(53,228,210,0.09)', borderWidth: 1, borderColor: 'rgba(53,228,210,0.4)',
     borderRadius: 15, padding: 13,
   },
-  editRowText: { flex: 1, fontSize: 14, fontWeight: '800', color: DK.cyan },
+  editRowText: { flex: 1, fontFamily: FONT.bodyBold, fontSize: 14, color: DK.cyan },
 
-  sectionLabel: { fontSize: 12, fontWeight: '800', color: 'rgba(200,210,255,0.55)', letterSpacing: 2, marginBottom: 11 },
+  sectionLabel: { fontFamily: FONT.bodySemi, fontSize: 12, color: 'rgba(200,210,255,0.55)', letterSpacing: 1.5, marginBottom: 11 },
   sectionSpace: { marginTop: 22 },
   sectionRowBetween: {
     flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 22,
@@ -395,7 +396,7 @@ const s = StyleSheet.create({
     borderRadius: 16, padding: 13, gap: 3,
   },
   profItemLabel: { fontSize: 11.5, fontWeight: '700', color: DK.faint, marginTop: 4 },
-  profItemValue: { fontSize: 15, fontWeight: '800', color: DK.ink, letterSpacing: -0.3 },
+  profItemValue: { fontFamily: FONT.num, fontSize: 15, color: DK.ink, letterSpacing: -0.3 },
   profSchool: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 10 },
   profSchoolText: { fontSize: 13.5, fontWeight: '600', color: DK.sub },
   profNote: {
@@ -429,8 +430,8 @@ const s = StyleSheet.create({
     width: 36, height: 36, borderRadius: 11, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center', marginBottom: 10,
   },
-  cardLabel: { fontSize: 12, fontWeight: '800', color: DK.sub, marginBottom: 6, letterSpacing: 0.5 },
-  cardItem: { fontSize: 14, fontWeight: '700', color: DK.ink, marginTop: 3 },
+  cardLabel: { fontFamily: FONT.bodySemi, fontSize: 12, color: DK.sub, marginBottom: 6, letterSpacing: 0.5 },
+  cardItem: { fontFamily: FONT.num, fontSize: 14, color: DK.ink, marginTop: 3 },
 
   progressCard: {
     flexDirection: 'row', alignItems: 'center',
@@ -438,8 +439,8 @@ const s = StyleSheet.create({
     borderRadius: 20, padding: 16,
   },
   ringText: { fontSize: 16, fontWeight: '800', color: DK.ink },
-  progressTitle: { fontSize: 15, fontWeight: '800', color: DK.ink },
-  progressSub: { fontSize: 13, color: DK.sub, fontWeight: '500', marginTop: 2 },
+  progressTitle: { fontFamily: FONT.num, fontSize: 15, color: DK.ink },
+  progressSub: { fontFamily: FONT.body, fontSize: 13, color: DK.sub, marginTop: 2 },
 
   matCard: {
     borderWidth: 1, borderColor: DK.cardBorder, borderRadius: 22, padding: 16, gap: 13,
@@ -470,7 +471,7 @@ const s = StyleSheet.create({
     paddingVertical: 12, paddingHorizontal: 14,
   },
   histIcon: { width: 34, height: 34 },
-  histTitle: { fontSize: 13, fontWeight: '700', color: DK.ink },
+  histTitle: { fontFamily: FONT.num, fontSize: 13, color: DK.ink },
   histDate: { fontSize: 11.5, color: DK.sub, fontWeight: '600', marginTop: 1 },
   histScore: { fontSize: 12.5, fontWeight: '800' },
 });

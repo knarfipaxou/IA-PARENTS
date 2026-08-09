@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DK, DK_ICONS } from '../constants/darkTheme';
+import { FONT } from '../constants/handoff';
 import { useChild } from '../contexts/ChildContext';
 
 const STEPS = ['Rappel de la leçon', 'Reconnaître une fraction', 'Comparer deux fractions', 'Petit défi final'];
@@ -112,14 +113,14 @@ const s = StyleSheet.create({
     width: 60, height: 60,
     shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 14,
   },
-  headLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.5, color: DK.cyan },
-  headTitle: { fontSize: 21, fontWeight: '800', color: DK.ink, letterSpacing: -0.4, marginTop: 2 },
+  headLabel: { fontFamily: FONT.bodySemi, fontSize: 11, letterSpacing: 1.5, color: DK.cyan },
+  headTitle: { fontFamily: FONT.title, fontSize: 21, color: DK.ink, letterSpacing: -0.4, marginTop: 2 },
   minChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     backgroundColor: 'rgba(10,14,34,0.7)', borderWidth: 1, borderColor: 'rgba(148,168,255,0.25)',
     borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
   },
-  minChipText: { color: DK.ink, fontSize: 11.5, fontWeight: '700' },
+  minChipText: { color: DK.ink, fontSize: 11.5, fontFamily: FONT.num },
 
   activeCard: {
     borderWidth: 1.5, borderColor: 'rgba(53,228,210,0.45)', borderRadius: 24,
@@ -132,15 +133,15 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 10,
   },
-  stepNumOnText: { color: '#052A26', fontSize: 13, fontWeight: '800' },
-  stepTitleOn: { flex: 1, fontSize: 14.5, fontWeight: '800', color: DK.cyan },
-  stepMeta: { fontSize: 11, fontWeight: '800', color: 'rgba(210,220,255,0.55)' },
-  activeText: { fontSize: 13, lineHeight: 21, marginTop: 10, color: 'rgba(230,236,255,0.9)', fontWeight: '500' },
+  stepNumOnText: { color: '#052A26', fontSize: 13, fontFamily: FONT.title },
+  stepTitleOn: { flex: 1, fontFamily: FONT.num, fontSize: 14.5, color: DK.cyan },
+  stepMeta: { fontFamily: FONT.bodySemi, fontSize: 11, color: 'rgba(210,220,255,0.55)' },
+  activeText: { fontFamily: FONT.body, fontSize: 13, lineHeight: 21, marginTop: 10, color: 'rgba(230,236,255,0.9)' },
   stepCta: {
     alignItems: 'center', borderRadius: 999, paddingVertical: 12, marginTop: 12,
     shadowColor: DK.cyan, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.3, shadowRadius: 14, elevation: 5,
   },
-  stepCtaText: { color: '#052A26', fontSize: 13.5, fontWeight: '800' },
+  stepCtaText: { color: '#052A26', fontSize: 13.5, fontFamily: FONT.title },
 
   dimCard: {
     backgroundColor: 'rgba(19,26,58,0.5)', borderWidth: 1, borderColor: 'rgba(148,168,255,0.18)',
@@ -150,13 +151,13 @@ const s = StyleSheet.create({
     width: 28, height: 28, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(148,168,255,0.4)',
     alignItems: 'center', justifyContent: 'center',
   },
-  stepNumOffText: { color: '#B9C6FF', fontSize: 12, fontWeight: '800' },
-  stepTitleOff: { flex: 1, fontSize: 14.5, fontWeight: '800', color: 'rgba(230,236,255,0.85)' },
-  dimHint: { fontSize: 12, color: 'rgba(210,220,255,0.6)', fontWeight: '500', marginTop: 8 },
+  stepNumOffText: { color: '#B9C6FF', fontSize: 12, fontFamily: FONT.num },
+  stepTitleOff: { flex: 1, fontFamily: FONT.num, fontSize: 14.5, color: 'rgba(230,236,255,0.85)' },
+  dimHint: { fontFamily: FONT.body, fontSize: 12, color: 'rgba(210,220,255,0.6)', marginTop: 8 },
 
   xpPill: {
     borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,194,75,0.45)',
     backgroundColor: 'rgba(255,194,75,0.1)', paddingHorizontal: 11, paddingVertical: 5,
   },
-  xpPillText: { fontSize: 11.5, fontWeight: '800', color: '#FFC24B' },
+  xpPillText: { fontFamily: FONT.bodyBold, fontSize: 11.5, color: '#FFC24B' },
 });

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { Btn } from '../components/ui/Btn';
 import { Squircle } from '../components/ui/Squircle';
 import { TopBar } from '../components/ui/TopBar';
@@ -75,8 +76,8 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
   header: { marginTop: 18, marginBottom: 16 },
-  title: { fontSize: 27, fontWeight: '800', color: T.ink, letterSpacing: -0.6 },
-  sub: { fontSize: 15, color: T.sub, marginTop: 8, fontWeight: '500' },
+  title: { fontFamily: FONT.title, fontSize: 27, color: T.ink, letterSpacing: -0.5 },
+  sub: { fontFamily: FONT.body, fontSize: 15, color: T.sub, marginTop: 8 },
   list: { gap: 11 },
   row: {
     flexDirection: 'row', alignItems: 'center',
@@ -84,9 +85,9 @@ const s = StyleSheet.create({
     borderRadius: 20, padding: 15,
     shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2,
   },
-  rowMatiere: { fontWeight: '800', fontSize: 13, color: T.sub, letterSpacing: 0.2 },
-  rowTitre: { fontWeight: '800', fontSize: 15.5, color: T.ink, letterSpacing: -0.3, marginTop: 2 },
-  rowMeta: { fontSize: 12.5, color: T.faint, fontWeight: '600', marginTop: 4 },
+  rowMatiere: { fontFamily: FONT.bodyBold, fontSize: 13, color: T.sub, letterSpacing: 0.2 },
+  rowTitre: { fontFamily: FONT.num, fontSize: 15.5, color: T.ink, letterSpacing: -0.3, marginTop: 2 },
+  rowMeta: { fontFamily: FONT.body, fontSize: 12.5, color: T.faint, marginTop: 4 },
   emptyBox: { alignItems: 'center', paddingVertical: 48, gap: 16 },
-  emptyText: { fontSize: 15, color: T.faint, fontWeight: '600', textAlign: 'center' },
+  emptyText: { fontFamily: FONT.num, fontSize: 15, color: T.faint, textAlign: 'center' },
 });

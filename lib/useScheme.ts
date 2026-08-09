@@ -25,7 +25,9 @@ async function loadPref() {
 
 export function currentScheme(): 'light' | 'dark' {
   if (pref !== null) return pref ? 'dark' : 'light';
-  return Appearance.getColorScheme() === 'light' ? 'light' : 'dark';
+  // Défaut « nouvelle voie graphique » : sombre (handoff Kitsune) tant que
+  // l'utilisateur n'a pas explicitement choisi le mode clair (héritage).
+  return 'dark';
 }
 
 export function isDarkMode(): boolean { return currentScheme() === 'dark'; }

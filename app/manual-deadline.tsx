@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { T } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { Card } from '../components/ui/Card';
 import { TopBar } from '../components/ui/TopBar';
 import { Btn } from '../components/ui/Btn';
@@ -176,9 +177,9 @@ const s = StyleSheet.create({
   safe: { flex: 1, backgroundColor: T.bg },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingBottom: 32 },
-  title: { fontSize: 24, fontWeight: '800', color: T.ink, letterSpacing: -0.5, marginTop: 14 },
-  sub: { fontSize: 14, color: T.sub, fontWeight: '500', marginTop: 6 },
-  fieldLabel: { fontSize: 13, fontWeight: '700', color: T.sub, marginBottom: 9 },
+  title: { fontFamily: FONT.title, fontSize: 24, color: T.ink, letterSpacing: -0.5, marginTop: 14 },
+  sub: { fontFamily: FONT.body, fontSize: 14, color: T.sub, marginTop: 6 },
+  fieldLabel: { fontFamily: FONT.num, fontSize: 13, color: T.sub, marginBottom: 9 },
   inputRow: {
     flexDirection: 'row', alignItems: 'center',
     borderWidth: 1, borderColor: T.line, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12,
@@ -191,7 +192,7 @@ const s = StyleSheet.create({
     backgroundColor: T.surfaceAlt, borderWidth: 1.5, borderColor: 'transparent',
   },
   pillOn: { backgroundColor: T.primary, borderColor: T.primary },
-  pillText: { fontWeight: '700', fontSize: 14, color: T.ink },
+  pillText: { fontFamily: FONT.num, fontSize: 14, color: T.ink },
   pillTextOn: { color: '#fff' },
   subjectGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   subjectTile: {
@@ -203,8 +204,8 @@ const s = StyleSheet.create({
     shadowColor: '#12B886', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 3,
   },
   subjectImg: { width: 52, height: 52, borderRadius: 12 },
-  subjectLabel: { fontSize: 10, fontWeight: '700', color: T.sub, marginTop: 5 },
-  subjectLabelOn: { color: '#0A8A64' },
+  subjectLabel: { fontFamily: FONT.bodySemi, fontSize: 10, color: T.sub, marginTop: 5 },
+  subjectLabelOn: { color: '#3FD694' },
   subjectCheck: {
     position: 'absolute', top: 5, right: 5, width: 18, height: 18, borderRadius: 999,
     backgroundColor: '#12B886', alignItems: 'center', justifyContent: 'center',

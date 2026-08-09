@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { T, type AccentKey } from '../constants/theme';
+import { FONT } from '../constants/handoff';
 import { GhostBtn } from '../components/ui/Btn';
 import { Card } from '../components/ui/Card';
 import { Squircle } from '../components/ui/Squircle';
@@ -173,7 +174,7 @@ export default function LessonDetailScreen() {
             })}
             <TouchableOpacity onPress={() => router.push('/manual-deadline' as any)} style={[s.pickRow, { borderTopWidth: 1, borderTopColor: T.line }]} activeOpacity={0.8}>
               <Ionicons name="add-circle-outline" size={22} color={T.primary} />
-              <Text style={[s.pickTitle, { color: T.primaryDeep }]}>Créer un contrôle</Text>
+              <Text style={[s.pickTitle, { color: T.green.fg }]}>Créer un contrôle</Text>
             </TouchableOpacity>
           </Card>
         )}
@@ -188,7 +189,7 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: { padding: 18, paddingBottom: 36 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
-  centerText: { fontSize: 15, color: T.sub, fontWeight: '600', textAlign: 'center' },
+  centerText: { fontFamily: FONT.num, fontSize: 15, color: T.sub, textAlign: 'center' },
   trashBtn: {
     width: 44, height: 44, borderRadius: 14, backgroundColor: T.coral.soft,
     alignItems: 'center', justifyContent: 'center',
@@ -196,17 +197,17 @@ const s = StyleSheet.create({
   hero: { borderRadius: 24, padding: 20, marginTop: 14 },
   badgeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   badge: { backgroundColor: T.primary, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5 },
-  badgeText: { color: '#fff', fontWeight: '800', fontSize: 12.5 },
-  heroTitle: { color: '#fff', fontWeight: '800', fontSize: 20, letterSpacing: -0.4 },
-  heroDate: { color: 'rgba(255,255,255,0.66)', fontSize: 13, fontWeight: '600', marginTop: 6 },
+  badgeText: { color: '#fff', fontFamily: FONT.bodyBold, fontSize: 12.5 },
+  heroTitle: { color: '#fff', fontFamily: FONT.title, fontSize: 20, letterSpacing: -0.4 },
+  heroDate: { color: 'rgba(255,255,255,0.66)', fontFamily: FONT.body, fontSize: 13, marginTop: 6 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 13 },
-  cardTitle: { fontWeight: '800', fontSize: 16.5, color: T.ink, letterSpacing: -0.3 },
-  resumeText: { fontSize: 14.5, color: T.sub, lineHeight: 22, fontWeight: '500' },
+  cardTitle: { fontFamily: FONT.num, fontSize: 16.5, color: T.ink, letterSpacing: -0.3 },
+  resumeText: { fontFamily: FONT.body, fontSize: 14.5, color: T.sub, lineHeight: 22 },
   notionsList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   notionChip: { flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: T.primarySoft, borderRadius: 12, paddingVertical: 9, paddingHorizontal: 13 },
-  notionText: { fontSize: 14, fontWeight: '700', color: T.primaryDeep, letterSpacing: -0.2 },
-  sectionLabel: { fontSize: 13, fontWeight: '800', color: T.sub, marginTop: 22, marginBottom: 8, letterSpacing: 0.2 },
-  sectionHint: { fontSize: 12.5, color: T.faint, fontWeight: '500', lineHeight: 18, marginBottom: 12 },
+  notionText: { fontFamily: FONT.num, fontSize: 14, color: T.green.fg, letterSpacing: -0.2 },
+  sectionLabel: { fontFamily: FONT.bodySemi, fontSize: 13, color: T.sub, marginTop: 22, marginBottom: 8, letterSpacing: 0.5 },
+  sectionHint: { fontFamily: FONT.body, fontSize: 12.5, color: T.faint, lineHeight: 18, marginBottom: 12 },
   actionsList: { gap: 11 },
   actionRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -214,16 +215,16 @@ const s = StyleSheet.create({
     borderRadius: 20, padding: 14,
     shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.07, shadowRadius: 12, elevation: 2,
   },
-  actionTitle: { fontWeight: '800', fontSize: 15.5, color: T.ink, letterSpacing: -0.3 },
-  actionDesc: { fontSize: 13, color: T.sub, fontWeight: '500', marginTop: 2 },
+  actionTitle: { fontFamily: FONT.num, fontSize: 15.5, color: T.ink, letterSpacing: -0.3 },
+  actionDesc: { fontFamily: FONT.body, fontSize: 13, color: T.sub, marginTop: 2 },
   doneBadge: { backgroundColor: T.green.soft, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, marginRight: 8 },
-  doneBadgeText: { fontSize: 11.5, fontWeight: '800', color: T.green.fg },
+  doneBadgeText: { fontFamily: FONT.bodyBold, fontSize: 11.5, color: T.green.fg },
   linkedRow: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
     backgroundColor: T.primarySoft, borderRadius: 14, padding: 12,
   },
-  linkedText: { flex: 1, fontSize: 13.5, fontWeight: '700', color: T.primaryDeep },
+  linkedText: { flex: 1, fontFamily: FONT.num, fontSize: 13.5, color: T.green.fg },
   pickRow: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12 },
   pickBorder: { borderBottomWidth: 1, borderBottomColor: T.line },
-  pickTitle: { fontSize: 14.5, fontWeight: '700', color: T.ink },
+  pickTitle: { fontFamily: FONT.num, fontSize: 14.5, color: T.ink },
 });

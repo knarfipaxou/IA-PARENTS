@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { DK } from '../../constants/darkTheme';
+import { HC, FONT } from '../../constants/handoff';
 import { Starfield } from '../../components/Starfield';
 import { AvatarRing } from '../../components/AvatarRing';
 import { Breathe } from '../../components/anim/Breathe';
@@ -37,7 +38,7 @@ export default function ChildPicker() {
   }
 
   return (
-    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
+    <LinearGradient colors={[HC.gradTop, HC.gradBottom]} locations={[0, 0.6]} style={{ flex: 1 }}>
       <SafeAreaView style={s.safe} edges={['top', 'left', 'right']}>
         <StatusBar style="light" />
         <Starfield />
@@ -144,8 +145,8 @@ const s = StyleSheet.create({
     borderRadius: 999, backgroundColor: DK.cyan,
   },
 
-  title: { color: '#fff', fontSize: 38, fontWeight: '900', letterSpacing: -1, textAlign: 'center', marginTop: 28 },
-  sub: { color: DK.sub, fontSize: 16.5, fontWeight: '600', textAlign: 'center', marginTop: 12, lineHeight: 24 },
+  title: { color: '#fff', fontFamily: FONT.title, fontSize: 34, letterSpacing: -0.6, textAlign: 'center', marginTop: 28 },
+  sub: { color: DK.sub, fontFamily: FONT.body, fontSize: 15.5, textAlign: 'center', marginTop: 12, lineHeight: 24 },
 
   childCard: {
     flexDirection: 'row', alignItems: 'center',
@@ -160,8 +161,8 @@ const s = StyleSheet.create({
     backgroundColor: DK.cyan, borderWidth: 2.5, borderColor: '#0B1023',
     alignItems: 'center', justifyContent: 'center',
   },
-  childName: { color: '#fff', fontSize: 30, fontWeight: '900', letterSpacing: -0.7 },
-  childMeta: { fontSize: 16.5, fontWeight: '600', marginTop: 4 },
+  childName: { color: '#fff', fontFamily: FONT.title, fontSize: 28, letterSpacing: -0.5 },
+  childMeta: { fontFamily: FONT.body, fontSize: 16.5, marginTop: 4 },
   deadlinePill: {
     flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start',
     borderWidth: 1.1, borderColor: 'rgba(53,228,210,0.5)', backgroundColor: 'rgba(53,228,210,0.07)',
@@ -178,8 +179,8 @@ const s = StyleSheet.create({
     width: 74, height: 74, borderRadius: 999, borderWidth: 1.4, borderStyle: 'dashed',
     borderColor: 'rgba(53,228,210,0.5)', alignItems: 'center', justifyContent: 'center',
   },
-  addTitle: { color: '#fff', fontSize: 21, fontWeight: '800', letterSpacing: -0.4 },
-  addSub: { color: DK.sub, fontSize: 14.5, fontWeight: '600', marginTop: 4 },
+  addTitle: { color: '#fff', fontFamily: FONT.num, fontSize: 20, letterSpacing: -0.4 },
+  addSub: { color: DK.sub, fontFamily: FONT.body, fontSize: 14.5, marginTop: 4 },
 
   logoutRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,

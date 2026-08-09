@@ -1,16 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { DK } from '../../constants/darkTheme';
-import { Starfield } from '../../components/Starfield';
+import { HC, FONT } from '../../constants/handoff';
+import { PhysicalButton } from '../../components/ui/PhysicalButton';
+import { Kitsune, useKitsuneReaction } from '../../components/ui/Kitsune';
 import { useChild } from '../../contexts/ChildContext';
 import type { Child, CollegeChild, MatiereStat, ChildProfile, LearningObjective } from '../../types/childProfile';
 
-const CLASSES = ['CP', 'CE1', 'CE2', 'CM1', 'CM2', '6e', '5e', '4e', '3e'];
+type ClassDef = { id: string; tint: string; tileFg: string };
+const CLASSES: ClassDef[] = [
+  { id: 'CP', tint: '22,178,110', tileFg: '#3FD694' },
+  { id: 'CE1', tint: '59,125,255', tileFg: '#7FAAFF' },
+  { id: 'CE2', tint: '59,125,255', tileFg: '#7FAAFF' },
+  { id: 'CM1', tint: '255,176,32', tileFg: '#FFB020' },
+  { id: 'CM2', tint: '22,178,110', tileFg: '#3FD694' },
+  { id: '6e', tint: '169,123,255', tileFg: '#C4A2FF' },
+  { id: '5e', tint: '255,107,90', tileFg: '#FF9683' },
+  { id: '4e', tint: '169,123,255', tileFg: '#C4A2FF' },
+  { id: '3e', tint: '255,176,32', tileFg: '#FFB020' },
+];
+const CHEERS: Record<string, string> = {
+  CP: 'CP, on démarre en douceur !',
+  CE1: 'CE1, on consolide les bases.',
+  CE2: 'CE2, super ! Je connais bien le programme.',
+  CM1: 'CM1, top ! On va viser les fractions.',
+  CM2: 'CM2, parfait ! Bientôt le collège.',
+  '6e': '6e, on entre au collège !',
+  '5e': '5e, on passe la vitesse supérieure !',
+  '4e': '4e, on approfondit.',
+  '3e': '3e, cap sur le brevet !',
+};
 const GOALS: { id: string; emoji: string; label: string; sub: string; objectif: LearningObjective }[] = [
   { id: 'comprendre', emoji: '🧠', label: 'Mieux comprendre', sub: 'Renforcer les bases et mieux assimiler les notions clés.', objectif: 'consolidation' },
   { id: 'controles', emoji: '🏆', label: 'Réussir les contrôles', sub: 'Obtenir de meilleures notes et réussir ses contrôles.', objectif: 'excellence' },
@@ -18,10 +40,11 @@ const GOALS: { id: string; emoji: string; label: string; sub: string; objectif: 
 ];
 const AGE_MAP: Record<string, number> = { CP: 6, CE1: 7, CE2: 8, CM1: 9, CM2: 10, '6e': 11, '5e': 12, '4e': 13, '3e': 14 };
 
-/** Étape 2/2 : création du profil du premier enfant. */
+/** Étape 2/2 : profil du premier enfant (style handoff Kitsune, écran « profile »). */
 export default function ProfileScreen() {
   const router = useRouter();
-  const { children, addChild, addProfile, setChild } = useChild();
+  const { children, addChild, addProfile } = useChild();
+  const kit = useKitsuneReaction();
   const [prenom, setPrenom] = useState('');
   const [classe, setClasse] = useState('');
   const [goal, setGoal] = useState('comprendre');
@@ -45,180 +68,132 @@ export default function ProfileScreen() {
       matieres, forts: [], faibles: [], echeances: [], history: [],
     };
     const newChild = addChild(data as Omit<Child, 'id'>);
-
     const selected = GOALS.find((g) => g.id === goal) ?? GOALS[0];
     const now = new Date().toISOString();
     const profile: ChildProfile = {
-      childId: newChild.id,
-      pays: 'France',
-      niveauEstime: 'moyen',
-      objectif: selected.objectif,
-      matieresPrioritaires: ['Mathématiques', 'Français'],
-      dureeQuotidienne: 20,
-      rythme: 'semaine',
-      pointsFaibles: [], pointsForts: [],
-      correctionDetaillee: true, versionImprimable: false,
-      ton: 'bienveillant',
-      createdAt: now, updatedAt: now,
+      childId: newChild.id, pays: 'France', niveauEstime: 'moyen', objectif: selected.objectif,
+      matieresPrioritaires: ['Mathématiques', 'Français'], dureeQuotidienne: 20, rythme: 'semaine',
+      pointsFaibles: [], pointsForts: [], correctionDetaillee: true, versionImprimable: false,
+      ton: 'bienveillant', createdAt: now, updatedAt: now,
     };
     addProfile(profile);
     router.replace('/(tabs)' as any);
   }
 
   return (
-    <LinearGradient colors={[DK.bgTop, DK.bgBottom]} style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: HC.bgApp }}>
       <SafeAreaView style={s.safe}>
         <StatusBar style="light" />
-        <Starfield />
         <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-
           <View style={s.topRow}>
-            <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.8}>
-              <Ionicons name="chevron-back" size={22} color="#B9C6FF" />
-            </TouchableOpacity>
-            <View style={s.stepPill}>
-              <Text style={s.stepPillText}><Text style={{ color: DK.cyan }}>2</Text>/2</Text>
+            <Pressable onPress={() => router.back()} hitSlop={10}>
+              <Ionicons name="chevron-back" size={24} color={HC.faint} />
+            </Pressable>
+            <View style={s.progressTrack}>
+              <View style={[s.progressFill, { width: '72%' }]} />
             </View>
           </View>
 
-          <Text style={s.title}>Créer le profil{'\n'}de votre enfant</Text>
-          <Text style={s.sub}>Ces informations nous aident à proposer des révisions adaptées.</Text>
-
-          <View style={s.card}>
-            <View style={s.labelRow}>
-              <Ionicons name="person-outline" size={18} color={DK.cyan} />
-              <Text style={s.label}>Prénom de l'enfant</Text>
+          <View style={s.kitRow}>
+            <Kitsune width={66} move={kit.move} tick={kit.tick} />
+            <View style={s.bubble}>
+              <Text style={[s.bubbleTxt, kit.cheer ? { color: HC.greenLight } : null]}>
+                {kit.cheer || "En quelle classe est votre enfant\u00a0?"}
+              </Text>
             </View>
-            <View style={s.inputRow}>
+          </View>
+
+          <View style={s.field}>
+            <Text style={s.fieldLabel}>PRÉNOM DE L'ENFANT</Text>
+            <View style={s.fieldBox}>
               <TextInput
-                style={s.input}
+                style={s.fieldInput}
                 value={prenom}
                 onChangeText={setPrenom}
+                onFocus={() => kit.react()}
                 placeholder="Lucas"
-                placeholderTextColor={DK.faint}
+                placeholderTextColor={HC.faint}
               />
             </View>
-
-            <View style={[s.labelRow, { marginTop: 22 }]}>
-              <Ionicons name="school-outline" size={18} color={DK.cyan} />
-              <Text style={s.label}>Classe</Text>
-            </View>
-            <View style={s.classGrid}>
-              {CLASSES.map((c) => {
-                const on = classe === c;
-                return (
-                  <TouchableOpacity key={c} onPress={() => setClasse(c)} style={[s.classChip, on && s.classChipOn]} activeOpacity={0.8}>
-                    <Text style={[s.classChipText, on && { color: DK.cyan }]}>{c}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <View style={[s.labelRow, { marginTop: 22 }]}>
-              <Ionicons name="locate-outline" size={18} color={DK.cyan} />
-              <Text style={s.label}>Objectif principal</Text>
-            </View>
-            <View style={{ gap: 11 }}>
-              {GOALS.map((g) => {
-                const on = goal === g.id;
-                return (
-                  <TouchableOpacity key={g.id} onPress={() => setGoal(g.id)} style={[s.goalRow, on && s.goalRowOn]} activeOpacity={0.85}>
-                    <View style={s.goalEmoji}><Text style={{ fontSize: 26 }}>{g.emoji}</Text></View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.goalLabel}>{g.label}</Text>
-                      <Text style={s.goalSub}>{g.sub}</Text>
-                    </View>
-                    <View style={[s.radio, on && s.radioOn]}>
-                      {on && <Ionicons name="checkmark" size={15} color="#062A26" />}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <TouchableOpacity onPress={submit} activeOpacity={0.88} style={{ marginTop: 24 }}>
-              <View style={s.primaryBtn}>
-                <Text style={s.primaryBtnText}>Continuer</Text>
-              </View>
-            </TouchableOpacity>
-
-            {hasExistingChildren && (
-              <TouchableOpacity onPress={() => router.replace('/(tabs)' as any)} style={{ marginTop: 16 }}>
-                <Text style={s.skipLink}>Mes enfants existent déjà — passer cette étape</Text>
-              </TouchableOpacity>
-            )}
           </View>
+
+          <View style={{ gap: 11 }}>
+            {CLASSES.map((c) => {
+              const on = classe === c.id;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => { setClasse(c.id); kit.react(CHEERS[c.id] ?? null); }}
+                  style={[s.classRow, { backgroundColor: on ? 'rgba(22,178,110,0.10)' : '#1B2238', borderColor: on ? HC.green : 'rgba(255,255,255,0.09)' }]}
+                >
+                  <View style={[s.classTile, { backgroundColor: `rgba(${c.tint},${on ? 0.22 : 0.18})` }]}>
+                    <Text style={[s.classShort, { color: c.tileFg }]}>{c.id}</Text>
+                  </View>
+                  <Text style={[s.classLabel, { color: on ? HC.greenLight : HC.ink }]}>{`${c.id} · ${AGE_MAP[c.id]}-${AGE_MAP[c.id] + 1} ans`}</Text>
+                  <Ionicons name="checkmark" size={18} color={HC.greenLight} style={{ marginLeft: 'auto', opacity: on ? 1 : 0 }} />
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={{ gap: 11 }}>
+            <Text style={s.sectionLabel}>OBJECTIF PRINCIPAL</Text>
+            {GOALS.map((g) => {
+              const on = goal === g.id;
+              return (
+                <Pressable
+                  key={g.id}
+                  onPress={() => { setGoal(g.id); kit.react(); }}
+                  style={[s.goalRow, { borderColor: on ? HC.green : 'rgba(255,255,255,0.09)', backgroundColor: on ? 'rgba(22,178,110,0.08)' : '#1B2238' }]}
+                >
+                  <View style={s.goalEmoji}><Text style={{ fontSize: 24 }}>{g.emoji}</Text></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.goalLabel}>{g.label}</Text>
+                    <Text style={s.goalSub}>{g.sub}</Text>
+                  </View>
+                  <View style={[s.radio, on && { backgroundColor: HC.green, borderColor: HC.green }]}>
+                    {on && <Ionicons name="checkmark" size={15} color={HC.onGreen} />}
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <View style={{ minHeight: 8 }} />
+          <PhysicalButton label="C'EST PARTI" variant="parent" onPress={submit} />
+          {hasExistingChildren && (
+            <Pressable onPress={() => router.replace('/(tabs)' as any)}>
+              <Text style={s.skipLink}>Mes enfants existent déjà — passer cette étape</Text>
+            </Pressable>
+          )}
         </ScrollView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  content: { flexGrow: 1, padding: 22, paddingTop: 14, paddingBottom: 36 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  backBtn: {
-    width: 48, height: 48, borderRadius: 999, backgroundColor: 'rgba(148,168,255,0.1)',
-    borderWidth: 1, borderColor: 'rgba(148,168,255,0.22)', alignItems: 'center', justifyContent: 'center',
-  },
-  stepPill: {
-    borderWidth: 1, borderColor: 'rgba(148,168,255,0.25)', backgroundColor: 'rgba(148,168,255,0.08)',
-    borderRadius: 999, paddingHorizontal: 18, paddingVertical: 10,
-  },
-  stepPillText: { color: DK.sub, fontSize: 16, fontWeight: '800' },
-
-  title: { color: '#fff', fontSize: 36, fontWeight: '900', letterSpacing: -1, marginTop: 22, lineHeight: 44 },
-  sub: { color: DK.sub, fontSize: 16, fontWeight: '600', marginTop: 12, lineHeight: 23 },
-
-  card: {
-    marginTop: 24, borderRadius: 26, borderWidth: 1.2, borderColor: 'rgba(53,228,210,0.4)',
-    backgroundColor: 'rgba(148,168,255,0.04)', padding: 20,
-  },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 11 },
-  label: { color: '#fff', fontSize: 17, fontWeight: '800' },
-  inputRow: {
-    borderWidth: 1.2, borderColor: DK.cardBorder, backgroundColor: 'rgba(10,14,34,0.5)',
-    borderRadius: 16, paddingHorizontal: 15,
-  },
-  input: { color: '#fff', fontSize: 16, fontWeight: '600', paddingVertical: 14 },
-
-  classGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  classChip: {
-    minWidth: 62, alignItems: 'center', borderRadius: 14, paddingVertical: 13, paddingHorizontal: 14,
-    borderWidth: 1.2, borderColor: DK.cardBorder, backgroundColor: 'rgba(19,26,58,0.55)',
-  },
-  classChipOn: {
-    borderColor: 'rgba(53,228,210,0.7)', backgroundColor: 'rgba(53,228,210,0.08)',
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.35, shadowRadius: 10,
-  },
-  classChipText: { color: '#fff', fontSize: 15.5, fontWeight: '700' },
-
-  goalRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 13,
-    borderWidth: 1.2, borderColor: DK.cardBorder, backgroundColor: 'rgba(19,26,58,0.5)',
-    borderRadius: 20, padding: 14,
-  },
-  goalRowOn: {
-    borderColor: 'rgba(53,228,210,0.7)', backgroundColor: 'rgba(53,228,210,0.06)',
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.3, shadowRadius: 12,
-  },
-  goalEmoji: {
-    width: 56, height: 56, borderRadius: 999, backgroundColor: 'rgba(10,14,34,0.6)',
-    borderWidth: 1, borderColor: DK.cardBorder, alignItems: 'center', justifyContent: 'center',
-  },
-  goalLabel: { color: '#fff', fontSize: 16.5, fontWeight: '800', letterSpacing: -0.3 },
-  goalSub: { color: DK.sub, fontSize: 13, fontWeight: '600', marginTop: 3, lineHeight: 18 },
-  radio: {
-    width: 28, height: 28, borderRadius: 999, borderWidth: 1.6, borderColor: 'rgba(148,168,255,0.4)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  radioOn: { backgroundColor: DK.cyan, borderColor: DK.cyan },
-
-  primaryBtn: {
-    borderRadius: 999, paddingVertical: 17, alignItems: 'center', backgroundColor: DK.cyan,
-    shadowColor: DK.cyan, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 8,
-  },
-  primaryBtnText: { color: '#062A26', fontSize: 17.5, fontWeight: '800' },
-  skipLink: { color: DK.sub, fontSize: 13.5, fontWeight: '700', textAlign: 'center', textDecorationLine: 'underline' },
+  content: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 34, gap: 20 },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  progressTrack: { flex: 1, height: 16, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 99, backgroundColor: HC.green },
+  kitRow: { flexDirection: 'row', gap: 14, alignItems: 'flex-end' },
+  bubble: { flex: 1, backgroundColor: '#1B2238', borderWidth: 2, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16 },
+  bubbleTxt: { fontFamily: FONT.num, fontSize: 16.5, lineHeight: 22, color: HC.ink },
+  field: { gap: 8 },
+  fieldLabel: { fontFamily: FONT.bodyBold, fontSize: 11, letterSpacing: 1, color: HC.faint },
+  fieldBox: { backgroundColor: '#1B2238', borderWidth: 2, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 18, paddingHorizontal: 18 },
+  fieldInput: { fontFamily: FONT.num, fontSize: 18, color: HC.ink, paddingVertical: 15 },
+  classRow: { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 2, borderRadius: 18, paddingVertical: 15, paddingHorizontal: 17 },
+  classTile: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  classShort: { fontFamily: FONT.title, fontSize: 15 },
+  classLabel: { fontFamily: FONT.num, fontSize: 17 },
+  sectionLabel: { fontFamily: FONT.bodySemi, fontSize: 12, letterSpacing: 1.2, color: HC.faint },
+  goalRow: { flexDirection: 'row', alignItems: 'center', gap: 13, borderWidth: 2, borderRadius: 18, padding: 14 },
+  goalEmoji: { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  goalLabel: { fontFamily: FONT.num, fontSize: 16.5, color: HC.ink },
+  goalSub: { fontFamily: FONT.body, fontSize: 12.5, color: HC.sub, marginTop: 3, lineHeight: 17 },
+  radio: { width: 28, height: 28, borderRadius: 999, borderWidth: 1.6, borderColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
+  skipLink: { fontFamily: FONT.bodySemi, fontSize: 13.5, color: HC.sub, textAlign: 'center', textDecorationLine: 'underline' },
 });
