@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import { T } from '../../constants/theme';
+import { HC, FONT, tintBg } from '../../constants/handoff';
 import { useChild } from '../../contexts/ChildContext';
 import { upcomingDeadlines } from '../../lib/deadlines';
 import type { Child } from '../../data/mock';
@@ -12,9 +13,10 @@ interface AlertItem {
   id: string;
   child: Child;
   icon: string;
-  accent: 'coral' | 'amber';
+  tone: 'coral' | 'amber';
   title: string;
   sub: string;
+  days: number;
 }
 
 export default function Notifications() {
@@ -29,14 +31,14 @@ export default function Notifications() {
         .map((e) => ({
           id: `${c.id}-${e.id}`,
           child: c,
-          icon: e.days <= 3 ? 'alert-circle-outline' : 'calendar-outline',
-          accent: (e.days <= 3 ? 'coral' : 'amber') as AlertItem['accent'],
+          icon: e.days <= 3 ? 'alert-circle' : 'calendar',
+          tone: (e.days <= 3 ? 'coral' : 'amber') as AlertItem['tone'],
           title: `${e.type} de ${e.subj} — ${c.name}`,
           sub: e.days === 0 ? "Aujourd'hui" : `Dans ${e.days} jour${e.days > 1 ? 's' : ''} · ${e.date}`,
           days: e.days,
-        }))
+        })),
     )
-    .sort((a: any, b: any) => a.days - b.days);
+    .sort((a, b) => a.days - b.days);
 
   function openAlert(a: AlertItem) {
     setChild(a.child);
@@ -44,66 +46,70 @@ export default function Notifications() {
   }
 
   return (
-    <SafeAreaView style={s.safe}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.content}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <TouchableOpacity
-            onPress={() => router.back()}
-            style={{
-              width: 40, height: 40, borderRadius: 999, backgroundColor: T.surface,
-              borderWidth: 1, borderColor: T.line, alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="chevron-back" size={20} color={T.ink} />
-          </TouchableOpacity>
-          <Text style={s.title}>Alertes</Text>
-        </View>
-        <Text style={s.sub}>Échéances des 7 prochains jours</Text>
+    <View style={{ flex: 1, backgroundColor: HC.bgApp }}>
+      <SafeAreaView style={s.safe}>
+        <StatusBar style="light" />
+        <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+          <View style={s.header}>
+            <Pressable onPress={() => router.back()} hitSlop={10}>
+              <Ionicons name="chevron-back" size={24} color={HC.sub} />
+            </Pressable>
+            <Text style={s.title}>Notifications</Text>
+          </View>
+          <Text style={s.sub}>Échéances des 7 prochains jours</Text>
 
-        {alerts.length === 0 ? (
-          <View style={s.emptyBox}>
-            <Ionicons name="checkmark-circle-outline" size={40} color={T.green.fg} />
-            <Text style={s.emptyText}>Tout est calme !</Text>
-            <Text style={s.emptySub}>Aucune échéance urgente dans les 7 prochains jours.</Text>
-          </View>
-        ) : (
-          <View style={s.list}>
-            {alerts.map((n) => (
-              <TouchableOpacity key={n.id} style={s.row} activeOpacity={0.85} onPress={() => openAlert(n)}>
-                <View style={[s.iconBox, { backgroundColor: T[n.accent].soft }]}>
-                  <Ionicons name={n.icon as any} size={22} color={T[n.accent].fg} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.rowTitle}>{n.title}</Text>
-                  <Text style={s.rowSub}>{n.sub}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={17} color={T.faint} />
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+          {alerts.length === 0 ? (
+            <View style={s.emptyBox}>
+              <Ionicons name="checkmark-circle" size={44} color={HC.greenLight} />
+              <Text style={s.emptyText}>Tout est calme&nbsp;!</Text>
+              <Text style={s.emptySub}>Aucune échéance urgente dans les 7 prochains jours.</Text>
+            </View>
+          ) : (
+            <View style={s.list}>
+              {alerts.map((n) => {
+                const fg = n.tone === 'coral' ? HC.coralLight : HC.amber;
+                return (
+                  <Pressable key={n.id} style={s.row} onPress={() => openAlert(n)}>
+                    <View style={[s.iconBox, { backgroundColor: tintBg[n.tone] }]}>
+                      <Ionicons name={n.icon as any} size={22} color={fg} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.rowTitle}>{n.title}</Text>
+                      <Text style={s.rowSub}>{n.sub}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={HC.faint} />
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: T.bg },
-  scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 32 },
-  title: { fontSize: 26, fontWeight: '800', color: T.ink, letterSpacing: -0.6 },
-  sub: { fontSize: 14, color: T.sub, marginTop: 4, fontWeight: '500', marginBottom: 20 },
-  list: { gap: 10 },
+  safe: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  title: { fontFamily: FONT.num, fontSize: 24, color: HC.ink },
+  sub: { fontFamily: FONT.body, fontSize: 13, color: HC.sub, marginTop: 6, marginBottom: 18 },
+  list: { gap: 11 },
   row: {
-    flexDirection: 'row', alignItems: 'center', gap: 13,
-    backgroundColor: T.surface, borderWidth: 1, borderColor: T.line,
-    borderRadius: 20, padding: 14,
-    shadowColor: '#102818', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    backgroundColor: '#1B2238',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 20,
+    padding: 15,
   },
-  iconBox: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { fontSize: 14.5, fontWeight: '700', color: T.ink, letterSpacing: -0.2 },
-  rowSub: { fontSize: 12.5, color: T.sub, fontWeight: '500', marginTop: 2 },
-  emptyBox: { alignItems: 'center', paddingVertical: 48, gap: 8 },
-  emptyText: { fontSize: 17, fontWeight: '800', color: T.ink },
-  emptySub: { fontSize: 13.5, color: T.sub, fontWeight: '500', textAlign: 'center', lineHeight: 19 },
+  iconBox: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  rowTitle: { fontFamily: FONT.num, fontSize: 15, color: HC.ink },
+  rowSub: { fontFamily: FONT.body, fontSize: 12.5, color: '#7C8AB4', marginTop: 3 },
+  emptyBox: { alignItems: 'center', paddingVertical: 56, gap: 10 },
+  emptyText: { fontFamily: FONT.title, fontSize: 18, color: HC.ink },
+  emptySub: { fontFamily: FONT.body, fontSize: 13.5, color: HC.sub, textAlign: 'center', lineHeight: 20 },
 });
