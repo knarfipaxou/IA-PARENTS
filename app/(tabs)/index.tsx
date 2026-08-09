@@ -5,11 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { DK } from '../../constants/darkTheme';
 import { Starfield } from '../../components/Starfield';
 import { AvatarRing } from '../../components/AvatarRing';
-import { Breathe } from '../../components/anim/Breathe';
 import { useChild } from '../../contexts/ChildContext';
 import { logout } from '../../lib/auth';
 import { upcomingDeadlines } from '../../lib/deadlines';
@@ -65,23 +63,21 @@ export default function ChildPicker() {
 
           {/* cartes enfants */}
           <View style={{ gap: 16, marginTop: 30 }}>
-            {children.map((c, i) => {
+            {children.map((c) => {
               const proches = upcomingDeadlines(c.echeances ?? []).filter((e) => e.days <= 7).length;
               return (
-                <Animated.View key={c.id} entering={FadeInDown.delay(i * 90).springify().damping(16)}>
+                <View key={c.id}>
                   <TouchableOpacity onPress={() => openChild(c)} style={s.childCard} activeOpacity={0.88}>
-                    <Breathe>
-                      <View style={s.avatarWrap}>
-                        <Image
-                          source={c.photoUri ? { uri: c.photoUri } : AVATAR_DEFAULT}
-                          style={s.avatar}
-                        />
-                        <AvatarRing size={128} teal={DK.cyan} track="rgba(53,228,210,0.3)" />
-                        <View style={s.starBadge}>
-                          <Ionicons name="star" size={13} color="#fff" />
-                        </View>
+                    <View style={s.avatarWrap}>
+                      <Image
+                        source={c.photoUri ? { uri: c.photoUri } : AVATAR_DEFAULT}
+                        style={s.avatar}
+                      />
+                      <AvatarRing size={128} teal={DK.cyan} track="rgba(53,228,210,0.3)" />
+                      <View style={s.starBadge}>
+                        <Ionicons name="star" size={13} color="#fff" />
                       </View>
-                    </Breathe>
+                    </View>
                     <View style={{ flex: 1, marginLeft: 16 }}>
                       <Text style={s.childName}>{c.name}</Text>
                       <Text style={s.childMeta}>
@@ -99,7 +95,7 @@ export default function ChildPicker() {
                     </View>
                     <Ionicons name="chevron-forward" size={22} color={DK.sub} />
                   </TouchableOpacity>
-                </Animated.View>
+                </View>
               );
             })}
           </View>
