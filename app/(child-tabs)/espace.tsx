@@ -20,6 +20,7 @@ import { Breathe } from '../../components/anim/Breathe';
 import { useChild } from '../../contexts/ChildContext';
 import { getLevel, getLevelProgress, getNextLevelXP, BADGE_DEFS } from '../../lib/gamification';
 import { DK_ICONS } from '../../constants/darkTheme';
+import { FONT } from '../../constants/handoff';
 
 // ─── Illustrations découpées des maquettes (zones pleines, aucun détourage) ──
 const ART = {
@@ -366,14 +367,14 @@ const s = StyleSheet.create({
   safe: { flex: 1 },
   content: { padding: 18, paddingBottom: 32 },
   backBtn: { borderRadius: 14, paddingVertical: 12, paddingHorizontal: 24 },
-  backBtnText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  backBtnText: { color: '#fff', fontFamily: FONT.num, fontSize: 15 },
 
   topNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
   circleBtn: {
     width: 44, height: 44, borderRadius: 999, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
-  navTitle: { fontWeight: '700', fontSize: 15.5, letterSpacing: -0.2 },
+  navTitle: { fontFamily: FONT.num, fontSize: 15.5, letterSpacing: -0.2 },
   bellDot: { position: 'absolute', top: 9, right: 10, width: 8, height: 8, borderRadius: 999 },
 
   headerCard: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
@@ -383,15 +384,15 @@ const s = StyleSheet.create({
     position: 'absolute', top: 8, right: 8, width: 34, height: 34, borderRadius: 999,
     alignItems: 'center', justifyContent: 'center', borderWidth: 2.5,
   },
-  name: { fontSize: 36, fontWeight: '900', letterSpacing: -0.8 },
-  classeLine: { fontSize: 17, marginTop: 4 },
+  name: { fontFamily: FONT.titleBold, fontSize: 34, letterSpacing: -0.6 },
+  classeLine: { fontFamily: FONT.num, fontSize: 17, marginTop: 4 },
 
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 13 },
   sectionIcon: {
     width: 34, height: 34, borderRadius: 11, borderWidth: 1,
     alignItems: 'center', justifyContent: 'center',
   },
-  sectionLabel: { fontSize: 14, fontWeight: '800', letterSpacing: 1.5, flex: 1 },
+  sectionLabel: { fontFamily: FONT.bodySemi, fontSize: 12.5, letterSpacing: 1.2, flex: 1 },
   seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
 
   ctrlRow: {
@@ -417,8 +418,8 @@ const s = StyleSheet.create({
   tile: { width: '100%', borderRadius: 24, borderWidth: 1, overflow: 'hidden', minHeight: 268 },
   tileArt: { width: '100%', height: 128 },
   tileBody: { flex: 1, paddingHorizontal: 12, paddingBottom: 12, paddingTop: 10 },
-  tileTitle: { fontWeight: '800', fontSize: 15.5, letterSpacing: -0.3, marginBottom: 6, lineHeight: 20 },
-  tileDesc: { fontSize: 12, fontWeight: '500', lineHeight: 17 },
+  tileTitle: { fontFamily: FONT.num, fontSize: 15.5, letterSpacing: -0.3, marginBottom: 6, lineHeight: 20 },
+  tileDesc: { fontFamily: FONT.body, fontSize: 12, lineHeight: 17 },
   tileChevron: {
     width: 36, height: 36, borderRadius: 999, alignSelf: 'flex-end', marginTop: 'auto',
     alignItems: 'center', justifyContent: 'center',
@@ -432,31 +433,31 @@ const s = StyleSheet.create({
     width: 68, height: 68,
     shadowColor: '#35E4D2', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.55, shadowRadius: 14,
   },
-  missionLabel: { fontSize: 11.5, fontWeight: '800', letterSpacing: 1, flex: 1 },
-  missionTitle: { fontWeight: '900', fontSize: 21, letterSpacing: -0.4, marginTop: 4 },
-  missionSub: { fontSize: 13, fontWeight: '500', marginTop: 3 },
+  missionLabel: { fontFamily: FONT.bodySemi, fontSize: 11.5, letterSpacing: 1, flex: 1 },
+  missionTitle: { fontFamily: FONT.title, fontSize: 21, letterSpacing: -0.4, marginTop: 4 },
+  missionSub: { fontFamily: FONT.body, fontSize: 13, marginTop: 3 },
   minChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     borderWidth: 1, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
   },
-  minChipText: { fontSize: 13, fontWeight: '700' },
+  minChipText: { fontFamily: FONT.num, fontSize: 13 },
 
   levelCard: { borderWidth: 1, borderRadius: 24, padding: 16 },
   flameIcon: {
     width: 68, height: 68,
     shadowColor: '#FF7A3D', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 12,
   },
-  levelSub: { fontSize: 13, fontWeight: '600' },
+  levelSub: { fontFamily: FONT.body, fontSize: 13 },
   levelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 1, marginBottom: 9 },
-  levelName: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-  levelXP: { fontSize: 16.5, fontWeight: '800' },
+  levelName: { fontFamily: FONT.title, fontSize: 22, letterSpacing: -0.5 },
+  levelXP: { fontFamily: FONT.title, fontSize: 16.5 },
   xpTrack: { height: 9, borderRadius: 999, overflow: 'hidden' },
   xpFill: { height: '100%', borderRadius: 999 },
-  levelNext: { fontSize: 12, fontWeight: '600', marginTop: 6, textAlign: 'right' },
+  levelNext: { fontFamily: FONT.body, fontSize: 12, marginTop: 6, textAlign: 'right' },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 14 },
   badgePill: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
     borderWidth: 1.2, borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8,
   },
-  badgePillText: { fontSize: 13, fontWeight: '700' },
+  badgePillText: { fontFamily: FONT.bodySemi, fontSize: 13 },
 });

@@ -2,10 +2,11 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 import { useScheme } from '../../lib/useScheme';
+import { FONT } from '../../constants/handoff';
 
-// Barre d'onglets bi-thème (maquettes clair/sombre) : actif teal + soulignement
+// Barre d'onglets bi-thème (handoff Kitsune) : actif cyan (univers enfant) + soulignement
 const THEMES = {
-  dark: { bg: '#0B1023', border: 'rgba(148,168,255,0.16)', active: '#35E4D2', inactive: 'rgba(210,220,255,0.65)' },
+  dark: { bg: '#141A2F', border: 'rgba(255,255,255,0.07)', active: '#35E4D2', inactive: '#5D6890' },
   light: { bg: '#FFFFFF', border: 'rgba(27,37,89,0.08)', active: '#12B886', inactive: '#6B7699' },
 };
 
@@ -38,7 +39,7 @@ export default function ChildTabsLayout() {
           paddingTop: 10,
           height: 84,
         },
-        tabBarLabelStyle: { fontSize: 11.5, fontWeight: '600', letterSpacing: -0.1 },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: FONT.bodySemi, letterSpacing: 0.1 },
       }}
     >
       <Tabs.Screen
