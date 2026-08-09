@@ -27,7 +27,8 @@
         {
           "photosPermission": "Utilisé pour importer les photos de cahiers et devoirs."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "iaparents",
     "experiments": {

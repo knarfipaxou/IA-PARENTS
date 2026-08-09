@@ -1,8 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useFonts, Fredoka_400Regular, Fredoka_500Medium, Fredoka_600SemiBold, Fredoka_700Bold } from '@expo-google-fonts/fredoka';
+import { useFonts } from 'expo-font';
+import {
+  Fredoka_400Regular,
+  Fredoka_500Medium,
+  Fredoka_600SemiBold,
+  Fredoka_700Bold,
+} from '@expo-google-fonts/fredoka';
 import {
   PlusJakartaSans_400Regular,
   PlusJakartaSans_500Medium,
@@ -16,7 +23,7 @@ import { ChildProvider } from '../contexts/ChildContext';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
+  const [loaded, fontError] = useFonts({
     Fredoka_400Regular,
     Fredoka_500Medium,
     Fredoka_600SemiBold,
@@ -27,18 +34,39 @@ export default function RootLayout() {
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
   });
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded]);
+    const t = setTimeout(() => setTimedOut(true), 2000);
+    return () => clearTimeout(t);
+  }, []);
 
-  if (!loaded) return null;
+  const ready = loaded || !!fontError || timedOut;
+
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  if (!ready) {
+    // Fond sombre pendant le chargement — plus d'écran blanc
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0F1424', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color="#35E4D2" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaProvider>
       <ChildProvider>
         <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: '#0F1424' } }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+            contentStyle: { backgroundColor: '#0F1424' },
+          }}
+        >
           <Stack.Screen name="index" />
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(tabs)" />
