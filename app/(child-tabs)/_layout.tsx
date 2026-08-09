@@ -1,52 +1,39 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { View } from 'react-native';
-import { useScheme } from '../../lib/useScheme';
+import { Image, View, Text, StyleSheet } from 'react-native';
+import { DK, Fonts, DK_ICONS } from '../../constants/darkTheme';
 
-// Barre d'onglets bi-thème (maquettes clair/sombre) : actif teal + soulignement
-const THEMES = {
-  dark: { bg: '#0B1023', border: 'rgba(148,168,255,0.16)', active: '#35E4D2', inactive: 'rgba(210,220,255,0.65)' },
-  light: { bg: '#FFFFFF', border: 'rgba(27,37,89,0.08)', active: '#12B886', inactive: '#6B7699' },
-};
-
-function TabIcon({ name, focused, color }: { name: string; focused: boolean; color: string }) {
+function TabIcon({ source, focused, label }: { source: any; focused: boolean; label: string }) {
   return (
-    <View style={{ alignItems: 'center' }}>
-      <Ionicons name={name as any} size={24} color={color} />
-      <View style={{
-        width: 26, height: 3, borderRadius: 2, marginTop: 4,
-        backgroundColor: focused ? color : 'transparent',
-      }} />
+    <View style={styles.tabItem}>
+      <Image source={source} style={[styles.icon, { opacity: focused ? 1 : 0.55 }]} />
+      <Text style={[styles.label, { color: focused ? DK.cyan : DK.faint }]}>{label}</Text>
+      <View style={[styles.underline, { backgroundColor: focused ? DK.cyan : 'transparent' }]} />
     </View>
   );
 }
 
 export default function ChildTabsLayout() {
-  const scheme = useScheme();
-  const T = scheme === 'light' ? THEMES.light : THEMES.dark;
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: T.active,
-        tabBarInactiveTintColor: T.inactive,
+        tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: T.bg,
-          borderTopColor: T.border,
+          backgroundColor: DK.nav,
+          borderTopColor: DK.cardBorder,
           borderTopWidth: 1,
-          paddingBottom: 20,
+          paddingBottom: 18,
           paddingTop: 10,
           height: 84,
         },
-        tabBarLabelStyle: { fontSize: 11.5, fontWeight: '600', letterSpacing: -0.1 },
       }}
     >
       <Tabs.Screen
         name="espace"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? 'home' : 'home-outline'} focused={focused} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={DK_ICONS.navHome} focused={focused} label="Accueil" />
           ),
         }}
       />
@@ -54,8 +41,8 @@ export default function ChildTabsLayout() {
         name="echeances"
         options={{
           title: 'Échéances',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={DK_ICONS.navCalendar} focused={focused} label="Échéances" />
           ),
         }}
       />
@@ -63,8 +50,8 @@ export default function ChildTabsLayout() {
         name="lecons"
         options={{
           title: 'Leçons',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? 'book' : 'book-outline'} focused={focused} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={DK_ICONS.book} focused={focused} label="Leçons" />
           ),
         }}
       />
@@ -73,11 +60,18 @@ export default function ChildTabsLayout() {
         name="profil"
         options={{
           title: 'Profil',
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? 'person' : 'person-outline'} focused={focused} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon source={DK_ICONS.navProfile} focused={focused} label="Profil" />
           ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabItem: { alignItems: 'center', minWidth: 64 },
+  icon: { width: 24, height: 24, resizeMode: 'contain' },
+  label: { fontFamily: Fonts.bodySemi, fontSize: 11, marginTop: 3 },
+  underline: { width: 26, height: 3, borderRadius: 2, marginTop: 3 },
+});

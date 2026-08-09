@@ -1,30 +1,33 @@
+// Tokens light (écrans legacy) + accents partagés.
+// Le design Kitsune (dark) vit dans constants/darkTheme.ts — source de vérité visuelle.
+
 export const T = {
-  // Brand
-  primary: '#0E9D6A',
-  primaryDeep: '#0A7A52',
-  primarySoft: '#E2F3EB',
+  // Brand — alignés Kitsune pour cohérence cross-mode
+  primary: '#16B26E',
+  primaryDeep: '#0D8C56',
+  primarySoft: 'rgba(22,178,110,0.14)',
   // Hero (dark panel)
-  heroFrom: '#12463A',
-  heroTo: '#0B2A23',
-  // Surfaces
+  heroFrom: '#1B2748',
+  heroTo: '#0F1424',
+  // Surfaces light (legacy)
   bg: '#F6F7F5',
   surface: '#FFFFFF',
   surfaceAlt: '#F1F4F1',
-  // Text
+  // Text light
   ink: '#13241D',
   sub: '#5C6B63',
   faint: '#90A097',
   // Lines
   line: 'rgba(19,36,29,0.08)',
   lineStrong: 'rgba(19,36,29,0.14)',
-  // On primary
-  onPrimary: '#FFFFFF',
-  // Accents
-  blue:   { fg: '#2F5BD0', soft: '#E7EDFB', solid: '#3B5BD9' },
-  amber:  { fg: '#C7791C', soft: '#FBEEDA', solid: '#EFA02E' },
-  coral:  { fg: '#D6543F', soft: '#FCE7E1', solid: '#F0654C' },
-  violet: { fg: '#6030A8', soft: '#EFE8FB', solid: '#7A45C7' },
-  green:  { fg: '#0A7A52', soft: '#E2F3EB', solid: '#0E9D6A' },
+  // On primary (Kitsune: texte sombre sur vert)
+  onPrimary: '#062E1E',
+  // Accents — hex Kitsune
+  blue:   { fg: '#3B7DFF', soft: 'rgba(59,125,255,0.16)', solid: '#3B7DFF' },
+  amber:  { fg: '#FFB020', soft: 'rgba(255,176,32,0.16)', solid: '#FFB020' },
+  coral:  { fg: '#FF6B5A', soft: 'rgba(255,107,90,0.16)', solid: '#FF6B5A' },
+  violet: { fg: '#A97BFF', soft: 'rgba(169,123,255,0.16)', solid: '#A97BFF' },
+  green:  { fg: '#0D8C56', soft: 'rgba(22,178,110,0.16)', solid: '#16B26E' },
 } as const;
 
 export type AccentKey = 'blue' | 'amber' | 'coral' | 'violet' | 'green';
