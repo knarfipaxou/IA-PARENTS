@@ -56,7 +56,7 @@ async function waitForHttp(url, ms = 120000) {
 async function smokeWeb(buildId) {
   mkdirSync(ART, { recursive: true });
   mkdirSync(ART_PUB, { recursive: true });
-  spawnSync('bash', ['-lc', `fuser -k ${PORT}/tcp 2>/dev/null || true`]);
+  spawnSync('bash', ['-lc', `(pkill -f "expo start --web --port ${PORT}" || true)`]);
   await new Promise((r) => setTimeout(r, 500));
 
   let bootLog = '';
@@ -147,7 +147,7 @@ async function smokeWeb(buildId) {
     if (fatal.length) throw new Error(`Smoke web: erreurs console JS\n${fatal.join('\n')}`);
   } finally {
     child.kill('SIGTERM');
-    spawnSync('bash', ['-lc', `fuser -k ${PORT}/tcp 2>/dev/null || true`]);
+    spawnSync('bash', ['-lc', `(pkill -f "expo start --web --port ${PORT}" || true)`]);
   }
 }
 
@@ -172,7 +172,7 @@ async function main() {
 
   log('4/4', 'Smoke web Playwright');
   // Libérer le port si un debug précédent tourne
-  spawnSync('bash', ['-lc', `fuser -k ${PORT}/tcp 2>/dev/null || true`]);
+  spawnSync('bash', ['-lc', `(pkill -f "expo start --web --port ${PORT}" || true)`]);
   await new Promise((r) => setTimeout(r, 800));
   await smokeWeb(buildId);
 
