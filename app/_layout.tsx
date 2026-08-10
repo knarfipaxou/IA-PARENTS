@@ -1,31 +1,43 @@
-import 'react-native-gesture-handler';
-import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, StyleSheet, Text } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { ChildProvider } from '../contexts/ChildContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { BUILD_ID } from '../constants/buildInfo';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// Ne PAS appeler preventAutoHideAsync : un splash bloqué = écran figé.
+SplashScreen.hideAsync().catch(() => {});
+
+/** Filet JS global — les erreurs hors React finissent aussi à l'écran si possible. */
+function installGlobalHandlers() {
+  const g = globalThis as any;
+  const prev = g.ErrorUtils?.getGlobalHandler?.();
+  g.ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
+    console.error('GlobalError', isFatal, error);
+    if (typeof prev === 'function') prev(error, isFatal);
+  });
+}
 
 export default function RootLayout() {
   useEffect(() => {
+    installGlobalHandlers();
     SplashScreen.hideAsync().catch(() => {});
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <ErrorBoundary>
+    // ErrorBoundary DOIT rester le plus à l'extérieur — sinon crash = écran blanc.
+    <ErrorBoundary>
+      <View style={styles.root}>
         <SafeAreaProvider>
           <ChildProvider>
             <StatusBar style="light" />
             <Stack
               screenOptions={{
                 headerShown: false,
-                animation: 'slide_from_right',
+                animation: 'fade',
                 contentStyle: { backgroundColor: '#0F1424' },
               }}
             >
@@ -57,11 +69,21 @@ export default function RootLayout() {
             </Stack>
           </ChildProvider>
         </SafeAreaProvider>
-      </ErrorBoundary>
-    </GestureHandlerRootView>
+        {/* Filigrane discrète : confirme que le JS de CETTE update tourne */}
+        <Text style={styles.buildTag} pointerEvents="none">{BUILD_ID}</Text>
+      </View>
+    </ErrorBoundary>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0F1424' },
+  buildTag: {
+    position: 'absolute',
+    bottom: 8,
+    right: 10,
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 10,
+    fontWeight: '700',
+  },
 });

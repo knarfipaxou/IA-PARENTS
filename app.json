@@ -7,8 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#0F1424"
+      "backgroundColor": "#16B26E"
     },
+    "backgroundColor": "#16B26E",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.iaparents.app"
