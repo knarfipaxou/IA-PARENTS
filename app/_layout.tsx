@@ -1,89 +1,82 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { ChildProvider } from '../contexts/ChildContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { BUILD_ID } from '../constants/buildInfo';
+import { BUILD_ID, BUILD_LABEL } from '../constants/buildInfo';
 
-// Ne PAS appeler preventAutoHideAsync : un splash bloqué = écran figé.
 SplashScreen.hideAsync().catch(() => {});
 
-/** Filet JS global — les erreurs hors React finissent aussi à l'écran si possible. */
-function installGlobalHandlers() {
-  const g = globalThis as any;
-  const prev = g.ErrorUtils?.getGlobalHandler?.();
-  g.ErrorUtils?.setGlobalHandler?.((error: Error, isFatal?: boolean) => {
-    console.error('GlobalError', isFatal, error);
-    if (typeof prev === 'function') prev(error, isFatal);
-  });
-}
-
+/**
+ * DIAGNOSTIC — aucun Stack / ChildProvider / GestureHandler / SafeArea.
+ * Si cet écran s'affiche, React + EAS Update fonctionnent.
+ * La navigation sera réactivée juste après confirmation.
+ */
 export default function RootLayout() {
   useEffect(() => {
-    installGlobalHandlers();
     SplashScreen.hideAsync().catch(() => {});
   }, []);
 
   return (
-    // ErrorBoundary DOIT rester le plus à l'extérieur — sinon crash = écran blanc.
     <ErrorBoundary>
       <View style={styles.root}>
-        <SafeAreaProvider>
-          <ChildProvider>
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'fade',
-                contentStyle: { backgroundColor: '#0F1424' },
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(onboarding)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="(child-tabs)" />
-              <Stack.Screen name="scan" />
-              <Stack.Screen name="scan-agenda" />
-              <Stack.Screen name="result" />
-              <Stack.Screen name="echeance-detail" />
-              <Stack.Screen name="attach-lesson" />
-              <Stack.Screen name="prepare-control" />
-              <Stack.Screen name="manual-deadline" />
-              <Stack.Screen name="add-child" />
-              <Stack.Screen name="generate" />
-              <Stack.Screen name="lessons" />
-              <Stack.Screen name="lesson-detail" />
-              <Stack.Screen name="agenda-validate" />
-              <Stack.Screen name="echeance-edit" />
-              <Stack.Screen name="edit-child" />
-              <Stack.Screen name="archived-children" />
-              <Stack.Screen name="mission" />
-              <Stack.Screen name="mission-rappel" />
-              <Stack.Screen name="mission-exo" />
-              <Stack.Screen name="mission-result" />
-              <Stack.Screen name="drill" />
-              <Stack.Screen name="blurry" />
-            </Stack>
-          </ChildProvider>
-        </SafeAreaProvider>
-        {/* Filigrane discrète : confirme que le JS de CETTE update tourne */}
-        <Text style={styles.buildTag} pointerEvents="none">{BUILD_ID}</Text>
+        <Text style={styles.ok}>ROOT OK</Text>
+        <Text style={styles.label}>{BUILD_LABEL}</Text>
+        <Text style={styles.hint}>
+          Rien n’est perdu.{'\n'}
+          Stack temporairement coupé pour isoler le crash.{'\n'}
+          Dis-moi si tu vois cet écran vert.
+        </Text>
+        <Pressable style={styles.pill}>
+          <Text style={styles.pillText}>JS vivant ✓</Text>
+        </Pressable>
+        <Text style={styles.build}>{BUILD_ID}</Text>
       </View>
     </ErrorBoundary>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0F1424' },
-  buildTag: {
+  root: {
+    flex: 1,
+    backgroundColor: '#16B26E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  ok: {
+    color: '#062E1E',
+    fontSize: 44,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  label: {
+    marginTop: 8,
+    color: '#062E1E',
+    fontSize: 16,
+    fontWeight: '700',
+    opacity: 0.85,
+  },
+  hint: {
+    marginTop: 22,
+    color: '#062E1E',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  pill: {
+    marginTop: 28,
+    backgroundColor: '#062E1E',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 999,
+  },
+  pillText: { color: '#fff', fontWeight: '800', fontSize: 15 },
+  build: {
     position: 'absolute',
-    bottom: 8,
-    right: 10,
-    color: 'rgba(255,255,255,0.35)',
-    fontSize: 10,
+    bottom: 36,
+    color: 'rgba(6,46,30,0.55)',
+    fontSize: 12,
     fontWeight: '700',
   },
 });
