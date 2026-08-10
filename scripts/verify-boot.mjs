@@ -100,10 +100,9 @@ async function smokeWeb(buildId) {
         // Attendre contenu utile
         await page.waitForFunction(() => {
           const t = document.body?.innerText || '';
-          return t.includes('BOOT OK')
-            || t.includes('ROOT OK')
-            || t.includes('Une photo du cahier')
+          return t.includes('Une photo du cahier')
             || t.includes('Choisir un enfant')
+            || t.includes('CRÉER MA FAMILLE')
             || t.includes('Erreur au démarrage');
         }, { timeout: 90000 });
         bodyText = await page.innerText('body');
@@ -127,7 +126,7 @@ async function smokeWeb(buildId) {
       'Application has not been registered',
     ];
     const hit = bad.find((b) => bodyText.includes(b) || pageErrors.some((e) => e.includes(b)));
-    const goodHints = ['ROOT OK', 'BOOT OK', 'Une photo du cahier', 'Choisir un enfant', 'CRÉER MA FAMILLE', buildId];
+    const goodHints = ['Une photo du cahier', 'Choisir un enfant', 'CRÉER MA FAMILLE', buildId];
     const hasGood = goodHints.some((g) => bodyText.includes(g));
 
     const report = {
