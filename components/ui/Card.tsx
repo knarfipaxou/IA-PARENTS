@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, ViewStyle } from 'react-native';
-import { DK } from '../../constants/darkTheme';
 import { T } from '../../constants/theme';
 
 interface CardProps {
@@ -8,26 +7,21 @@ interface CardProps {
   pad?: number;
   soft?: boolean;
   style?: ViewStyle;
-  /** dark = Kitsune (défaut) · light = legacy */
-  variant?: 'dark' | 'light';
 }
 
-export function Card({ children, pad = 18, soft, style, variant = 'light' }: CardProps) {
-  const dark = variant === 'dark';
+export function Card({ children, pad = 18, soft, style }: CardProps) {
   return (
     <View style={[{
-      backgroundColor: soft
-        ? (dark ? 'rgba(255,255,255,0.04)' : T.surfaceAlt)
-        : (dark ? DK.card : T.surface),
-      borderRadius: dark ? DK.radiusCard : 24,
+      backgroundColor: soft ? T.surfaceAlt : T.surface,
+      borderRadius: 24,
       padding: pad,
       borderWidth: 1,
-      borderColor: dark ? DK.cardBorder : T.line,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: soft ? 0 : 10 },
-      shadowOpacity: soft ? 0 : 0.14,
-      shadowRadius: soft ? 0 : 26,
-      elevation: soft ? 0 : 4,
+      borderColor: T.line,
+      shadowColor: '#102818',
+      shadowOffset: { width: 0, height: soft ? 0 : 6 },
+      shadowOpacity: soft ? 0 : 0.07,
+      shadowRadius: soft ? 0 : 16,
+      elevation: soft ? 0 : 3,
     }, style]}>
       {children}
     </View>

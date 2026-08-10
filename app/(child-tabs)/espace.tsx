@@ -53,28 +53,29 @@ function urgencyColor(days: number) {
 const PALETTES = {
   dark: {
     scheme: 'dark' as const,
-    // Kitsune tokens
-    bg: ['#1B2748', '#0F1424'] as [string, string],
+    bg: ['#070A1E', '#101638'] as [string, string],
     ink: '#FFFFFF',
-    sub: '#96A3CC',
+    sub: 'rgba(210,220,255,0.7)',
     teal: '#35E4D2',
-    circleBtnBg: 'rgba(255,255,255,0.06)',
-    circleBtnBorder: 'rgba(255,255,255,0.08)',
+    circleBtnBg: 'rgba(148,168,255,0.12)',
+    circleBtnBorder: 'rgba(148,168,255,0.25)',
     headerCardBg: 'transparent',
+    // cartes contrôle [bg, border, accent] : orange / violet / bleu
     ctrl: [
-      { bg: 'rgba(255,176,32,0.10)', border: 'rgba(255,176,32,0.35)', accent: '#FFB020', track: 'rgba(255,255,255,0.10)' },
-      { bg: 'rgba(169,123,255,0.10)', border: 'rgba(169,123,255,0.35)', accent: '#A97BFF', track: 'rgba(255,255,255,0.10)' },
-      { bg: 'rgba(59,125,255,0.10)', border: 'rgba(59,125,255,0.35)', accent: '#3B7DFF', track: 'rgba(255,255,255,0.10)' },
+      { bg: 'rgba(255,158,44,0.08)', border: 'rgba(255,158,44,0.55)', accent: '#FFA82E', track: 'rgba(255,255,255,0.14)' },
+      { bg: 'rgba(139,92,246,0.1)', border: 'rgba(139,92,246,0.55)', accent: '#9B72F2', track: 'rgba(255,255,255,0.14)' },
+      { bg: 'rgba(90,140,255,0.1)', border: 'rgba(90,140,255,0.55)', accent: '#6E9BFF', track: 'rgba(255,255,255,0.14)' },
     ],
+    // tuiles actions [fond zone texte] (échantillonné) + accent chevron
     tiles: [
-      { bg: '#16234A', accent: '#35E4D2' },
-      { bg: '#1B2238', accent: '#3B7DFF' },
-      { bg: '#142A24', accent: '#16B26E' },
-      { bg: '#241A3A', accent: '#A97BFF' },
+      { bg: '#012439', accent: '#2EC7A6' },
+      { bg: '#021940', accent: '#3D7BFF' },
+      { bg: '#00232A', accent: '#1FA36B' },
+      { bg: '#1B124C', accent: '#8F5CF0' },
     ],
-    tileBorder: 'rgba(255,255,255,0.08)',
-    card: 'rgba(255,255,255,0.06)',
-    cardBorder: 'rgba(255,255,255,0.08)',
+    tileBorder: 'rgba(148,168,255,0.16)',
+    card: 'rgba(148,168,255,0.07)',
+    cardBorder: 'rgba(148,168,255,0.18)',
   },
   light: {
     scheme: 'light' as const,

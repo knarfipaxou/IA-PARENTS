@@ -7,9 +7,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#0F1424"
+      "backgroundColor": "#F7F5F2"
     },
-    "backgroundColor": "#0F1424",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.iaparents.app"
@@ -28,8 +27,7 @@
         {
           "photosPermission": "Utilisé pour importer les photos de cahiers et devoirs."
         }
-      ],
-      "expo-font"
+      ]
     ],
     "scheme": "iaparents",
     "experiments": {
@@ -45,9 +43,6 @@
       "eas": {
         "projectId": "ef7972bd-aafb-464c-a786-fd683cdfc56d"
       }
-    },
-    "web": {
-      "bundler": "metro"
     }
   }
 }

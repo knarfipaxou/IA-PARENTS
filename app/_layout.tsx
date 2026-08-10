@@ -1,53 +1,40 @@
-import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
-import { StyleSheet, Text } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as SplashScreen from 'expo-splash-screen';
 import { ChildProvider } from '../contexts/ChildContext';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-import { BUILD_ID } from '../constants/buildInfo';
-
-SplashScreen.hideAsync().catch(() => {});
 
 export default function RootLayout() {
-  useEffect(() => {
-    SplashScreen.hideAsync().catch(() => {});
-  }, []);
-
   return (
-    <ErrorBoundary>
-      <GestureHandlerRootView style={styles.root}>
-        <SafeAreaProvider>
-          <ChildProvider>
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'none',
-                gestureEnabled: false,
-                fullScreenGestureEnabled: false,
-                contentStyle: { backgroundColor: '#0F1424' },
-              }}
-            />
-          </ChildProvider>
-        </SafeAreaProvider>
-        <Text style={styles.buildTag} pointerEvents="none">{BUILD_ID}</Text>
-      </GestureHandlerRootView>
-    </ErrorBoundary>
+    <SafeAreaProvider>
+      <ChildProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(child-tabs)" />
+          <Stack.Screen name="scan" />
+          <Stack.Screen name="scan-agenda" />
+          <Stack.Screen name="result" />
+          <Stack.Screen name="echeance-detail" />
+          <Stack.Screen name="attach-lesson" />
+          <Stack.Screen name="prepare-control" />
+          <Stack.Screen name="manual-deadline" />
+          <Stack.Screen name="add-child" />
+          <Stack.Screen name="generate" />
+          <Stack.Screen name="lessons" />
+          <Stack.Screen name="lesson-detail" />
+          <Stack.Screen name="agenda-validate" />
+          <Stack.Screen name="echeance-edit" />
+          <Stack.Screen name="edit-child" />
+          <Stack.Screen name="archived-children" />
+          <Stack.Screen name="mission" />
+          <Stack.Screen name="mission-rappel" />
+          <Stack.Screen name="mission-exo" />
+          <Stack.Screen name="mission-result" />
+          <Stack.Screen name="drill" />
+        </Stack>
+      </ChildProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0F1424' },
-  buildTag: {
-    position: 'absolute',
-    bottom: 8,
-    right: 10,
-    color: 'rgba(255,255,255,0.28)',
-    fontSize: 10,
-    fontWeight: '700',
-  },
-});
