@@ -105,6 +105,8 @@ async function smokeWeb(buildId) {
             || t.includes('CRÉER MA FAMILLE')
             || t.includes('Erreur au démarrage');
         }, { timeout: 90000 });
+        // laisser expo-image / Asset finir le chargement Kitsune
+        await page.waitForTimeout(2000);
         bodyText = await page.innerText('body');
         lastNavErr = null;
         break;
@@ -129,10 +131,24 @@ async function smokeWeb(buildId) {
     const goodHints = ['Une photo du cahier', 'Choisir un enfant', 'CRÉER MA FAMILLE', buildId];
     const hasGood = goodHints.some((g) => bodyText.includes(g));
 
+    // Kitsune doit être une vraie image chargée (pas un trou vide)
+    const imgStats = await page.evaluate(() => {
+      const imgs = Array.from(document.images || []);
+      return imgs.map((img) => ({
+        w: img.naturalWidth,
+        h: img.naturalHeight,
+        visible: !!(img.offsetWidth && img.offsetHeight),
+        alt: img.alt || '',
+      }));
+    });
+    const kitsuneImg = imgStats.find((i) => i.w >= 100 && i.h >= 100 && i.visible);
+
     const report = {
       buildId,
       hasGood,
       hit: hit || null,
+      kitsuneImg: kitsuneImg || null,
+      imgCount: imgStats.length,
       bodySnippet: bodyText.slice(0, 800),
       pageErrors: pageErrors.filter((e) => !/favicon|net::ERR_CONNECTION_REFUSED/.test(e)).slice(0, 20),
       screenshot: shot,
@@ -142,6 +158,7 @@ async function smokeWeb(buildId) {
 
     if (hit) throw new Error(`Smoke web: erreur détectée (${hit})`);
     if (!hasGood) throw new Error('Smoke web: aucun écran attendu (ROOT/BOOT/welcome)');
+    if (!kitsuneImg) throw new Error('Smoke web: Kitsune image absente ou non chargée');
     const fatal = report.pageErrors.filter((e) => /TypeError|ReferenceError|Cannot read/.test(e));
     if (fatal.length) throw new Error(`Smoke web: erreurs console JS\n${fatal.join('\n')}`);
   } finally {

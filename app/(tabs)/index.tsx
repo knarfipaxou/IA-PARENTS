@@ -8,10 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { DK } from '../../constants/darkTheme';
 import { Starfield } from '../../components/Starfield';
 import { AvatarRing } from '../../components/AvatarRing';
+import { Kitsune } from '../../components/Kitsune';
 import { useChild } from '../../contexts/ChildContext';
 import { logout } from '../../lib/auth';
 import { upcomingDeadlines } from '../../lib/deadlines';
 import { type Child } from '../../types/childProfile';
+import { BUILD_ID } from '../../constants/buildInfo';
 
 const AVATAR_DEFAULT = require('../../assets/home/avatar.png');
 
@@ -58,8 +60,12 @@ export default function ChildPicker() {
             </TouchableOpacity>
           </View>
 
+          <View style={s.mascotRow}>
+            <Kitsune size={88} />
+          </View>
           <Text style={s.title}>Choisir un enfant</Text>
           <Text style={s.sub}>Sélectionnez un profil pour accéder{'\n'}au tableau de bord.</Text>
+          <Text style={s.buildTag}>{BUILD_ID}</Text>
 
           {/* cartes enfants */}
           <View style={{ gap: 16, marginTop: 30 }}>
@@ -140,8 +146,10 @@ const s = StyleSheet.create({
     borderRadius: 999, backgroundColor: DK.cyan,
   },
 
-  title: { color: '#fff', fontSize: 38, fontWeight: '900', letterSpacing: -1, textAlign: 'center', marginTop: 28 },
+  mascotRow: { alignItems: 'center', marginTop: 8, marginBottom: -4 },
+  title: { color: '#fff', fontSize: 38, fontWeight: '900', letterSpacing: -1, textAlign: 'center', marginTop: 12 },
   sub: { color: DK.sub, fontSize: 16.5, fontWeight: '600', textAlign: 'center', marginTop: 12, lineHeight: 24 },
+  buildTag: { color: 'rgba(255,255,255,0.28)', fontSize: 11, fontWeight: '700', textAlign: 'center', marginTop: 8 },
 
   childCard: {
     flexDirection: 'row', alignItems: 'center',

@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { DarkScreen } from '../../components/ui/DarkScreen';
 import { Btn, GhostBtn } from '../../components/ui/Btn';
-import { DK, Fonts, KITSUNE } from '../../constants/darkTheme';
+import { Kitsune } from '../../components/Kitsune';
+import { DK, Fonts } from '../../constants/darkTheme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function WelcomeScreen() {
         <View style={s.ringOuter} />
         <View style={s.ringInner} />
         <View style={s.kitsuneWrap}>
-          <Image source={KITSUNE.full} style={{ width: 196, height: 238 }} resizeMode="contain" />
+          <Kitsune size={200} />
           <View style={[s.badge, s.badgePlus]}><Text style={s.badgePlusText}>+</Text></View>
           <View style={[s.badge, s.badgeOk]}><Text style={s.badgeOkText}>✓</Text></View>
         </View>
@@ -36,7 +37,13 @@ export default function WelcomeScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  hero: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  hero: {
+    flex: 1,
+    minHeight: 280,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
   ringOuter: {
     position: 'absolute', width: 290, height: 290, borderRadius: 999,
     borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.06)',
@@ -45,7 +52,13 @@ const s = StyleSheet.create({
     position: 'absolute', width: 196, height: 196, borderRadius: 999,
     borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.11)', borderStyle: 'dashed',
   },
-  kitsuneWrap: { width: 230, height: 230, alignItems: 'center', justifyContent: 'flex-end' },
+  kitsuneWrap: {
+    width: 250,
+    height: 270,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
   badge: {
     position: 'absolute', width: 46, height: 46, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center',
